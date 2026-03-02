@@ -13,6 +13,9 @@ export function renderAccountsList({ container, accounts, onDetails }) {
 
   // Accept only arrays so renderer does not crash with null/undefined data.
   const accountsData = Array.isArray(accounts) ? accounts : [];
+  const pageSize = 6;
+  let currentPage = 1;
+  const totalPages = Math.max(1, Math.ceil(accountsData.length / pageSize));
 
   if (accountsData.length === 0) {
     // Friendly empty state when there is no data.
@@ -23,17 +26,71 @@ export function renderAccountsList({ container, accounts, onDetails }) {
     return;
   }
 
-  // Create one card per account and append to container.
-  accountsData.forEach((account) => {
-    const card = createAccountSummaryCard(account);
+  const controls = document.createElement("nav");
+  controls.className = "ft-page-accounts__pagination";
 
-    if (typeof onDetails === "function") {
-      // Listen to card-level custom event and forward detail to page callback.
-      card.addEventListener("account:details", (event) => {
-        onDetails(event.detail);
-      });
+  const prevButton = document.createElement("button");
+  prevButton.type = "button";
+  prevButton.className = "ft-page-accounts__page-btn";
+  prevButton.textContent = "Previous";
+
+  const pageInfo = document.createElement("span");
+  pageInfo.className = "ft-page-accounts__page-info";
+
+  const nextButton = document.createElement("button");
+  nextButton.type = "button";
+  nextButton.className = "ft-page-accounts__page-btn";
+  nextButton.textContent = "Next";
+
+  controls.appendChild(prevButton);
+  controls.appendChild(pageInfo);
+  controls.appendChild(nextButton);
+
+  function renderPage() {
+    clearChildren(container);
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const visibleAccounts = accountsData.slice(startIndex, endIndex);
+
+    visibleAccounts.forEach((account) => {
+      const card = createAccountSummaryCard(account);
+
+      if (typeof onDetails === "function") {
+        card.addEventListener("account:details", (event) => {
+          onDetails(event.detail);
+        });
+      }
+
+      container.appendChild(card);
+    });
+
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    prevButton.disabled = currentPage === 1;
+    nextButton.disabled = currentPage === totalPages;
+
+    if (totalPages > 1) {
+      container.appendChild(controls);
     }
 
-    container.appendChild(card);
+    if (window.lucide?.createIcons) {
+      window.lucide.createIcons();
+    }
+  }
+
+  prevButton.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage -= 1;
+      renderPage();
+    }
   });
+
+  nextButton.addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      currentPage += 1;
+      renderPage();
+    }
+  });
+
+  renderPage();
 }

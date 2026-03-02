@@ -6,9 +6,9 @@
 }
 
 .ft-card {
-  background: var(--ft-color-bg);
+  background: var(--ft-color-card);
   border-radius: 10px;
-  border: 1px solid var(--ft-color-border);
+  border: 1px solid var(--ft-color-border-strong, var(--ft-color-border));
   padding: 16px 18px;
 }
 

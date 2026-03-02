@@ -15,10 +15,29 @@
 
       <!-- Page container using page-level class -->
       <main class="ft-app-shell__content ft-page-accounts ft-page-accounts--demo">
-        <header>
-          <h1 class="ft-h2">Accounts (Demo)</h1>
-          <p class="ft-text-muted">Rendered dynamically from fake JS data</p>
+        <header class="ft-page-accounts__header">
+          <div>
+            <h1 class="ft-h2">Accounts</h1>
+            <p class="ft-text-muted">Rendered dynamically from fake JS data &mdash; Main currency: USD</p>
+          </div>
         </header>
+
+        <div class="ft-page-accounts__toolbar" data-component="accounts-filters">
+          <label class="ft-page-accounts__filter">
+            <span class="ft-page-accounts__filter-label">Holder</span>
+            <select class="ft-page-accounts__filter-select" data-filter="holder"></select>
+          </label>
+          <span class="ft-page-accounts__filter-divider"></span>
+          <label class="ft-page-accounts__filter">
+            <span class="ft-page-accounts__filter-label">Currency</span>
+            <select class="ft-page-accounts__filter-select" data-filter="currency"></select>
+          </label>
+          <span class="ft-page-accounts__filter-divider"></span>
+          <label class="ft-page-accounts__filter">
+            <span class="ft-page-accounts__filter-label">Type</span>
+            <select class="ft-page-accounts__filter-select" data-filter="type"></select>
+          </label>
+        </div>
 
         <!-- JS looks for this data attribute and injects account cards here -->
         <section data-component="accounts-list"></section>

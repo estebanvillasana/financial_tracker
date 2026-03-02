@@ -98,21 +98,40 @@ export function createAccountSummaryCard(account) {
   meta.appendChild(metaRow);
 
   const balance = createNode("div", "ft-account-card__balance");
+  const accountCurrency = account.currency || "USD";
+  const mainCurrency = account.mainCurrency || accountCurrency;
   const balanceMain = createNode(
     "div",
     "ft-account-card__balance-main",
-    formatCurrency(account.balance, account.currency || "USD"),
+    `${formatCurrency(account.balance, accountCurrency)} ${accountCurrency}`,
   );
-  const balanceSub = createNode(
-    "div",
-    "ft-account-card__balance-sub",
-    account.secondaryBalance == null
-      ? ""
-      : formatCurrency(account.secondaryBalance, account.secondaryCurrency || account.currency || "USD"),
-  );
+  const balanceSubValue =
+    account.mainBalance != null
+      ? `${formatCurrency(account.mainBalance, mainCurrency)} ${mainCurrency}`
+      : account.secondaryBalance == null
+        ? ""
+        : formatCurrency(
+            account.secondaryBalance,
+            account.secondaryCurrency || accountCurrency,
+          );
+  const balanceSub = createNode("div", "ft-account-card__balance-sub", balanceSubValue);
 
-  if (!balanceSub.textContent && account.availableBalance != null) {
-    balanceSub.textContent = formatCurrency(account.availableBalance, account.currency || "USD");
+  if (!balanceSub.textContent && account.availableMainBalance != null) {
+    balanceSub.textContent = `${formatCurrency(
+      account.availableMainBalance,
+      mainCurrency,
+    )} ${mainCurrency}`;
+  }
+
+  if (
+    !balanceSub.textContent &&
+    account.availableBalance != null &&
+    mainCurrency === accountCurrency
+  ) {
+    balanceSub.textContent = `${formatCurrency(
+      account.availableBalance,
+      accountCurrency,
+    )} ${accountCurrency}`;
   }
 
   balance.appendChild(balanceMain);

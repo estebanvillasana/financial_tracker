@@ -12,7 +12,7 @@
 
 .ft-account-card:hover {
   border-color: var(--ft-color-accent-15);
-  box-shadow: 0 12px 26px #0b111a66;
+  box-shadow: 0 4px 12px rgba(11, 17, 26, 0.15);
 }
 
 .ft-account-card__top {
