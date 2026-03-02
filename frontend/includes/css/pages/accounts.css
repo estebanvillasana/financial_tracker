@@ -4,6 +4,10 @@
 	gap: calc(var(--ft-spacing) * 2);
 }
 
+.ft-page-accounts--demo {
+	background: var(--ft-color-surface-alt);
+}
+
 .ft-page-accounts__list {
 	display: flex;
 	flex-direction: column;

@@ -9,7 +9,7 @@
   background: var(--ft-color-bg);
   border-radius: 10px;
   border: 1px solid var(--ft-color-border);
-  padding: 14px 16px;
+  padding: 16px 18px;
 }
 
 .ft-card--summary {

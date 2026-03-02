@@ -19,6 +19,18 @@ function normalizeType(accountType) {
   return String(accountType).toLowerCase();
 }
 
+function formatMaskedAccount(account) {
+  if (account.maskedAccount) {
+    return account.maskedAccount;
+  }
+
+  if (account.last4) {
+    return `**** ${account.last4}`;
+  }
+
+  return "**** ----";
+}
+
 export function createAccountSummaryCard(account) {
   // Root card element. Returns one complete DOM node per account.
   const card = createNode("article", "ft-card ft-account-card");
@@ -40,8 +52,8 @@ export function createAccountSummaryCard(account) {
   const name = createNode("h3", "ft-account-card__name", account.name || "Unnamed account");
   const typeTag = createNode(
     "span",
-    "ft-label ft-account-card__type-label ft-label--neutral",
-    account.typeLabel || accountType,
+    "ft-account-card__tag",
+    account.typeLabel || `${accountType} account`,
   );
 
   nameRow.appendChild(name);
@@ -54,19 +66,32 @@ export function createAccountSummaryCard(account) {
   );
 
   const metaRow = createNode("div", "ft-account-card__meta-row");
-  const updatedText = createNode(
+  const metaMain = createNode(
     "span",
     "ft-account-card__meta-main",
-    `Updated ${formatShortDate(account.updatedAt || Date.now())}`,
+    `${account.currency || "USD"} · ${formatMaskedAccount(account)}`,
   );
-  const institutionText = createNode(
+  const updatedText = createNode(
     "span",
     "ft-account-card__meta-sub",
-    account.institution || "-",
+    account.updatedLabel || `Updated ${formatShortDate(account.updatedAt || Date.now())}`,
   );
 
+  metaRow.appendChild(metaMain);
   metaRow.appendChild(updatedText);
-  metaRow.appendChild(institutionText);
+
+  const holderInline = createNode("span", "ft-account-card__holder-inline");
+  const holderIcon = createNode("i", "ft-icon ft-icon--sm");
+  holderIcon.dataset.lucide = "user";
+  holderInline.appendChild(holderIcon);
+  holderInline.appendChild(
+    createNode(
+      "span",
+      "ft-account-card__holder-text",
+      account.holderName || "Unavailable",
+    ),
+  );
+  metaRow.appendChild(holderInline);
 
   meta.appendChild(nameRow);
   meta.appendChild(description);
@@ -81,10 +106,14 @@ export function createAccountSummaryCard(account) {
   const balanceSub = createNode(
     "div",
     "ft-account-card__balance-sub",
-    account.availableBalance == null
+    account.secondaryBalance == null
       ? ""
-      : `Available ${formatCurrency(account.availableBalance, account.currency || "USD")}`,
+      : formatCurrency(account.secondaryBalance, account.secondaryCurrency || account.currency || "USD"),
   );
+
+  if (!balanceSub.textContent && account.availableBalance != null) {
+    balanceSub.textContent = formatCurrency(account.availableBalance, account.currency || "USD");
+  }
 
   balance.appendChild(balanceMain);
   if (balanceSub.textContent) {
@@ -95,13 +124,7 @@ export function createAccountSummaryCard(account) {
   top.appendChild(meta);
   top.appendChild(balance);
 
-  // ----- Bottom section (action + holder info) -----
-  const bottom = createNode("div", "ft-account-card__bottom");
-  const detailsButton = createNode("button", "ft-account-card__details", "View details");
-  detailsButton.type = "button";
-  detailsButton.addEventListener("click", () => {
-    // Emit a custom event so parent layers decide what happens on click.
-    // This keeps the component reusable and free of routing logic.
+  card.addEventListener("click", () => {
     card.dispatchEvent(
       new CustomEvent("account:details", {
         bubbles: true,
@@ -110,19 +133,7 @@ export function createAccountSummaryCard(account) {
     );
   });
 
-  const holder = createNode("div", "ft-account-card__holder");
-  const holderName = createNode(
-    "span",
-    "ft-account-card__holder-text",
-    account.holderName || "Account holder unavailable",
-  );
-
-  holder.appendChild(holderName);
-  bottom.appendChild(detailsButton);
-  bottom.appendChild(holder);
-
   card.appendChild(top);
-  card.appendChild(bottom);
 
   // Renderer will append this returned node into the page container.
   return card;

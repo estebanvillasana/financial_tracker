@@ -9,16 +9,21 @@
     <link rel="stylesheet" href="../includes/css/styles.css" />
   </head>
   <body class="ft-theme">
-    <!-- Page container using page-level class -->
-    <main class="ft-page-accounts" style="max-width: 760px; margin: 0 auto; padding: 24px;">
-      <header>
-        <h1 class="ft-h2">Accounts (Demo)</h1>
-        <p class="ft-text-muted">Rendered dynamically from fake JS data</p>
-      </header>
+    <div class="ft-app-shell">
+      <!-- Sidebar is now rendered by JS so it can be reused on any page -->
+      <div data-component="sidebar" data-active-path="/accounts"></div>
 
-      <!-- JS looks for this data attribute and injects account cards here -->
-      <section data-component="accounts-list"></section>
-    </main>
+      <!-- Page container using page-level class -->
+      <main class="ft-app-shell__content ft-page-accounts ft-page-accounts--demo">
+        <header>
+          <h1 class="ft-h2">Accounts (Demo)</h1>
+          <p class="ft-text-muted">Rendered dynamically from fake JS data</p>
+        </header>
+
+        <!-- JS looks for this data attribute and injects account cards here -->
+        <section data-component="accounts-list"></section>
+      </main>
+    </div>
 
     <!-- Icon library (optional visual enhancement) -->
     <script src="https://unpkg.com/lucide@latest"></script>

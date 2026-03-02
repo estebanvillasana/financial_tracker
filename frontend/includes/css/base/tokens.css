@@ -3,14 +3,14 @@
     "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --ft-font-size-base: 14px;
 
-  --ft-color-bg: #1f2836;
-  --ft-color-surface: #2e3744;
-  --ft-color-surface-alt: #242f3f;
-  --ft-color-surface-deep: #0d2430;
-  --ft-color-text: #ffffff;
-  --ft-color-text-muted: #8a9bb0;
-  --ft-color-text-muted-30: #8a9bb050;
-  --ft-color-border: #ffffff26;
+  --ft-color-bg: #1b2330;
+  --ft-color-surface: #2a3443;
+  --ft-color-surface-alt: #222c3a;
+  --ft-color-surface-deep: #111a24;
+  --ft-color-text: #f5f7fb;
+  --ft-color-text-muted: #9aa8bd;
+  --ft-color-text-muted-30: #9aa8bd50;
+  --ft-color-border: #ffffff1f;
 
   --ft-color-accent: #2196f3;
   --ft-color-accent-10: #2196f31a;
