@@ -1,0 +1,11 @@
+.ft-page-accounts {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--ft-spacing) * 2);
+}
+
+.ft-page-accounts__list {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--ft-spacing) * 1.5);
+}

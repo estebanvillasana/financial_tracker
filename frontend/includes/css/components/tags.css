@@ -1,0 +1,95 @@
+.ft-tag {
+  align-items: center;
+  border-radius: 6px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+}
+
+.ft-tag--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+.ft-tag--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-tag--neutral {
+  background: var(--ft-color-accent-15);
+  color: var(--ft-color-accent);
+}
+
+.ft-tag--sub {
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 3px 8px;
+}
+
+.ft-tag--sub-solid-income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+.ft-tag--sub-solid-expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-tag--sub-solid-neutral {
+  background: var(--ft-color-accent-15);
+  color: var(--ft-color-accent);
+}
+
+.ft-tag--sub-outline-income {
+  border: 1px solid var(--ft-color-success-30);
+  color: var(--ft-color-success-60);
+}
+
+.ft-tag--sub-outline-expense {
+  border: 1px solid var(--ft-color-danger-30);
+  color: var(--ft-color-danger-60);
+}
+
+.ft-tag--sub-outline-neutral {
+  border: 1px solid var(--ft-color-text-muted-30, #8a9bb050);
+  color: var(--ft-color-text-muted);
+}
+
+.ft-label {
+  align-items: center;
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 500;
+  gap: 5px;
+  padding: 3px 10px;
+}
+
+.ft-label--checking {
+  background: var(--ft-color-accent-10);
+  color: var(--ft-color-accent);
+}
+
+.ft-label--savings {
+  background: var(--ft-color-success-10);
+  color: var(--ft-color-success);
+}
+
+.ft-label--investment {
+  background: var(--ft-color-success-10);
+  color: var(--ft-color-success);
+}
+
+.ft-label--credit {
+  background: var(--ft-color-warning-10);
+  color: var(--ft-color-warning);
+}
+
+.ft-label--cash {
+  background: var(--ft-color-text-muted-30);
+  color: var(--ft-color-text-muted);
+}

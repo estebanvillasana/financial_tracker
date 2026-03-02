@@ -1,0 +1,34 @@
+.ft-text {
+  font-family: var(--ft-font-family);
+  font-size: var(--ft-font-size-base);
+  color: var(--ft-color-text);
+}
+
+.ft-text-muted {
+  color: var(--ft-color-text-muted);
+}
+
+.ft-h1 {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.ft-h2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.ft-h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ft-label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.ft-small {
+  font-size: 12px;
+}

@@ -1,0 +1,180 @@
+.ft-account-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ft-account-card__top {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.ft-account-card__icon {
+  align-items: center;
+  background: var(--ft-color-surface-deep);
+  border-radius: 10px;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.ft-account-card__meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-account-card__name-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.ft-account-card__name {
+  color: var(--ft-color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ft-account-card__type-label {
+  text-transform: none;
+}
+
+.ft-account-card__description {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.ft-account-card__meta-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.ft-account-card__meta-main {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ft-account-card__meta-sub {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.ft-account-card__balance {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ft-account-card__balance-main {
+  color: var(--ft-color-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ft-account-card__balance-sub {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.ft-account-card__bottom {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  height: 24px;
+  justify-content: space-between;
+}
+
+.ft-account-card__details {
+  align-items: center;
+  background: var(--ft-color-accent-10);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--ft-color-accent);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--ft-font-family);
+  font-size: 11px;
+  font-weight: 500;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.ft-account-card__holder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ft-account-card__holder-text {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.ft-account-card__page {
+  align-items: flex-start;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.ft-account-card__frame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.ft-account-card--checking .ft-account-card__icon {
+  background: var(--ft-color-accent-10);
+}
+
+.ft-account-card--checking .ft-account-card__icon .ft-icon,
+.ft-account-card--checking .ft-account-card__details,
+.ft-account-card--checking .ft-account-card__details .ft-icon {
+  color: var(--ft-color-accent);
+}
+
+.ft-account-card--checking .ft-account-card__details {
+  background: var(--ft-color-accent-10);
+}
+
+.ft-account-card--savings .ft-account-card__icon {
+  background: var(--ft-color-success-10);
+}
+
+.ft-account-card--savings .ft-account-card__icon .ft-icon,
+.ft-account-card--savings .ft-account-card__details,
+.ft-account-card--savings .ft-account-card__details .ft-icon {
+  color: var(--ft-color-success);
+}
+
+.ft-account-card--savings .ft-account-card__details {
+  background: var(--ft-color-success-10);
+}
+
+.ft-account-card--credit .ft-account-card__icon {
+  background: var(--ft-color-danger-10);
+}
+
+.ft-account-card--credit .ft-account-card__icon .ft-icon,
+.ft-account-card--credit .ft-account-card__details,
+.ft-account-card--credit .ft-account-card__details .ft-icon {
+  color: var(--ft-color-danger);
+}
+
+.ft-account-card--credit .ft-account-card__details {
+  background: var(--ft-color-danger-10);
+}

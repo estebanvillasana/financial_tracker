@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Basic document metadata -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Tracker - Accounts Demo</title>
+    <!-- Single CSS entrypoint (imports base + components + pages) -->
+    <link rel="stylesheet" href="../includes/css/styles.css" />
+  </head>
+  <body class="ft-theme">
+    <!-- Page container using page-level class -->
+    <main class="ft-page-accounts" style="max-width: 760px; margin: 0 auto; padding: 24px;">
+      <header>
+        <h1 class="ft-h2">Accounts (Demo)</h1>
+        <p class="ft-text-muted">Rendered dynamically from fake JS data</p>
+      </header>
+
+      <!-- JS looks for this data attribute and injects account cards here -->
+      <section data-component="accounts-list"></section>
+    </main>
+
+    <!-- Icon library (optional visual enhancement) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Demo entry file: provides fake data and triggers rendering -->
+    <script type="module" src="../includes/js/demo/accountsPageDemo.js"></script>
+  </body>
+</html>

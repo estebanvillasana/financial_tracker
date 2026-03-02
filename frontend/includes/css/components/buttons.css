@@ -1,0 +1,46 @@
+.ft-btn {
+  align-items: center;
+  border-radius: var(--ft-radius-widget);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--ft-font-family);
+  font-size: 14px;
+  font-weight: 500;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 20px;
+  text-decoration: none;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ft-btn--primary {
+  background: var(--ft-color-accent);
+  color: var(--ft-color-text);
+}
+
+.ft-btn--secondary {
+  background: var(--ft-color-surface);
+  border-color: var(--ft-color-border);
+  color: var(--ft-color-text);
+}
+
+.ft-btn--outline {
+  background: transparent;
+  border-color: var(--ft-color-accent);
+  color: var(--ft-color-accent);
+}
+
+.ft-btn--ghost {
+  background: transparent;
+  border-color: var(--ft-color-border);
+  color: var(--ft-color-text-muted);
+}
+
+.ft-btn--danger {
+  background: var(--ft-color-danger);
+  color: var(--ft-color-text);
+}
