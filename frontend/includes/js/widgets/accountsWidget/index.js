@@ -1,4 +1,23 @@
-import { applyFilters, fillSelect, getUniqueValues } from "./filters.js";
+// index.js — Public entry point for the accounts widget.
+//
+// mountAccountsWidget() is the only export. It:
+//   1. Builds the DOM skeleton via view.js (createWidgetView).
+//   2. Populates filter dropdowns with unique values extracted from the
+//      accounts array (filters.js → getUniqueValues, filterBar.fill).
+//   3. Attaches event listeners for filter changes and pagination clicks.
+//   4. Calls render() which applies filters (filters.js → applyFilters),
+//      slices the result for the current page, then hands the slice to
+//      view.js (renderWidget) to update the DOM.
+//
+// Options:
+//   container      HTMLElement — where the widget is mounted.
+//   accounts       Array      — full account list (typically from the API).
+//   pageSize       number     — cards per page (default 6).
+//   showFilters    boolean    — include the filter bar (default true).
+//   showPagination boolean    — include prev/next controls (default true).
+//   onDetails      Function   — called with { accountId, account } on card click.
+
+import { applyFilters, getUniqueValues } from "./filters.js";
 import { createAccountsWidgetState } from "./state.js";
 import { createWidgetView, renderWidget } from "./view.js";
 
@@ -18,17 +37,9 @@ export function mountAccountsWidget({
   const elements = createWidgetView(container, { showFilters, showPagination });
 
   if (showFilters) {
-    fillSelect(
-      elements.holderSelect,
-      getUniqueValues(accounts, "holderName"),
-      "holders",
-    );
-    fillSelect(
-      elements.currencySelect,
-      getUniqueValues(accounts, "currency"),
-      "currencies",
-    );
-    fillSelect(elements.typeSelect, getUniqueValues(accounts, "typeLabel"), "types");
+    elements.filterBar.fill("holder", getUniqueValues(accounts, "holderName"), "All holders");
+    elements.filterBar.fill("currency", getUniqueValues(accounts, "currency"), "All currencies");
+    elements.filterBar.fill("type", getUniqueValues(accounts, "typeLabel"), "All types");
   }
 
   function render() {
@@ -51,19 +62,13 @@ export function mountAccountsWidget({
   }
 
   if (showFilters) {
-    function handleFilterChange() {
-      state.holder = elements.holderSelect.value;
-      state.currency = elements.currencySelect.value;
-      state.type = elements.typeSelect.value;
+    elements.filterBar.onChange((values) => {
+      state.holder = values.holder;
+      state.currency = values.currency;
+      state.type = values.type;
       state.page = 1;
       render();
-    }
-
-    [elements.holderSelect, elements.currencySelect, elements.typeSelect].forEach(
-      (select) => {
-        select.addEventListener("change", handleFilterChange);
-      },
-    );
+    });
   }
 
   if (showPagination) {

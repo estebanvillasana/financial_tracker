@@ -1,43 +1,36 @@
+// view.js — DOM construction and rendering for the accounts widget.
+//
+// Responsibilities:
+//   createWidgetView  — Builds the full widget skeleton (filter bar, card list,
+//                       pagination) and mounts it into the host container.
+//                       Returns refs to every interactive element so index.js
+//                       can wire events without touching the DOM directly.
+//   renderCards       — Clears the list section and stamps one account card
+//                       per account in the given slice. Handles the empty state.
+//   renderWidget      — Called on every render pass: updates the card list and
+//                       syncs pagination controls to the current state.
+//
+// This file owns the DOM; it never touches filtering logic or state mutations.
+
 import { createNode, clearChildren } from "../../core/dom.js";
 import { createAccountSummaryCard } from "../../components/accountSummaryCard.js";
+import { createFilterBar } from "../../components/filterBar.js";
 
-function createFilter({ label, dataFilter }) {
-  const wrapper = createNode("label", "ft-accounts-widget__filter");
-  const labelNode = createNode("span", "ft-accounts-widget__filter-label", label);
-  const select = createNode("select", "ft-accounts-widget__filter-select");
-  select.dataset.filter = dataFilter;
-
-  wrapper.appendChild(labelNode);
-  wrapper.appendChild(select);
-
-  return { wrapper, select };
-}
-
+// Builds and mounts the widget skeleton. Returns element refs for index.js.
+// `showFilters` and `showPagination` let callers opt out of either section
+// (e.g. a compact dashboard panel that just shows 3 cards).
 export function createWidgetView(container, { showFilters = true, showPagination = true } = {}) {
   const root = createNode("div", "ft-accounts-widget");
 
-  let holderSelect = null;
-  let currencySelect = null;
-  let typeSelect = null;
+  let filterBar = null;
 
   if (showFilters) {
-    const toolbar = createNode("div", "ft-accounts-widget__toolbar");
-    const holderFilter = createFilter({ label: "Holder", dataFilter: "holder" });
-    const currencyFilter = createFilter({ label: "Currency", dataFilter: "currency" });
-    const typeFilter = createFilter({ label: "Type", dataFilter: "type" });
-    const divider1 = createNode("span", "ft-accounts-widget__filter-divider");
-    const divider2 = createNode("span", "ft-accounts-widget__filter-divider");
-
-    toolbar.appendChild(holderFilter.wrapper);
-    toolbar.appendChild(divider1);
-    toolbar.appendChild(currencyFilter.wrapper);
-    toolbar.appendChild(divider2);
-    toolbar.appendChild(typeFilter.wrapper);
-    root.appendChild(toolbar);
-
-    holderSelect = holderFilter.select;
-    currencySelect = currencyFilter.select;
-    typeSelect = typeFilter.select;
+    filterBar = createFilterBar([
+      { label: "Holder", key: "holder" },
+      { label: "Currency", key: "currency" },
+      { label: "Type", key: "type" },
+    ]);
+    root.appendChild(filterBar.element);
   }
 
   const list = createNode("section", "ft-accounts-widget__list");
@@ -72,12 +65,12 @@ export function createWidgetView(container, { showFilters = true, showPagination
     prevButton,
     pageInfo,
     nextButton,
-    holderSelect,
-    currencySelect,
-    typeSelect,
+    filterBar,
   };
 }
 
+// Renders a flat list of account cards into `container`.
+// Only receives the already-filtered, already-paginated slice — no data logic here.
 export function renderCards({ container, accounts, onDetails }) {
   clearChildren(container);
 
@@ -104,6 +97,7 @@ export function renderCards({ container, accounts, onDetails }) {
   });
 }
 
+// Full render pass: updates the card list then syncs pagination UI to state.
 export function renderWidget({ elements, accounts, state, totalPages, onDetails, showPagination }) {
   renderCards({ container: elements.list, accounts, onDetails });
 

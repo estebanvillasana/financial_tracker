@@ -8,6 +8,7 @@
 @import url("./components/sidebar.css");
 @import url("./components/tags.css");
 @import url("./components/account-summary-card.css");
+@import url("./components/filter-bar.css");
 @import url("./widgets/accounts-widget.css");
 @import url("./pages/dashboard.css");
 @import url("./pages/accounts.css");
