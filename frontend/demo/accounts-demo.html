@@ -14,33 +14,16 @@
       <div data-component="sidebar" data-active-path="/accounts"></div>
 
       <!-- Page container using page-level class -->
-      <main class="ft-app-shell__content ft-page-accounts ft-page-accounts--demo">
-        <header class="ft-page-accounts__header">
+      <main class="ft-app-shell__content ft-page ft-page-accounts">
+        <header class="ft-page__header">
           <div>
             <h1 class="ft-h2">Accounts</h1>
             <p class="ft-text-muted">Rendered dynamically from fake JS data &mdash; Main currency: USD</p>
           </div>
         </header>
 
-        <div class="ft-page-accounts__toolbar" data-component="accounts-filters">
-          <label class="ft-page-accounts__filter">
-            <span class="ft-page-accounts__filter-label">Holder</span>
-            <select class="ft-page-accounts__filter-select" data-filter="holder"></select>
-          </label>
-          <span class="ft-page-accounts__filter-divider"></span>
-          <label class="ft-page-accounts__filter">
-            <span class="ft-page-accounts__filter-label">Currency</span>
-            <select class="ft-page-accounts__filter-select" data-filter="currency"></select>
-          </label>
-          <span class="ft-page-accounts__filter-divider"></span>
-          <label class="ft-page-accounts__filter">
-            <span class="ft-page-accounts__filter-label">Type</span>
-            <select class="ft-page-accounts__filter-select" data-filter="type"></select>
-          </label>
-        </div>
-
-        <!-- JS looks for this data attribute and injects account cards here -->
-        <section data-component="accounts-list"></section>
+        <!-- JS mounts the full accounts widget (filters + list + pagination) here -->
+        <section data-component="accounts-widget"></section>
       </main>
     </div>
 

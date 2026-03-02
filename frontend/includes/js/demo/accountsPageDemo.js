@@ -1,4 +1,4 @@
-import { renderAccountsList } from "../renderers/accountsList.js";
+import { mountAccountsWidget } from "../widgets/accountsWidget/_accountsWidget.js";
 import { renderSidebar } from "../components/sidebar.js";
 
 const MAIN_CURRENCY = "USD";
@@ -154,90 +154,22 @@ function mountDemo() {
     renderSidebar({ container: sidebarMount, activePath });
   }
 
-  // 1) Find the place in HTML where cards should be inserted.
-  const container = document.querySelector("[data-component='accounts-list']");
-  const filters = document.querySelector("[data-component='accounts-filters']");
+  // 1) Find the place in HTML where the widget should be mounted.
+  const container = document.querySelector("[data-component='accounts-widget']");
 
   if (!container) {
     // If the target container does not exist, exit safely.
     return;
   }
 
-  const holderSelect = filters?.querySelector("[data-filter='holder']") || null;
-  const currencySelect = filters?.querySelector("[data-filter='currency']") || null;
-  const typeSelect = filters?.querySelector("[data-filter='type']") || null;
-
-  function getUniqueValues(items, key) {
-    return [...new Set(items.map((item) => item[key]).filter(Boolean))].sort();
-  }
-
-  function fillSelect(select, values, label) {
-    if (!select) {
-      return;
-    }
-
-    select.innerHTML = "";
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = `All ${label}`;
-    select.appendChild(defaultOption);
-
-    values.forEach((value) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      select.appendChild(option);
-    });
-  }
-
-  fillSelect(holderSelect, getUniqueValues(fakeAccounts, "holderName"), "holders");
-  fillSelect(currencySelect, getUniqueValues(fakeAccounts, "currency"), "currencies");
-  fillSelect(typeSelect, getUniqueValues(fakeAccounts, "typeLabel"), "types");
-
-  function applyFilters() {
-    const holderValue = holderSelect?.value || "";
-    const currencyValue = currencySelect?.value || "";
-    const typeValue = typeSelect?.value || "";
-
-    const filteredAccounts = fakeAccounts.filter((account) => {
-      if (holderValue && account.holderName !== holderValue) {
-        return false;
-      }
-
-      if (currencyValue && account.currency !== currencyValue) {
-        return false;
-      }
-
-      if (typeValue && account.typeLabel !== typeValue) {
-        return false;
-      }
-
-      return true;
-    });
-
-    renderAccountsList({
-      container,
-      accounts: filteredAccounts,
-      onDetails: ({ accountId, account }) => {
-        alert(`Open details for #${accountId} (${account.name})`);
-      },
-    });
-  }
-
-  [holderSelect, currencySelect, typeSelect].forEach((select) => {
-    if (select) {
-      select.addEventListener("change", applyFilters);
-    }
+  mountAccountsWidget({
+    container,
+    accounts: fakeAccounts,
+    pageSize: 6,
+    onDetails: ({ accountId, account }) => {
+      alert(`Open details for #${accountId} (${account.name})`);
+    },
   });
-
-  // 2) Render one account card per account object.
-  // The renderer handles looping and calls your component factory for each item.
-  applyFilters();
-
-  // 4) Ask Lucide to replace <i data-lucide="..."></i> with SVG icons.
-  if (window.lucide?.createIcons) {
-    window.lucide.createIcons();
-  }
 }
 
 // Start the demo.

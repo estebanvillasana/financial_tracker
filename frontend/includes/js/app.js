@@ -1,9 +1,9 @@
-import { renderAccountsList } from "./renderers/accountsList.js";
+import { mountAccountsWidget } from "./widgets/accountsWidget/_accountsWidget.js";
 import { fetchAccounts } from "./services/accountsService.js";
 
 async function mountAccountsPage() {
   // This is the production entrypoint (real API), not fake demo data.
-  const container = document.querySelector("[data-component='accounts-list']");
+  const container = document.querySelector("[data-component='accounts-widget']");
 
   if (!container) {
     return;
@@ -13,8 +13,8 @@ async function mountAccountsPage() {
     // 1) Get data from backend.
     const accounts = await fetchAccounts();
 
-    // 2) Render UI from data.
-    renderAccountsList({
+    // 2) Mount the full widget (filters + list + pagination).
+    mountAccountsWidget({
       container,
       accounts,
       onDetails: ({ accountId }) => {
