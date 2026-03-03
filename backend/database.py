@@ -1,0 +1,1 @@
+# Initialization of SQLite DB (data/financial.db)
