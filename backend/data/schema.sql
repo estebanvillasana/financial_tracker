@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS repetitive_movements (
 	movement TEXT NOT NULL,
 	description TEXT,
 	type TEXT NOT NULL CHECK (type IN ('Income', 'Expense')),
-	category TEXT NOT NULL
+	category TEXT NOT NULL,
+	tax_report INTEGER NOT NULL DEFAULT 0 CHECK (tax_report IN (0, 1))
 );
 
 CREATE TABLE IF NOT EXISTS movements (
@@ -41,12 +42,13 @@ CREATE TABLE IF NOT EXISTS movements (
 	account_id INTEGER NOT NULL,
 	value INTEGER NOT NULL,
 	type TEXT NOT NULL CHECK (type IN ('Income', 'Expense')),
-	category_id INTEGER NOT NULL,
+	date TEXT NOT NULL,
+	category_id INTEGER,
 	sub_category_id INTEGER,
-	tax_report INTEGER NOT NULL DEFAULT 0 CHECK (tax_report IN (0, 1)),
 	repetitive_movement_id INTEGER,
 	movement_code TEXT,
 	money_transfer INTEGER NOT NULL DEFAULT 0 CHECK (money_transfer IN (0, 1)),
+	invoice INTEGER NOT NULL DEFAULT 0 CHECK (invoice IN (0, 1)),
 	FOREIGN KEY (account_id) REFERENCES bank_accounts (id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	FOREIGN KEY (category_id) REFERENCES categories (id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	FOREIGN KEY (sub_category_id, category_id) REFERENCES sub_categories (id, category_id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -70,3 +72,6 @@ CREATE INDEX IF NOT EXISTS idx_movements_repetitive_movement_id
 
 CREATE INDEX IF NOT EXISTS idx_movements_type
 	ON movements (type);
+
+CREATE INDEX IF NOT EXISTS idx_movements_date
+	ON movements (date);
