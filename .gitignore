@@ -1,1 +1,3 @@
 .vscode/*
+backend/data/database/
+log/
