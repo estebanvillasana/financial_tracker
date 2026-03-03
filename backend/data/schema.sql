@@ -8,20 +8,22 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
 	owner            TEXT    NOT NULL,
 	currency         TEXT    NOT NULL CHECK (length(currency) = 3),
 	initial_balance  INTEGER NOT NULL,
-	active           INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-	updated          INTEGER NOT NULL DEFAULT 0 CHECK (updated IN (0, 1))
+	updated          INTEGER NOT NULL DEFAULT 0 CHECK (updated IN (0, 1)),
+	active           INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
 );
 
 CREATE TABLE IF NOT EXISTS categories (
-	id        INTEGER PRIMARY KEY AUTOINCREMENT,
-	category  TEXT NOT NULL,
-	type      TEXT NOT NULL CHECK (type IN ('Income', 'Expense'))
+	id       INTEGER PRIMARY KEY AUTOINCREMENT,
+	category TEXT    NOT NULL,
+	type     TEXT    NOT NULL CHECK (type IN ('Income', 'Expense')),
+	active   INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
 );
 
 CREATE TABLE IF NOT EXISTS sub_categories (
 	id           INTEGER PRIMARY KEY AUTOINCREMENT,
 	sub_category TEXT    NOT NULL,
 	category_id  INTEGER NOT NULL,
+	active       INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
 	FOREIGN KEY (category_id) REFERENCES categories (id) ON UPDATE CASCADE ON DELETE RESTRICT,
 	UNIQUE (id, category_id)
 );
@@ -34,7 +36,8 @@ CREATE TABLE IF NOT EXISTS repetitive_movements (
 	tax_report          INTEGER NOT NULL DEFAULT 0 CHECK (tax_report IN (0, 1)),
 	active_subscription INTEGER DEFAULT NULL
 		CHECK (type != 'Income' OR active_subscription IS NULL)
-		CHECK (active_subscription IN (0, 1, NULL))
+		CHECK (active_subscription IN (0, 1, NULL)),
+	active              INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
 );
 
 CREATE TABLE IF NOT EXISTS movements (
@@ -50,16 +53,27 @@ CREATE TABLE IF NOT EXISTS movements (
 	repetitive_movement_id INTEGER,
 	movement_code          TEXT,
 	invoice                INTEGER NOT NULL DEFAULT 0 CHECK (invoice IN (0, 1)),
-	FOREIGN KEY (account_id)             REFERENCES bank_accounts (id)        ON UPDATE CASCADE ON DELETE RESTRICT,
-	FOREIGN KEY (category_id)            REFERENCES categories (id)            ON UPDATE CASCADE ON DELETE RESTRICT,
+	active                 INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+	FOREIGN KEY (account_id)                   REFERENCES bank_accounts (id)             ON UPDATE CASCADE ON DELETE RESTRICT,
+	FOREIGN KEY (category_id)                  REFERENCES categories (id)                ON UPDATE CASCADE ON DELETE RESTRICT,
 	FOREIGN KEY (sub_category_id, category_id) REFERENCES sub_categories (id, category_id) ON UPDATE CASCADE ON DELETE RESTRICT,
-	FOREIGN KEY (repetitive_movement_id) REFERENCES repetitive_movements (id) ON UPDATE CASCADE ON DELETE SET NULL
+	FOREIGN KEY (repetitive_movement_id)       REFERENCES repetitive_movements (id)      ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_sub_categories_category_id      ON sub_categories (category_id);
-CREATE INDEX IF NOT EXISTS idx_movements_account_id            ON movements (account_id);
-CREATE INDEX IF NOT EXISTS idx_movements_category_id           ON movements (category_id);
-CREATE INDEX IF NOT EXISTS idx_movements_sub_category_id       ON movements (sub_category_id);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_sub_categories_category_id       ON sub_categories (category_id);
+CREATE INDEX IF NOT EXISTS idx_movements_account_id             ON movements (account_id);
+CREATE INDEX IF NOT EXISTS idx_movements_category_id            ON movements (category_id);
+CREATE INDEX IF NOT EXISTS idx_movements_sub_category_id        ON movements (sub_category_id);
 CREATE INDEX IF NOT EXISTS idx_movements_repetitive_movement_id ON movements (repetitive_movement_id);
-CREATE INDEX IF NOT EXISTS idx_movements_type                  ON movements (type);
-CREATE INDEX IF NOT EXISTS idx_movements_date                  ON movements (date);
+CREATE INDEX IF NOT EXISTS idx_movements_type                   ON movements (type);
+CREATE INDEX IF NOT EXISTS idx_movements_date                   ON movements (date);
+
+-- Triggers
+-- When a category is soft deleted, cascade to its sub_categories
+CREATE TRIGGER IF NOT EXISTS deactivate_sub_categories
+AFTER UPDATE OF active ON categories
+WHEN NEW.active = 0
+BEGIN
+    UPDATE sub_categories SET active = 0 WHERE category_id = OLD.id;
+END;
