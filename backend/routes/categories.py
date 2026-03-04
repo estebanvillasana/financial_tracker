@@ -1,6 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Query
-from pydantic import BaseModel
-from models.categories import get_all_categories, get_category_by_id
+import sqlite3
+from typing import Literal
+
+from fastapi import APIRouter, HTTPException, Response, status, Query
+from pydantic import BaseModel, Field
+from models.categories import (
+    get_all_categories,
+    get_category_by_id,
+    update_category,
+    delete_category,
+    soft_delete_category,
+)
 
 # ─────────────────────────────────────────────
 # ROUTER
@@ -39,6 +48,11 @@ class CategoryResponse(BaseModel):
     active:               int
     movements_count:      int
     subcategories_count:  int
+
+
+class CategoryUpdateRequest(BaseModel):
+    category: str = Field(min_length=1)
+    type: Literal["Income", "Expense"]
 
 
 # ─────────────────────────────────────────────
@@ -96,3 +110,65 @@ def route_get_one(id: int):
         )
 
     return category
+
+
+@router.put("/{id}", response_model=CategoryResponse)
+def route_update(id: int, payload: CategoryUpdateRequest):
+    """Updates a category by id."""
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+
+    try:
+        updated = update_category(id=id, **data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category with id {id} not found"
+        )
+
+    return updated
+
+
+@router.patch("/{id}/soft-delete", response_model=CategoryResponse)
+def route_soft_delete(id: int):
+    """Soft-deletes a category by setting active=0."""
+
+    category = soft_delete_category(id=id)
+
+    if category is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category with id {id} not found"
+        )
+
+    return category
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def route_delete(id: int):
+    """Permanently deletes a category by id."""
+
+    try:
+        deleted = delete_category(id=id)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Cannot delete category because it is referenced by other records "
+                "(for example, sub-categories or movements)."
+            ),
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category with id {id} not found"
+        )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
