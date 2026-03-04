@@ -1,11 +1,14 @@
 SELECT
+    m_expense.movement_code,
+    m_expense.id as send_movement_id,
+    m_income.id as receive_movement_id,
     m_expense.description,
     m_expense.date,
     ba_from.id as send_account_id,
     ba_from.account as send_account_name,
     ba_from.currency as send_currency,
     m_expense.value as sent_value,
-    m_income.id as receive_account_id,
+    ba_to.id as receive_account_id,
     ba_to.account as receive_account_name,
     ba_to.currency as receive_currency,
     m_income.value as received_value
