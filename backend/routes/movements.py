@@ -9,6 +9,7 @@ from models.movements import (
     get_all_movements,
     get_movement_by_id,
     create_movement,
+    create_bulk_movements,
     update_movement,
     delete_movement,
     soft_delete_movement,
@@ -112,6 +113,14 @@ class MovementUpdateRequest(BaseModel):
         return v
 
 
+class MovementBulkCreateRequest(BaseModel):
+    movements: list[MovementCreateRequest] = Field(
+        min_length=1,
+        max_length=1000,
+        description="List of movements to create in one request",
+    )
+
+
 @router.get("", response_model=list[MovementResponse])
 def route_get_all(
     active: int | None = Query(default=None, description="Filter by active status: 1 = active, 0 = inactive"),
@@ -191,6 +200,33 @@ def route_create(payload: MovementCreateRequest):
         ) from exc
 
     return created
+
+
+@router.post("/bulk", response_model=list[MovementResponse], status_code=status.HTTP_201_CREATED)
+def route_create_bulk(payload: MovementBulkCreateRequest):
+    """
+    Creates many movements in one request.
+
+    Behavior:
+    - Atomic transaction: all rows are inserted, or none if one fails.
+    - Maximum batch size: 1000 movements per request.
+    """
+
+    rows = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    items = rows["movements"]
+
+    for item in items:
+        item["movement_date"] = item.pop("date")
+
+    try:
+        created_rows = create_bulk_movements(movements=items)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return created_rows
 
 
 @router.put("/{id}", response_model=MovementResponse)

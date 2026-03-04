@@ -200,6 +200,99 @@ def create_movement(
     return created
 
 
+def create_bulk_movements(*, movements: list[dict]) -> list[dict]:
+    """
+    Creates multiple movements in a single transaction.
+
+    If one insert fails, the entire batch is rolled back.
+    Returns all created movements ordered by insertion order.
+    """
+
+    if not movements:
+        return []
+
+    insert_query = load_query("movements/insert.sql")
+    inserted_ids: list[int] = []
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        for item in movements:
+            movement_date = item["movement_date"]
+            date_str = movement_date.isoformat() if isinstance(movement_date, date) else movement_date
+
+            cursor.execute(
+                insert_query,
+                (
+                    item["movement"],
+                    item.get("description"),
+                    item["account_id"],
+                    item["value"],
+                    item["type"],
+                    date_str,
+                    item.get("category_id"),
+                    item.get("sub_category_id"),
+                    item.get("repetitive_movement_id"),
+                    item.get("movement_code"),
+                    item.get("invoice", 0),
+                    item.get("active", 1),
+                ),
+            )
+
+            new_id = cursor.lastrowid
+            if new_id is None:
+                raise RuntimeError("Bulk insert succeeded but one row id was not returned")
+
+            inserted_ids.append(new_id)
+
+        placeholders = ",".join(["?"] * len(inserted_ids))
+        cursor.execute(
+            f"""
+            SELECT
+                m.id,
+                m.movement,
+                m.description,
+                m.value,
+                m.type,
+                m.date,
+                m.movement_code,
+                m.invoice,
+                m.active,
+                m.account_id,
+                ba.account,
+                ba.currency,
+                m.category_id,
+                c.category,
+                m.sub_category_id,
+                sc.sub_category,
+                m.repetitive_movement_id,
+                rm.movement AS repetitive_movement
+            FROM movements m
+            JOIN bank_accounts ba
+                ON ba.id = m.account_id
+            LEFT JOIN categories c
+                ON c.id = m.category_id
+            LEFT JOIN sub_categories sc
+                ON sc.id = m.sub_category_id
+               AND sc.category_id = m.category_id
+            LEFT JOIN repetitive_movements rm
+                ON rm.id = m.repetitive_movement_id
+            WHERE m.id IN ({placeholders})
+            """,
+            inserted_ids,
+        )
+        rows_by_id = {row["id"]: dict(row) for row in cursor.fetchall()}
+
+    created: list[dict] = []
+    for inserted_id in inserted_ids:
+        row = rows_by_id.get(inserted_id)
+        if row is None:
+            raise RuntimeError(f"Movement with id {inserted_id} was inserted but could not be retrieved")
+        created.append(row)
+
+    return created
+
+
 def update_movement(
     *,
     id: int,
