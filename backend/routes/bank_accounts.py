@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Query
 from pydantic import BaseModel
-from models.bank_accounts import get_all, get_one
+from models.bank_accounts import get_all_bank_accounts, get_bank_account_by_id
 
 # ─────────────────────────────────────────────
 # ROUTER
@@ -71,7 +71,7 @@ def route_get_all(
 
     # Call the model function — the route doesn't touch the database directly.
     # The model handles all data access, the route just orchestrates.
-    accounts = get_all(active=active)
+    accounts = get_all_bank_accounts(active=active)
 
     # FastAPI automatically converts the list of dicts to JSON.
     # Pydantic validates each dict against BankAccountResponse before sending.
@@ -87,7 +87,7 @@ def route_get_one(id: int):
     Returns 404 if the account doesn't exist.
     """
 
-    account = get_one(id=id)
+    account = get_bank_account_by_id(id=id)
 
     # The model returns None when nothing is found.
     # The route decides what that means for the HTTP response: a 404.

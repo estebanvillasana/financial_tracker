@@ -1,7 +1,7 @@
 from database import get_connection
 from functions.queries import load_query
 
-def get_all(active: int | None = None) -> list[dict]:
+def get_all_bank_accounts(active: int | None = None) -> list[dict]:
     """
     Returns all bank accounts with their current balance.
 
@@ -44,7 +44,7 @@ def get_all(active: int | None = None) -> list[dict]:
     return rows
 
 
-def get_one(id: int) -> dict | None:
+def get_bank_account_by_id(id: int) -> dict | None:
     """
     Returns a single bank account by its ID.
 
