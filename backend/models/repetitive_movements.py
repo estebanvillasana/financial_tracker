@@ -98,3 +98,131 @@ LIMIT 1;
         row = cursor.fetchone()
 
     return dict(row) if row else None
+
+
+def create_repetitive_movement(
+    *,
+    movement: str,
+    description: str | None,
+    type: Literal["Income", "Expense"],
+    tax_report: int = 0,
+    active_subscription: int | None = None,
+    active: int = 1,
+) -> dict:
+    """
+    Creates a new repetitive movement and returns it.
+    """
+
+    insert_query = load_query("repetitive_movements/insert.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            insert_query,
+            (
+                movement,
+                description,
+                type,
+                tax_report,
+                active_subscription,
+                active,
+            ),
+        )
+        new_id = cursor.lastrowid
+
+        if new_id is None:
+            raise RuntimeError(
+                "Repetitive movement insert succeeded but no id was returned"
+            )
+
+    created = get_repetitive_movement_by_id(id=new_id)
+    if created is None:
+        raise RuntimeError(
+            "Repetitive movement was inserted but could not be retrieved"
+        )
+
+    return created
+
+
+def update_repetitive_movement(
+    *,
+    id: int,
+    movement: str,
+    description: str | None,
+    type: Literal["Income", "Expense"],
+    tax_report: int,
+    active_subscription: int | None,
+) -> dict | None:
+    """
+    Updates an existing repetitive movement and returns it.
+
+    Returns None if the repetitive movement id does not exist.
+    """
+
+    update_query = load_query("repetitive_movements/update.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            update_query,
+            (
+                movement,
+                description,
+                type,
+                tax_report,
+                active_subscription,
+                id,
+            ),
+        )
+
+        if cursor.rowcount == 0:
+            return None
+
+    updated = get_repetitive_movement_by_id(id=id)
+    if updated is None:
+        raise RuntimeError(
+            "Repetitive movement was updated but could not be retrieved"
+        )
+
+    return updated
+
+
+def delete_repetitive_movement(*, id: int) -> bool:
+    """
+    Permanently deletes a repetitive movement.
+
+    Returns:
+        True if a row was deleted, False if the id was not found.
+    """
+
+    delete_query = load_query("repetitive_movements/delete.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(delete_query, (id,))
+        return cursor.rowcount > 0
+
+
+def soft_delete_repetitive_movement(*, id: int) -> dict | None:
+    """
+    Soft-deletes a repetitive movement by setting active = 0.
+
+    Returns None if the repetitive movement id does not exist.
+    """
+
+    soft_delete_query = load_query("repetitive_movements/soft_delete.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(soft_delete_query, (id,))
+
+        if cursor.rowcount == 0:
+            return None
+
+    deleted = get_repetitive_movement_by_id(id=id)
+    if deleted is None:
+        raise RuntimeError(
+            "Repetitive movement was soft-deleted but could not be retrieved"
+        )
+
+    return deleted
