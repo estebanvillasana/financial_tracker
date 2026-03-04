@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from database import initialize_database
 from routes.bank_accounts import router as bank_accounts_router
+from routes.categories import router as categories_router
 
 
 # ─────────────────────────────────────────────
@@ -60,3 +61,4 @@ app = FastAPI(
 # As we add more routes (movements, categories, etc.),
 # we just add more lines here.
 app.include_router(bank_accounts_router)
+app.include_router(categories_router)
