@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from datetime import date
+
+from fastapi import APIRouter, HTTPException, status, Query
 from pydantic import BaseModel
 
 from models.money_transfers import (
@@ -25,12 +27,30 @@ class MoneyTransferResponse(BaseModel):
 
 
 @router.get("", response_model=list[MoneyTransferResponse])
-def route_get_all():
+def route_get_all(
+    date_from: date | None = Query(default=None, description="Filter transfers from date (YYYY-MM-DD)"),
+    date_to: date | None = Query(default=None, description="Filter transfers up to date (YYYY-MM-DD)"),
+    send_account_id: int | None = Query(default=None, description="Filter by sender account ID"),
+    receive_account_id: int | None = Query(default=None, description="Filter by receiver account ID"),
+    movement_code_contains: str | None = Query(default=None, description="Filter by movement_code substring"),
+):
     """
-    Returns all internal money transfers.
+    Returns all internal money transfers with optional filters.
+
+    Optional query parameters:
+    - date_from, date_to: Filter by date range
+    - send_account_id: Filter by sender account
+    - receive_account_id: Filter by receiver account
+    - movement_code_contains: Filter by movement code (substring search)
     """
 
-    transfers = get_all_money_transfers()
+    transfers = get_all_money_transfers(
+        date_from=date_from,
+        date_to=date_to,
+        send_account_id=send_account_id,
+        receive_account_id=receive_account_id,
+        movement_code_contains=movement_code_contains,
+    )
     return transfers
 
 
