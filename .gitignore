@@ -2,3 +2,4 @@
 backend/data/app.db
 backend/data/backups/
 log/
+__pycache__
