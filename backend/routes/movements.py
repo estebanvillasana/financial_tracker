@@ -1,14 +1,26 @@
+import sqlite3
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query, status
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Response, Query, status
+from pydantic import BaseModel, Field, field_validator
 
-from models.movements import get_all_movements, get_movement_by_id
+from models.movements import (
+    get_all_movements,
+    get_movement_by_id,
+    create_movement,
+    update_movement,
+    delete_movement,
+    soft_delete_movement,
+)
 
 
 router = APIRouter(prefix="/movements", tags=["Movements"])
 
+
+# ─────────────────────────────────────────────
+# RESPONSE MODELS
+# ─────────────────────────────────────────────
 
 class MovementResponse(BaseModel):
     id:                     int
@@ -29,6 +41,75 @@ class MovementResponse(BaseModel):
     sub_category:           str | None
     repetitive_movement_id: int | None
     repetitive_movement:    str | None
+
+
+class MovementCreateRequest(BaseModel):
+    movement: str = Field(min_length=1, description="Movement name/title")
+    description: str | None = None
+    account_id: int = Field(description="Bank account ID")
+    value: int = Field(description="Amount in cents")
+    type: Literal["Income", "Expense"]
+    date: str = Field(description="Date in YYYY-MM-DD format")
+    category_id: int | None = None
+    sub_category_id: int | None = None
+    repetitive_movement_id: int | None = None
+    movement_code: str | None = None
+    invoice: int = Field(default=0, ge=0, le=1)
+    active: int = Field(default=1, ge=0, le=1)
+
+    @field_validator("date")
+    @classmethod
+    def validate_date(cls, v: str) -> str:
+        """Validate that date is in YYYY-MM-DD format."""
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(
+                f"'{v}' is not a valid date. Use YYYY-MM-DD format (e.g., 2026-03-04)"
+            )
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v: int) -> int:
+        """Ensure value is not zero."""
+        if v == 0:
+            raise ValueError("Movement value cannot be zero")
+        return v
+
+
+class MovementUpdateRequest(BaseModel):
+    movement: str = Field(min_length=1, description="Movement name/title")
+    description: str | None = None
+    account_id: int = Field(description="Bank account ID")
+    value: int = Field(description="Amount in cents")
+    type: Literal["Income", "Expense"]
+    date: str = Field(description="Date in YYYY-MM-DD format")
+    category_id: int | None = None
+    sub_category_id: int | None = None
+    repetitive_movement_id: int | None = None
+    movement_code: str | None = None
+    invoice: int = Field(ge=0, le=1)
+
+    @field_validator("date")
+    @classmethod
+    def validate_date(cls, v: str) -> str:
+        """Validate that date is in YYYY-MM-DD format."""
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(
+                f"'{v}' is not a valid date. Use YYYY-MM-DD format (e.g., 2026-03-04)"
+            )
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v: int) -> int:
+        """Ensure value is not zero."""
+        if v == 0:
+            raise ValueError("Movement value cannot be zero")
+        return v
 
 
 @router.get("", response_model=list[MovementResponse])
@@ -89,3 +170,86 @@ def route_get_one(id: int):
         )
 
     return movement
+
+
+@router.post("", response_model=MovementResponse, status_code=status.HTTP_201_CREATED)
+def route_create(payload: MovementCreateRequest):
+    """Creates a new movement.
+
+    Request body values are expected in cents for `value`.
+    """
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    data["movement_date"] = data.pop("date")
+
+    try:
+        created = create_movement(**data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return created
+
+
+@router.put("/{id}", response_model=MovementResponse)
+def route_update(id: int, payload: MovementUpdateRequest):
+    """Updates a movement by id."""
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    data["movement_date"] = data.pop("date")
+
+    try:
+        updated = update_movement(id=id, **data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Movement with id {id} not found"
+        )
+
+    return updated
+
+
+@router.patch("/{id}/soft-delete", response_model=MovementResponse)
+def route_soft_delete(id: int):
+    """Soft-deletes a movement by setting active=0."""
+
+    movement = soft_delete_movement(id=id)
+
+    if movement is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Movement with id {id} not found"
+        )
+
+    return movement
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def route_delete(id: int):
+    """Permanently deletes a movement by id."""
+
+    try:
+        deleted = delete_movement(id=id)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Cannot delete movement because it is referenced by other records."
+            ),
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Movement with id {id} not found"
+        )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
