@@ -8,6 +8,7 @@ from routes.money_transfers import router as money_transfers_router
 from routes.repetitive_movements import router as repetitive_movements_router
 from routes.sub_categories import router as sub_categories_router
 from scripts.exchange_rates import main as update_exchange_rates
+from scripts.backup_db import backup_database, should_backup
 
 
 # ─────────────────────────────────────────────
@@ -47,10 +48,15 @@ async def lifespan(app: FastAPI):
 
     # ── SHUTDOWN ──
     # Everything here runs once when the app stops (Ctrl+C)
-    # For now we don't need to do anything on shutdown,
-    # but this is where you'd close persistent connections,
-    # flush logs, etc.
     print("[APP] Shutting down...")
+
+    if should_backup():
+        try:
+            backup_database()
+        except Exception as e:
+            print(f"[APP] Backup error: {e}")
+    else:
+        print("[APP] Backup skipped: last backup is recent enough.")
 
 
 # ─────────────────────────────────────────────

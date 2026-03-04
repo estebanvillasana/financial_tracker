@@ -10,6 +10,50 @@ BACKUP_DIR = os.path.join(BASE_DIR, "data", "backups")
 # Ensure backup directory exists
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
+BACKUP_INTERVAL_DAYS = 7
+
+
+def get_latest_backup_time():
+    """
+    Returns the modification time of the most recent backup file,
+    or None if no backups exist.
+    """
+    if not os.path.exists(BACKUP_DIR):
+        return None
+
+    backup_files = [
+        f for f in os.listdir(BACKUP_DIR)
+        if f.startswith("app_backup_") and f.endswith(".db")
+    ]
+
+    if not backup_files:
+        return None
+
+    latest_backup = max(
+        backup_files,
+        key=lambda f: os.path.getmtime(os.path.join(BACKUP_DIR, f))
+    )
+    latest_path = os.path.join(BACKUP_DIR, latest_backup)
+    return os.path.getmtime(latest_path)
+
+
+def should_backup():
+    """
+    Returns True if no backup exists or if the last backup
+    is older than BACKUP_INTERVAL_DAYS (default 7 days).
+    Returns False if a recent backup exists.
+    """
+    latest_backup_time = get_latest_backup_time()
+
+    if latest_backup_time is None:
+        return True
+
+    age_seconds = datetime.datetime.now().timestamp() - latest_backup_time
+    age_days = age_seconds / (24 * 3600)
+
+    return age_days >= BACKUP_INTERVAL_DAYS
+
+
 def backup_database():
     """
     Creates a timestamped backup of app.db in data/backups.
@@ -24,6 +68,7 @@ def backup_database():
 
     shutil.copy2(DB_PATH, backup_path)
     print(f"[BACKUP] Database backed up to {backup_path}")
+
 
 if __name__ == "__main__":
     backup_database()
