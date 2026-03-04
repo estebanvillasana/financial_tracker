@@ -7,7 +7,7 @@ BEGIN
 END;
 
 -- Internal transfer guardrails
--- Convention: MT_{sender_account_id}-{receiver_account_id}_{yymmdd}_{sequence}
+-- Convention: MT_{sender_account_id:02d}-{receiver_account_id:02d}_{yymmdd}_{sequence}
 CREATE TRIGGER IF NOT EXISTS validate_internal_transfer_insert
 BEFORE INSERT ON movements
 WHEN NEW.movement_code IS NOT NULL
@@ -20,8 +20,8 @@ BEGIN
     END;
 
     SELECT CASE
-        WHEN NEW.movement_code NOT GLOB 'MT_[0-9]*-[0-9]*_[0-9][0-9][0-9][0-9][0-9][0-9]_[0-9]*'
-        THEN RAISE(ABORT, 'Invalid movement_code format. Expected MT_{from}-{to}_{yymmdd}_{n}')
+        WHEN NEW.movement_code NOT GLOB 'MT_[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]_[0-9]*'
+        THEN RAISE(ABORT, 'Invalid movement_code format. Expected MT_{from:02d}-{to:02d}_{yymmdd}_{n}')
     END;
 
     SELECT CASE
@@ -31,14 +31,36 @@ BEGIN
 
     SELECT CASE
         WHEN NEW.type = 'Expense'
-         AND NEW.movement_code NOT LIKE 'MT_' || NEW.account_id || '-%_%_%'
+         AND NEW.movement_code NOT LIKE 'MT_' || PRINTF('%02d', NEW.account_id) || '-%_%_%'
         THEN RAISE(ABORT, 'For Expense transfer rows, sender account in movement_code must match account_id')
     END;
 
     SELECT CASE
         WHEN NEW.type = 'Income'
-         AND NEW.movement_code NOT LIKE 'MT_%-' || NEW.account_id || '_%_%'
+         AND NEW.movement_code NOT LIKE 'MT_%-' || PRINTF('%02d', NEW.account_id) || '_%_%'
         THEN RAISE(ABORT, 'For Income transfer rows, receiver account in movement_code must match account_id')
+    END;
+
+    SELECT CASE
+        WHEN NEW.type = 'Expense'
+         AND NEW.movement NOT LIKE 'SEND TO % (%)'
+        THEN RAISE(ABORT, 'Expense transfer movement must follow SEND TO {account} ({currency})')
+    END;
+
+    SELECT CASE
+        WHEN NEW.type = 'Income'
+         AND NEW.movement NOT LIKE 'RECEIVE FROM % (%)'
+        THEN RAISE(ABORT, 'Income transfer movement must follow RECEIVE FROM {account} ({currency})')
+    END;
+
+    SELECT CASE
+        WHEN (
+            SELECT COUNT(*)
+            FROM movements m
+            WHERE m.movement_code = NEW.movement_code
+              AND m.type IN ('Expense', 'Income')
+        ) >= 2
+        THEN RAISE(ABORT, 'Internal transfer movement_code can have only 2 rows (Expense + Income)')
     END;
 END;
 
@@ -55,8 +77,8 @@ BEGIN
     END;
 
     SELECT CASE
-        WHEN NEW.movement_code NOT GLOB 'MT_[0-9]*-[0-9]*_[0-9][0-9][0-9][0-9][0-9][0-9]_[0-9]*'
-        THEN RAISE(ABORT, 'Invalid movement_code format. Expected MT_{from}-{to}_{yymmdd}_{n}')
+        WHEN NEW.movement_code NOT GLOB 'MT_[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]_[0-9]*'
+        THEN RAISE(ABORT, 'Invalid movement_code format. Expected MT_{from:02d}-{to:02d}_{yymmdd}_{n}')
     END;
 
     SELECT CASE
@@ -66,14 +88,37 @@ BEGIN
 
     SELECT CASE
         WHEN NEW.type = 'Expense'
-         AND NEW.movement_code NOT LIKE 'MT_' || NEW.account_id || '-%_%_%'
+         AND NEW.movement_code NOT LIKE 'MT_' || PRINTF('%02d', NEW.account_id) || '-%_%_%'
         THEN RAISE(ABORT, 'For Expense transfer rows, sender account in movement_code must match account_id')
     END;
 
     SELECT CASE
         WHEN NEW.type = 'Income'
-         AND NEW.movement_code NOT LIKE 'MT_%-' || NEW.account_id || '_%_%'
+         AND NEW.movement_code NOT LIKE 'MT_%-' || PRINTF('%02d', NEW.account_id) || '_%_%'
         THEN RAISE(ABORT, 'For Income transfer rows, receiver account in movement_code must match account_id')
+    END;
+
+    SELECT CASE
+        WHEN NEW.type = 'Expense'
+         AND NEW.movement NOT LIKE 'SEND TO % (%)'
+        THEN RAISE(ABORT, 'Expense transfer movement must follow SEND TO {account} ({currency})')
+    END;
+
+    SELECT CASE
+        WHEN NEW.type = 'Income'
+         AND NEW.movement NOT LIKE 'RECEIVE FROM % (%)'
+        THEN RAISE(ABORT, 'Income transfer movement must follow RECEIVE FROM {account} ({currency})')
+    END;
+
+    SELECT CASE
+        WHEN (
+            SELECT COUNT(*)
+            FROM movements m
+            WHERE m.movement_code = NEW.movement_code
+              AND m.type IN ('Expense', 'Income')
+              AND m.id <> OLD.id
+        ) >= 2
+        THEN RAISE(ABORT, 'Internal transfer movement_code can have only 2 rows (Expense + Income)')
     END;
 END;
 

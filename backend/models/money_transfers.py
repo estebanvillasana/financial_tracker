@@ -41,11 +41,11 @@ def _build_next_movement_code(
 ) -> str:
     """
     Generates the next movement_code using the trigger convention:
-    MT_{sender_account_id}-{receiver_account_id}_{yymmdd}_{sequence}
+    MT_{sender_account_id:02d}-{receiver_account_id:02d}_{yymmdd}_{sequence}
     """
 
     yymmdd = movement_date[2:].replace("-", "")
-    prefix = f"MT_{send_account_id}-{receive_account_id}_{yymmdd}_"
+    prefix = f"MT_{send_account_id:02d}-{receive_account_id:02d}_{yymmdd}_"
 
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -62,6 +62,47 @@ def _build_next_movement_code(
     max_sequence = int(row[0]) if row and row[0] is not None else 0
     next_sequence = max_sequence + 1
     return f"{prefix}{next_sequence}"
+
+
+def _get_account_snapshot(*, account_id: int) -> dict:
+    """Returns account metadata needed for transfer naming."""
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, account, currency
+            FROM bank_accounts
+            WHERE id = ?
+            """,
+            (account_id,),
+        )
+        row = cursor.fetchone()
+
+    if row is None:
+        raise ValueError(f"Bank account with id '{account_id}' not found")
+
+    return dict(row)
+
+
+def _build_transfer_movement_names(
+    *,
+    send_account_id: int,
+    receive_account_id: int,
+) -> tuple[str, str]:
+    """
+    Returns movement labels following the internal transfer naming convention:
+    - Expense row: SEND TO {receiver_account_name} ({receiver_currency})
+    - Income row: RECEIVE FROM {sender_account_name} ({sender_currency})
+    """
+
+    sender = _get_account_snapshot(account_id=send_account_id)
+    receiver = _get_account_snapshot(account_id=receive_account_id)
+
+    expense_movement = f"SEND TO {receiver['account']} ({receiver['currency'].upper()})"
+    income_movement = f"RECEIVE FROM {sender['account']} ({sender['currency'].upper()})"
+
+    return expense_movement, income_movement
 
 
 def _get_transfer_movement_rows(movement_code: str) -> tuple[dict, dict] | None:
@@ -185,7 +226,6 @@ LIMIT 1;
 
 def create_money_transfer(
     *,
-    movement: str,
     description: str | None,
     movement_date: date | str,
     send_account_id: int,
@@ -206,6 +246,11 @@ def create_money_transfer(
     if sent_value <= 0 or received_value <= 0:
         raise ValueError("Transfer values must be greater than zero")
 
+    expense_movement, income_movement = _build_transfer_movement_names(
+        send_account_id=send_account_id,
+        receive_account_id=receive_account_id,
+    )
+
     date_str = _normalize_date(movement_date)
     movement_code = _build_next_movement_code(
         send_account_id=send_account_id,
@@ -221,7 +266,7 @@ def create_money_transfer(
         cursor.execute(
             insert_query,
             (
-                movement,
+                expense_movement,
                 description,
                 send_account_id,
                 sent_value,
@@ -235,7 +280,7 @@ def create_money_transfer(
         cursor.execute(
             insert_query,
             (
-                movement,
+                income_movement,
                 description,
                 receive_account_id,
                 received_value,
@@ -256,7 +301,6 @@ def create_money_transfer(
 def update_money_transfer(
     *,
     movement_code: str,
-    movement: str,
     description: str | None,
     movement_date: date | str,
     send_account_id: int,
@@ -282,6 +326,10 @@ def update_money_transfer(
         raise ValueError("Transfer values must be greater than zero")
 
     date_str = _normalize_date(movement_date)
+    expense_movement, income_movement = _build_transfer_movement_names(
+        send_account_id=send_account_id,
+        receive_account_id=receive_account_id,
+    )
 
     should_regenerate_code = (
         send_account_id != existing["send_account_id"]
@@ -311,7 +359,7 @@ def update_money_transfer(
         cursor.execute(
             update_query,
             (
-                movement,
+                expense_movement,
                 description,
                 send_account_id,
                 sent_value,
@@ -324,7 +372,7 @@ def update_money_transfer(
         cursor.execute(
             update_query,
             (
-                movement,
+                income_movement,
                 description,
                 receive_account_id,
                 received_value,

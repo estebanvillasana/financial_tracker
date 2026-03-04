@@ -5,3 +5,7 @@ CREATE INDEX IF NOT EXISTS idx_movements_sub_category_id        ON movements (su
 CREATE INDEX IF NOT EXISTS idx_movements_repetitive_movement_id ON movements (repetitive_movement_id);
 CREATE INDEX IF NOT EXISTS idx_movements_type                   ON movements (type);
 CREATE INDEX IF NOT EXISTS idx_movements_date                   ON movements (date);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_movements_transfer_code_type
+	ON movements (movement_code, type)
+	WHERE movement_code LIKE 'MT_%';

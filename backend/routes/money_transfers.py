@@ -32,7 +32,6 @@ class MoneyTransferResponse(BaseModel):
 
 
 class MoneyTransferCreateRequest(BaseModel):
-    movement: str = Field(default="Internal Transfer", min_length=1, description="Movement title")
     description: str | None = None
     date: str = Field(description="Date in YYYY-MM-DD format")
     send_account_id: int = Field(description="Sender account ID")
@@ -62,7 +61,6 @@ class MoneyTransferCreateRequest(BaseModel):
 
 
 class MoneyTransferUpdateRequest(BaseModel):
-    movement: str = Field(default="Internal Transfer", min_length=1, description="Movement title")
     description: str | None = None
     date: str = Field(description="Date in YYYY-MM-DD format")
     send_account_id: int = Field(description="Sender account ID")
