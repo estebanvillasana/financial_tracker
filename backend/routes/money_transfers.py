@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from models.money_transfers import (
@@ -12,8 +12,6 @@ router = APIRouter(prefix="/money-transfers", tags=["Money Transfers"])
 
 class MoneyTransferResponse(BaseModel):
     movement_code: str
-    send_movement_id: int
-    receive_movement_id: int
     description: str | None
     date: str
     send_account_id: int
@@ -27,24 +25,12 @@ class MoneyTransferResponse(BaseModel):
 
 
 @router.get("", response_model=list[MoneyTransferResponse])
-def route_get_all(
-    movement_code: str | None = Query(default=None, description="Filter by exact movement_code"),
-    limit: int = Query(default=100, ge=1, le=500, description="Max rows returned"),
-    offset: int = Query(default=0, ge=0, description="Rows to skip for pagination"),
-):
+def route_get_all():
     """
-    Returns internal money transfers.
-
-    Optional query parameters:
-    - movement_code=MT_1-2_260304_1 → one specific transfer pair
-    - limit/offset for pagination
+    Returns all internal money transfers.
     """
 
-    transfers = get_all_money_transfers(
-        movement_code=movement_code,
-        limit=limit,
-        offset=offset,
-    )
+    transfers = get_all_money_transfers()
     return transfers
 
 
@@ -61,7 +47,7 @@ def route_get_one(movement_code: str):
     if transfer is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Money transfer with movement_code {movement_code} not found",
+            detail=f"Money transfer with movement_code '{movement_code}' not found",
         )
 
     return transfer
