@@ -103,7 +103,7 @@ def resolve_start_date():
     latest = find_latest_recorded_date()
     if latest is None:
         return INITIAL_START_DATE, False
-    return latest, True
+    return latest + timedelta(days=1), True
 
 
 def main():
@@ -123,7 +123,7 @@ def main():
     total_days = (END_DATE - start_date).days + 1
     print(f"Downloading {total_days} days ({start_date} → {END_DATE})...")
     if has_existing_data:
-        print("Mode: incremental update from latest stored day")
+        print("Mode: incremental update from day after latest stored day")
     else:
         print(f"Mode: first run from {INITIAL_START_DATE}")
     print(f"Output folder: {OUTPUT_DIR.resolve()}\n")
