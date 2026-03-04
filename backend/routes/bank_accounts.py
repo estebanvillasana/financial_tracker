@@ -1,13 +1,16 @@
 import sqlite3
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, Response, status, Query
 from pydantic import BaseModel, Field, field_validator
 
 from models.bank_accounts import (
     get_all_bank_accounts,
     get_bank_account_by_id,
     create_bank_account,
+    update_bank_account,
+    delete_bank_account,
+    soft_delete_bank_account,
 )
 
 # ─────────────────────────────────────────────
@@ -100,6 +103,34 @@ class BankAccountCreateRequest(BaseModel):
         return v_lower
 
 
+class BankAccountUpdateRequest(BaseModel):
+    account: str = Field(min_length=1)
+    description: str | None = None
+    type: Literal[
+        "Bank Account",
+        "Credit Card",
+        "Savings",
+        "Crypto Wallet",
+        "Money Bag",
+    ]
+    owner: str = Field(min_length=1)
+    currency: str = Field(min_length=3, max_length=3, description="ISO 4217 currency code (3 letters)")
+    initial_balance: int
+    updated: int = Field(default=1, ge=0, le=1)
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        """Validate that currency is a valid ISO 4217 code."""
+        v_lower = v.lower()
+        if v_lower not in VALID_CURRENCIES:
+            raise ValueError(
+                f"'{v}' is not a valid ISO 4217 currency code. "
+                f"Valid codes include: USD, EUR, GBP, JPY, MXN, RUB, BRL, INR, etc."
+            )
+        return v_lower
+
+
 # ─────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────
@@ -176,3 +207,66 @@ def route_create(payload: BankAccountCreateRequest):
         ) from exc
 
     return created
+
+
+@router.put("/{id}", response_model=BankAccountResponse)
+def route_update(id: int, payload: BankAccountUpdateRequest):
+    """Updates a bank account by id."""
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    data["currency"] = data["currency"].lower()
+
+    try:
+        updated = update_bank_account(id=id, **data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bank account with id {id} not found"
+        )
+
+    return updated
+
+
+@router.patch("/{id}/soft-delete", response_model=BankAccountResponse)
+def route_soft_delete(id: int):
+    """Soft-deletes a bank account by setting active=0."""
+
+    account = soft_delete_bank_account(id=id)
+
+    if account is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bank account with id {id} not found"
+        )
+
+    return account
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def route_delete(id: int):
+    """Permanently deletes a bank account by id."""
+
+    try:
+        deleted = delete_bank_account(id=id)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Cannot delete bank account because it is referenced by other records "
+                "(for example, movements)."
+            ),
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bank account with id {id} not found"
+        )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -129,3 +129,87 @@ def create_bank_account(
         raise RuntimeError("Bank account was inserted but could not be retrieved")
 
     return created
+
+
+def update_bank_account(
+    *,
+    id: int,
+    account: str,
+    description: str | None,
+    type: str,
+    owner: str,
+    currency: str,
+    initial_balance: int,
+    updated: int,
+) -> dict | None:
+    """
+    Updates an existing bank account and returns it.
+
+    Returns None if the account id does not exist.
+    """
+
+    update_query = load_query("bank_accounts/update.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            update_query,
+            (
+                account,
+                description,
+                type,
+                owner,
+                currency,
+                initial_balance,
+                updated,
+                id,
+            ),
+        )
+
+        if cursor.rowcount == 0:
+            return None
+
+    updated_account = get_bank_account_by_id(id=id)
+    if updated_account is None:
+        raise RuntimeError("Bank account was updated but could not be retrieved")
+
+    return updated_account
+
+
+def delete_bank_account(*, id: int) -> bool:
+    """
+    Permanently deletes a bank account.
+
+    Returns:
+        True if a row was deleted, False if the id was not found.
+    """
+
+    delete_query = load_query("bank_accounts/delete.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(delete_query, (id,))
+        return cursor.rowcount > 0
+
+
+def soft_delete_bank_account(*, id: int) -> dict | None:
+    """
+    Soft-deletes a bank account by setting active = 0.
+
+    Returns None if the account id does not exist.
+    """
+
+    soft_delete_query = load_query("bank_accounts/soft_delete.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(soft_delete_query, (id,))
+
+        if cursor.rowcount == 0:
+            return None
+
+    deleted_account = get_bank_account_by_id(id=id)
+    if deleted_account is None:
+        raise RuntimeError("Bank account was soft-deleted but could not be retrieved")
+
+    return deleted_account
