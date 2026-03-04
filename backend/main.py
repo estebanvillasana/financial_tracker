@@ -7,6 +7,7 @@ from routes.movements import router as movements_router
 from routes.money_transfers import router as money_transfers_router
 from routes.repetitive_movements import router as repetitive_movements_router
 from routes.sub_categories import router as sub_categories_router
+from scripts.exchange_rates import main as update_exchange_rates
 
 
 # ─────────────────────────────────────────────
@@ -30,6 +31,16 @@ async def lifespan(app: FastAPI):
     # Everything here runs once when the app starts
     print("[APP] Starting up...")
     initialize_database()
+
+    print("[APP] Updating USD exchange rates...")
+    try:
+        update_exchange_rates()
+        print("[APP] Exchange rates update finished.")
+    except SystemExit:
+        print("[APP] Exchange rates update failed, continuing startup.")
+    except Exception as e:
+        print(f"[APP] Exchange rates update error: {e}")
+
     print("[APP] Ready.")
 
     yield  # The app runs here, handling requests
