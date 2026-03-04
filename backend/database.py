@@ -5,13 +5,52 @@ import os
 # PATHS
 # ─────────────────────────────────────────────
 
+# Directory where this file lives (backend/)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Path to the SQLite database file.
 # This file is created automatically on first run.
-DB_PATH = "data/app.db"
+DB_PATH = os.path.join(BASE_DIR, "data", "app.db")
 
-# Path to the schema file — this is the source of truth for our table definitions.
-# Instead of writing SQL inside Python strings, we keep SQL in .sql files.
-SCHEMA_PATH = "data/schema.sql"
+# Single schema entry file.
+# It may include other files using sqlite-shell style `.read path/to/file.sql` lines.
+SCHEMA_PATH = os.path.join(BASE_DIR, "data", "schema.sql")
+
+
+def _load_schema_sql(file_path, visited=None):
+    """
+    Loads SQL from a schema file and recursively resolves `.read` includes.
+
+    Why this exists:
+    - sqlite3.Connection.executescript() does not understand sqlite-shell commands
+      like `.read ...`.
+    - We still want a single entrypoint (`schema.sql`) in Python code.
+    """
+
+    if visited is None:
+        visited = set()
+
+    normalized = os.path.normpath(os.path.abspath(file_path))
+    if normalized in visited:
+        return ""
+
+    visited.add(normalized)
+
+    statements = []
+    current_dir = os.path.dirname(normalized)
+
+    with open(normalized, "r", encoding="utf-8") as schema_file:
+        for raw_line in schema_file:
+            stripped = raw_line.strip()
+
+            if stripped.startswith(".read "):
+                include_rel_path = stripped[len(".read "):].strip()
+                include_path = os.path.join(current_dir, include_rel_path)
+                statements.append(_load_schema_sql(include_path, visited))
+            else:
+                statements.append(raw_line)
+
+    return "".join(statements)
 
 
 # ─────────────────────────────────────────────
@@ -24,7 +63,7 @@ def initialize_database():
     
     What it does:
     1. Checks if the database file already exists
-    2. If not → creates it and runs schema.sql to build all tables
+    2. If not → creates it and runs schema files in data/schema to build the schema
     3. If yes → does nothing (safe to call every time the app starts)
     """
 
@@ -36,15 +75,12 @@ def initialize_database():
 
     print(f"[DB] No database found. Creating new database at {DB_PATH}...")
 
-    # Read the schema file as a plain string.
-    # We keep SQL in .sql files so it stays readable and testable independently.
-    with open(SCHEMA_PATH, "r") as f:
-        schema = f.read()
-
     # Connect to SQLite. Since the file doesn't exist yet, SQLite creates it automatically.
-    # executescript() runs multiple SQL statements at once — perfect for a schema file.
+    # We execute the single schema entry file and resolve `.read` includes.
     with sqlite3.connect(DB_PATH) as conn:
-        conn.executescript(schema)
+        conn.execute("PRAGMA foreign_keys = ON")
+        schema_sql = _load_schema_sql(SCHEMA_PATH)
+        conn.executescript(schema_sql)
 
     print(f"[DB] Database initialized successfully.")
 
