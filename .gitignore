@@ -1,5 +1,6 @@
-.vscode/*
+.vscode/
 backend/data/app.db
-backend/data/backups/
+backend/data/backups/*
 log/
 __pycache__
+.ignore/
