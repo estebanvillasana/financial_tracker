@@ -1,6 +1,14 @@
+import sqlite3
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, status, Query
-from pydantic import BaseModel
-from models.bank_accounts import get_all_bank_accounts, get_bank_account_by_id
+from pydantic import BaseModel, Field
+
+from models.bank_accounts import (
+    get_all_bank_accounts,
+    get_bank_account_by_id,
+    create_bank_account,
+)
 
 # ─────────────────────────────────────────────
 # ROUTER
@@ -45,6 +53,23 @@ class BankAccountResponse(BaseModel):
     initial_balance: int
     net_movements:   int
     total_balance:   int
+
+
+class BankAccountCreateRequest(BaseModel):
+    account: str = Field(min_length=1)
+    description: str | None = None
+    type: Literal[
+        "Bank Account",
+        "Credit Card",
+        "Savings",
+        "Crypto Wallet",
+        "Money Bag",
+    ]
+    owner: str = Field(min_length=1)
+    currency: str = Field(min_length=3, max_length=3, description="ISO 4217 currency code (3 letters)")
+    initial_balance: int
+    updated: int = Field(default=0, ge=0, le=1)
+    active: int = Field(default=1, ge=0, le=1)
 
 
 # ─────────────────────────────────────────────
@@ -100,3 +125,26 @@ def route_get_one(id: int):
         )
 
     return account
+
+
+@router.post("", response_model=BankAccountResponse, status_code=status.HTTP_201_CREATED)
+def route_create(payload: BankAccountCreateRequest):
+    """Creates a new bank account.
+
+    Request body values are expected in cents for `initial_balance`.
+    """
+
+    # Pydantic v1/v2 compatibility: dict() vs model_dump()
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    data["currency"] = data["currency"].upper()
+
+    try:
+        created = create_bank_account(**data)
+    except sqlite3.IntegrityError as exc:
+        # Covers CHECK constraints and NOT NULL violations.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return created

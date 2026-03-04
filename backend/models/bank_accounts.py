@@ -81,3 +81,51 @@ def get_bank_account_by_id(id: int) -> dict | None:
     account = next((row for row in rows if row["id"] == id), None)
 
     return account
+
+
+def create_bank_account(
+    *,
+    account: str,
+    description: str | None,
+    type: str,
+    owner: str,
+    currency: str,
+    initial_balance: int,
+    updated: int = 0,
+    active: int = 1,
+) -> dict:
+    """
+    Creates a new bank account and returns it.
+
+    Notes:
+    - Values are stored in cents (INTEGER).
+    - `updated` and `active` are stored as 0/1 integers.
+    """
+
+    insert_query = load_query("bank_accounts_insert.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            insert_query,
+            (
+                account,
+                description,
+                type,
+                owner,
+                currency,
+                initial_balance,
+                updated,
+                active,
+            ),
+        )
+        new_id = cursor.lastrowid
+
+        if new_id is None:
+            raise RuntimeError("Bank account insert succeeded but no id was returned")
+
+    created = get_bank_account_by_id(id=new_id)
+    if created is None:
+        raise RuntimeError("Bank account was inserted but could not be retrieved")
+
+    return created
