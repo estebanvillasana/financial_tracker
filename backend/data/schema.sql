@@ -6,4 +6,6 @@ PRAGMA foreign_keys = ON;
 .read schema/tables/repetitive_movements.sql
 .read schema/tables/movements.sql
 .read schema/indexes.sql
-.read schema/triggers.sql
+.read schema/triggers/categories.sql
+.read schema/triggers/internal_transfers.sql
+.read schema/triggers/movements.sql

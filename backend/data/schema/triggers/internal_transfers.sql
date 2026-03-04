@@ -1,11 +1,3 @@
--- When a category is soft deleted, cascade to its sub_categories
-CREATE TRIGGER IF NOT EXISTS deactivate_sub_categories
-AFTER UPDATE OF active ON categories
-WHEN NEW.active = 0
-BEGIN
-    UPDATE sub_categories SET active = 0 WHERE category_id = OLD.id;
-END;
-
 -- Internal transfer guardrails
 -- Convention: MT_{sender_account_id:02d}-{receiver_account_id:02d}_{yymmdd}_{sequence}
 CREATE TRIGGER IF NOT EXISTS validate_internal_transfer_insert
@@ -119,36 +111,5 @@ BEGIN
               AND m.id <> OLD.id
         ) >= 2
         THEN RAISE(ABORT, 'Internal transfer movement_code can have only 2 rows (Expense + Income)')
-    END;
-END;
-
--- Movement category must match movement type (Income/Expense)
-CREATE TRIGGER IF NOT EXISTS validate_movement_category_type_insert
-BEFORE INSERT ON movements
-WHEN NEW.category_id IS NOT NULL
-BEGIN
-    SELECT CASE
-        WHEN EXISTS (
-            SELECT 1
-            FROM categories c
-            WHERE c.id = NEW.category_id
-              AND c.type <> NEW.type
-        )
-        THEN RAISE(ABORT, 'Movement type must match category type')
-    END;
-END;
-
-CREATE TRIGGER IF NOT EXISTS validate_movement_category_type_update
-BEFORE UPDATE OF type, category_id ON movements
-WHEN NEW.category_id IS NOT NULL
-BEGIN
-    SELECT CASE
-        WHEN EXISTS (
-            SELECT 1
-            FROM categories c
-            WHERE c.id = NEW.category_id
-              AND c.type <> NEW.type
-        )
-        THEN RAISE(ABORT, 'Movement type must match category type')
     END;
 END;
