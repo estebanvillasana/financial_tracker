@@ -3,6 +3,7 @@ import sqlite3
 from fastapi import APIRouter, HTTPException, Response, status, Query
 from pydantic import BaseModel, Field
 from models.sub_categories import (
+    create_sub_category,
     get_all_sub_categories,
     get_sub_category_by_id,
     update_sub_category,
@@ -27,6 +28,12 @@ class SubCategoryResponse(BaseModel):
 class SubCategoryUpdateRequest(BaseModel):
     sub_category: str = Field(min_length=1)
     category_id: int
+
+
+class SubCategoryCreateRequest(BaseModel):
+    sub_category: str = Field(min_length=1)
+    category_id: int
+    active: int = Field(default=1, ge=0, le=1)
 
 
 @router.get("", response_model=list[SubCategoryResponse])
@@ -69,6 +76,23 @@ def route_get_one(id: int):
         )
 
     return sub_category
+
+
+@router.post("", response_model=SubCategoryResponse, status_code=status.HTTP_201_CREATED)
+def route_create(payload: SubCategoryCreateRequest):
+    """Creates a new sub-category."""
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+
+    try:
+        created = create_sub_category(**data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return created
 
 
 @router.put("/{id}", response_model=SubCategoryResponse)

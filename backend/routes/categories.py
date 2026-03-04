@@ -4,6 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Response, status, Query
 from pydantic import BaseModel, Field
 from models.categories import (
+    create_category,
     get_all_categories,
     get_category_by_id,
     update_category,
@@ -53,6 +54,12 @@ class CategoryResponse(BaseModel):
 class CategoryUpdateRequest(BaseModel):
     category: str = Field(min_length=1)
     type: Literal["Income", "Expense"]
+
+
+class CategoryCreateRequest(BaseModel):
+    category: str = Field(min_length=1)
+    type: Literal["Income", "Expense"]
+    active: int = Field(default=1, ge=0, le=1)
 
 
 # ─────────────────────────────────────────────
@@ -110,6 +117,23 @@ def route_get_one(id: int):
         )
 
     return category
+
+
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+def route_create(payload: CategoryCreateRequest):
+    """Creates a new category."""
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+
+    try:
+        created = create_category(**data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return created
 
 
 @router.put("/{id}", response_model=CategoryResponse)

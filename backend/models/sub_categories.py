@@ -67,6 +67,33 @@ def get_sub_category_by_id(id: int) -> dict | None:
     return sub_category
 
 
+def create_sub_category(
+    *,
+    sub_category: str,
+    category_id: int,
+    active: int = 1,
+) -> dict:
+    """
+    Creates a new sub-category and returns it.
+    """
+
+    insert_query = load_query("sub_categories/insert.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(insert_query, (sub_category, category_id, active))
+        new_id = cursor.lastrowid
+
+        if new_id is None:
+            raise RuntimeError("Sub-category insert succeeded but no id was returned")
+
+    created_sub_category = get_sub_category_by_id(id=new_id)
+    if created_sub_category is None:
+        raise RuntimeError("Sub-category was inserted but could not be retrieved")
+
+    return created_sub_category
+
+
 def update_sub_category(*, id: int, sub_category: str, category_id: int) -> dict | None:
     """
     Updates an existing sub-category and returns it.

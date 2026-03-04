@@ -80,6 +80,33 @@ def get_category_by_id(id: int) -> dict | None:
     return category
 
 
+def create_category(
+    *,
+    category: str,
+    type: str,
+    active: int = 1,
+) -> dict:
+    """
+    Creates a new category and returns it.
+    """
+
+    insert_query = load_query("categories/insert.sql")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(insert_query, (category, type, active))
+        new_id = cursor.lastrowid
+
+        if new_id is None:
+            raise RuntimeError("Category insert succeeded but no id was returned")
+
+    created_category = get_category_by_id(id=new_id)
+    if created_category is None:
+        raise RuntimeError("Category was inserted but could not be retrieved")
+
+    return created_category
+
+
 def update_category(*, id: int, category: str, type: str) -> dict | None:
     """
     Updates an existing category and returns it.
