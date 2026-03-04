@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from database import initialize_database
 from routes.bank_accounts import router as bank_accounts_router
 from routes.categories import router as categories_router
+from routes.movements import router as movements_router
 from routes.sub_categories import router as sub_categories_router
 
 
@@ -63,4 +64,5 @@ app = FastAPI(
 # we just add more lines here.
 app.include_router(bank_accounts_router)
 app.include_router(categories_router)
+app.include_router(movements_router)
 app.include_router(sub_categories_router)
