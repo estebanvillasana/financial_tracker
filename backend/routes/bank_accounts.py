@@ -2,13 +2,29 @@ import sqlite3
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from models.bank_accounts import (
     get_all_bank_accounts,
     get_bank_account_by_id,
     create_bank_account,
 )
+
+# ─────────────────────────────────────────────
+# VALID ISO 4217 CURRENCY CODES
+# ─────────────────────────────────────────────
+VALID_CURRENCIES = {
+    "usd", "eur", "gbp", "jpy", "aud", "cad", "chf", "cny", "sek", "nzd",
+    "mxn", "sgd", "hkd", "nok", "kwh", "thy", "myr", "zar", "php", "idr",
+    "rub", "inr", "brl", "clp", "cop", "pen", "ars", "uyu", "gel", "aed",
+    "sar", "qar", "bhd", "omr", "jod", "lbp", "egp", "ils", "pkr", "bgn",
+    "hrk", "czk", "huf", "pln", "ron", "rsd", "uah", "byn", "kzk", "uzs",
+    "tjs", "kgs", "afn", "mdl", "azn", "try", "irr", "isk", "mkd", "all",
+    "lek", "kgs", "xaf", "xof", "xpf", "xcd", "bsd", "bbd", "bmd", "jmd",
+    "ttd", "fkp", "gip", "shp", "srd", "ves", "vnd", "lak", "khr", "mmk",
+    "lrd", "ghs", "mga", "mur", "scr", "mzn", "swz", "lsl", "bwp", "nad",
+    "ang", "awg", "bz", "gyd", "pab", "hnl", "gtq", "hnl", "svc", "dop",
+}
 
 # ─────────────────────────────────────────────
 # ROUTER
@@ -70,6 +86,18 @@ class BankAccountCreateRequest(BaseModel):
     initial_balance: int
     updated: int = Field(default=0, ge=0, le=1)
     active: int = Field(default=1, ge=0, le=1)
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        """Validate that currency is a valid ISO 4217 code."""
+        v_lower = v.lower()
+        if v_lower not in VALID_CURRENCIES:
+            raise ValueError(
+                f"'{v}' is not a valid ISO 4217 currency code. "
+                f"Valid codes include: USD, EUR, GBP, JPY, MXN, RUB, BRL, INR, etc."
+            )
+        return v_lower
 
 
 # ─────────────────────────────────────────────
@@ -136,7 +164,7 @@ def route_create(payload: BankAccountCreateRequest):
 
     # Pydantic v1/v2 compatibility: dict() vs model_dump()
     data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
-    data["currency"] = data["currency"].upper()
+    data["currency"] = data["currency"].lower()
 
     try:
         created = create_bank_account(**data)
