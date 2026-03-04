@@ -10,13 +10,7 @@ SELECT
     ba.owner,
     ba.active,
     ba.initial_balance,
-    COALESCE(SUM(
-        CASE
-            WHEN m.type = 'Expense' THEN -m.value
-            WHEN m.type = 'Income'  THEN  m.value
-            ELSE 0
-        END
-    ), 0) AS net_movements,
+    COALESCE(COUNT(m.id), 0) AS net_movements,
     ba.initial_balance + COALESCE(SUM(
         CASE
             WHEN m.type = 'Expense' THEN -m.value
