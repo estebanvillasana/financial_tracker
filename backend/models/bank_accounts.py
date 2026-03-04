@@ -20,7 +20,7 @@ def get_all_bank_accounts(active: int | None = None) -> list[dict]:
     """
 
     # Load the SQL query from file instead of writing it inline
-    query = load_query("bank_accounts.sql")
+    query = load_query("bank_accounts/select.sql")
 
     # We need to filter by active status if the caller passed it.
     # We do this in Python (not SQL) because the dataset is small —
@@ -61,7 +61,7 @@ def get_bank_account_by_id(id: int) -> dict | None:
     Keeping that decision in the route makes the model reusable.
     """
 
-    query = load_query("bank_accounts.sql")
+    query = load_query("bank_accounts/select.sql")
 
     # We need to filter the results by id.
     # Our base query returns all accounts, so we filter in Python.
@@ -102,7 +102,7 @@ def create_bank_account(
     - `updated` and `active` are stored as 0/1 integers.
     """
 
-    insert_query = load_query("bank_accounts_insert.sql")
+    insert_query = load_query("bank_accounts/insert.sql")
 
     with get_connection() as conn:
         cursor = conn.cursor()

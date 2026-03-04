@@ -22,7 +22,7 @@ def get_all_sub_categories(active: int | None = None, category_id: int | None = 
         - movements_count: number of non-deleted movements in this sub-category
     """
 
-    query = load_query("sub_categories.sql")
+    query = load_query("sub_categories/select.sql")
 
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -55,7 +55,7 @@ def get_sub_category_by_id(id: int) -> dict | None:
     Keeping that decision in the route makes the model reusable.
     """
 
-    query = load_query("sub_categories.sql")
+    query = load_query("sub_categories/select.sql")
 
     with get_connection() as conn:
         cursor = conn.cursor()

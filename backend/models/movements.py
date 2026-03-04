@@ -41,7 +41,7 @@ def get_all_movements(
     Returns movements with optional SQL filters and pagination.
     """
 
-    query = load_query("movements.sql")
+    query = load_query("movements/select.sql")
     base_query, order_clause = _split_query_and_order(query)
 
     filters: list[str] = []
@@ -110,7 +110,7 @@ def get_movement_by_id(id: int) -> dict | None:
     Returns one movement by id or None when not found.
     """
 
-    query = load_query("movements.sql")
+    query = load_query("movements/select.sql")
     base_query, order_clause = _split_query_and_order(query)
 
     by_id_query = f"""

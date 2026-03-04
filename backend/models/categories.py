@@ -22,7 +22,7 @@ def get_all_categories(active: int | None = None) -> list[dict]:
     """
 
     # Load the SQL query from file
-    query = load_query("categories.sql")
+    query = load_query("categories/select.sql")
 
     # Filter by active status in Python since the dataset is small
     # (typically fewer than 50 categories per user).
@@ -59,7 +59,7 @@ def get_category_by_id(id: int) -> dict | None:
     Keeping that decision in the route makes the model reusable.
     """
 
-    query = load_query("categories.sql")
+    query = load_query("categories/select.sql")
 
     # Load all categories and filter by id in Python
     # This is acceptable because we're loading all categories anyway
