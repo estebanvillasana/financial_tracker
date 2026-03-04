@@ -1,4 +1,4 @@
 .vscode/*
-backend/data/financial.db
+backend/data/app.db
 backend/data/backups/
 log/
