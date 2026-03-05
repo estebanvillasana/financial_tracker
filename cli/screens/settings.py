@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from config import CliConfig, save_config
 from utils.inline_input import prompt_inline_text
 from utils.navigation import read_key
@@ -15,17 +17,21 @@ ACTIONS = [
 ]
 ACTION_KEYS = [key for key, _ in ACTIONS]
 ACTION_LABELS = {key: label for key, label in ACTIONS}
+RenderMode = Literal["preview", "content", "input"]
 
 
 def render_body(
     config: CliConfig,
     active_action: str = "9",
-    show_action_cursor: bool = True,
+    mode: RenderMode = "preview",
 ) -> str:
+    show_action_cursor = mode == "content"
+    highlight_active = mode == "input"
     action_lines = render_selectable_list(
         ACTIONS,
         active_action,
         show_cursor=show_action_cursor,
+        highlight_active=highlight_active,
         indent=1,
     )
 
@@ -49,7 +55,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         render_screen(
             menu_items,
             "0",
-            render_body(config, active_action),
+            render_body(config, active_action, mode="content"),
             interaction_area="content",
         )
         pressed_key = read_key()
@@ -67,7 +73,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             flash_action(
                 menu_items,
                 "0",
-                render_body(config, active_action),
+                render_body(config, active_action, mode="content"),
                 ACTION_LABELS.get(event.choice, "Action"),
                 interaction_area="content",
             )
@@ -81,7 +87,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 body_builder=lambda: render_body(
                     config,
                     active_action,
-                    show_action_cursor=False,
+                    mode="input",
                 ),
                 render_screen=render_screen,
                 interaction_area="content",
@@ -98,7 +104,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 body_builder=lambda: render_body(
                     config,
                     active_action,
-                    show_action_cursor=False,
+                    mode="input",
                 ),
                 render_screen=render_screen,
                 interaction_area="content",

@@ -6,12 +6,14 @@ from typing import Literal
 
 
 InteractionArea = Literal["menu", "content"]
+ACTIVE_LINE_MARKER = "[[active]]"
 
 
 def render_selectable_list(
     items: Iterable[tuple[str, str]],
     active_key: str,
     show_cursor: bool = True,
+    highlight_active: bool = False,
     indent: int = 1,
 ) -> str:
     """Render a selectable list where cursor ownership can be toggled per interaction area.
@@ -23,7 +25,8 @@ def render_selectable_list(
     lines = []
     for key, label in items:
         prefix = ">" if show_cursor and key == active_key else " "
-        lines.append(f"{pad}{prefix} {key}. {label}")
+        marker = ACTIVE_LINE_MARKER if highlight_active and key == active_key else ""
+        lines.append(f"{marker}{pad}{prefix} {key}. {label}")
     return "\n".join(lines)
 
 
@@ -71,8 +74,10 @@ def _build_rich_body_text(body: str):
     rich_text = Text()
     lines = body.splitlines()
     for index, line in enumerate(lines):
-        style = "bold yellow" if line.lstrip().startswith(">") else None
-        rich_text.append(line, style=style)
+        is_marked_active = ACTIVE_LINE_MARKER in line
+        display_line = line.replace(ACTIVE_LINE_MARKER, "")
+        style = "bold yellow" if is_marked_active or display_line.lstrip().startswith(">") else None
+        rich_text.append(display_line, style=style)
         if index < len(lines) - 1:
             rich_text.append("\n")
 
@@ -143,6 +148,7 @@ def render_plain_screen(
     flash_message: str | None = None,
     top_margin_rows: int = 1,
 ) -> None:
+    body = body.replace(ACTIVE_LINE_MARKER, "")
     if top_margin_rows > 0:
         print("\n" * top_margin_rows, end="")
     print(menu_text)
