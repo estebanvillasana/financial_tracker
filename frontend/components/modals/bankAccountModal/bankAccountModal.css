@@ -1,0 +1,226 @@
+/* ============================================================
+   Bank Account Modal Component
+   ============================================================ */
+
+.ft-modal-backdrop {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: calc(var(--ft-spacing) * 2);
+  position: fixed;
+  z-index: 900;
+}
+
+.ft-bank-account-modal {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-width: 820px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ft-bank-account-modal__header {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.25);
+  border-bottom: 1px solid var(--ft-color-border);
+  padding: calc(var(--ft-spacing) * 1.75) calc(var(--ft-spacing) * 2);
+}
+
+.ft-bank-account-modal__header-main {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ft-bank-account-modal__title-wrap {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+}
+
+.ft-bank-account-modal__title {
+  margin: 0;
+}
+
+.ft-bank-account-modal__chip {
+  background: var(--ft-color-surface-alt);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 999px;
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+
+.ft-bank-account-modal__status {
+  background: var(--ft-color-success-15);
+  border: 1px solid var(--ft-color-success-30);
+  border-radius: 999px;
+  color: var(--ft-color-success);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+
+.ft-bank-account-modal__status--inactive {
+  background: var(--ft-color-danger-15);
+  border-color: var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-bank-account-modal__close-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.ft-bank-account-modal__close-btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-bank-account-modal__body {
+  overflow: auto;
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+.ft-bank-account-modal__form {
+  display: block;
+}
+
+.ft-bank-account-modal__form-grid {
+  display: grid;
+  gap: var(--ft-spacing);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ft-bank-account-modal__meta {
+  display: grid;
+  gap: var(--ft-spacing);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ft-bank-account-modal__meta-item {
+  background: var(--ft-color-surface-alt);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: calc(var(--ft-spacing) * 1);
+}
+
+.ft-bank-account-modal__meta-item span {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ft-bank-account-modal__meta-item strong {
+  color: var(--ft-color-text);
+  font-size: 13px;
+}
+
+.ft-bank-account-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-bank-account-modal__field--wide {
+  grid-column: 1 / -1;
+}
+
+.ft-bank-account-modal__field span {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ft-bank-account-modal__field input,
+.ft-bank-account-modal__field select,
+.ft-bank-account-modal__field textarea {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  min-height: 34px;
+  outline: none;
+  padding: 6px 10px;
+}
+
+.ft-bank-account-modal__field textarea {
+  resize: vertical;
+}
+
+.ft-bank-account-modal__field input:focus,
+.ft-bank-account-modal__field select:focus,
+.ft-bank-account-modal__field textarea:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-bank-account-modal__footer {
+  align-items: center;
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  justify-content: space-between;
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+}
+
+.ft-bank-account-modal__message {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.ft-bank-account-modal__message--error {
+  color: var(--ft-color-danger);
+}
+
+.ft-bank-account-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+}
+
+.ft-bank-account-modal__delete-btn {
+  border-color: var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-bank-account-modal__delete-btn:hover {
+  background: var(--ft-color-danger-10);
+  border-color: var(--ft-color-danger-60);
+  color: var(--ft-color-danger);
+}
+
+@media (max-width: 720px) {
+  .ft-bank-account-modal__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-bank-account-modal__form-grid {
+    grid-template-columns: 1fr;
+  }
+}

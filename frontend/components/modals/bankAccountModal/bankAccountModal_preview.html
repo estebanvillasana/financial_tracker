@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bank Account Modal Preview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+
+    <link rel="stylesheet" href="../../../styles/styles.css" />
+    <link rel="stylesheet" href="./bankAccountModal.css" />
+  </head>
+  <body class="ft-theme">
+    <main style="max-width: 980px; margin: 0 auto; padding: 24px;">
+      <div class="ft-page">
+        <header class="ft-page__header">
+          <h1 class="ft-h2">Bank Account Modal Preview</h1>
+          <p class="ft-small ft-text-muted">Standalone preview for the bank account modal component</p>
+        </header>
+
+        <section class="ft-section">
+          <button id="open-bank-modal" class="ft-btn ft-btn--primary" type="button">
+            <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+            Open Bank Account Modal
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { BankAccountModal } from './bankAccountModal.js';
+
+      const sampleAccount = {
+        id: 1,
+        account: 'BBVA',
+        description: 'Card: 4152313657495730 CLABE: 012580004734123181',
+        type: 'Bank Account',
+        currency: 'mxn',
+        owner: 'Esteban Villasana',
+        active: 1,
+        initial_balance: 18366,
+        net_movements: 132,
+        total_balance: 1330533,
+      };
+
+      document.getElementById('open-bank-modal')?.addEventListener('click', () => {
+        BankAccountModal.open(sampleAccount, {
+          onSave: async (_id, payload) => {
+            console.log('Preview save payload:', payload);
+          },
+          onSoftDelete: async id => {
+            console.log('Preview soft delete id:', id);
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
