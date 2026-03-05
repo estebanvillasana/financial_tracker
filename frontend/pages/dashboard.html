@@ -1,0 +1,54 @@
+<div class="ft-page">
+  <header class="ft-page__header">
+    <h1 class="ft-h2">Dashboard</h1>
+    <p class="ft-small ft-text-muted">Overview of your accounts and recent activity</p>
+  </header>
+
+  <!-- Summary Stats -->
+  <section class="ft-section">
+    <div class="ft-stats-row">
+      <div class="ft-card ft-stat-card">
+        <span class="ft-small ft-text-muted">Net Worth</span>
+        <p class="ft-h2 ft-stat-card__value">—</p>
+        <span class="ft-small ft-text-muted">Across all accounts</span>
+      </div>
+      <div class="ft-card ft-stat-card">
+        <span class="ft-small ft-text-muted">Income · This Month</span>
+        <p class="ft-h2 ft-stat-card__value ft-stat-card__value--success">—</p>
+        <span class="ft-small ft-text-muted" id="dashboard-income-meta">—</span>
+      </div>
+      <div class="ft-card ft-stat-card">
+        <span class="ft-small ft-text-muted">Expenses · This Month</span>
+        <p class="ft-h2 ft-stat-card__value ft-stat-card__value--danger">—</p>
+        <span class="ft-small ft-text-muted" id="dashboard-expense-meta">—</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accounts -->
+  <section class="ft-section" id="widget-accounts-summary">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Accounts</h2>
+    </div>
+    <div class="ft-accounts-grid" id="accounts-grid">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">account_balance_wallet</span>
+        <p class="ft-small">No accounts found</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Movements -->
+  <section class="ft-section">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Recent Movements</h2>
+      <a class="ft-link ft-small" href="#movements">View all →</a>
+    </div>
+    <div class="ft-table-wrapper" id="widget-recent-movements">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        <p class="ft-small">No recent movements</p>
+      </div>
+    </div>
+  </section>
+</div>
