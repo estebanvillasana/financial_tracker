@@ -2,7 +2,7 @@
 -- Convention: MT_{sender_account_id:02d}-{receiver_account_id:02d}_{yymmdd}_{sequence}
 CREATE TRIGGER IF NOT EXISTS validate_internal_transfer_insert
 BEFORE INSERT ON movements
-WHEN NEW.movement_code IS NOT NULL
+WHEN NEW.movement_code LIKE 'MT_%'
 BEGIN
     SELECT CASE
         WHEN NEW.category_id IS NOT NULL
@@ -59,7 +59,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS validate_internal_transfer_update
 BEFORE UPDATE OF movement_code, account_id, type, date, category_id, sub_category_id, repetitive_movement_id
 ON movements
-WHEN NEW.movement_code IS NOT NULL
+WHEN NEW.movement_code LIKE 'MT_%'
 BEGIN
     SELECT CASE
         WHEN NEW.category_id IS NOT NULL

@@ -41,5 +41,4 @@ LEFT JOIN repetitive_movements rm
 ORDER BY
     m.active DESC,
     m.date DESC,
-    m.id DESC
-LIMIT 12;
+    m.id DESC;
