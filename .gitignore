@@ -1,6 +1,13 @@
+
+# Miscellaneous
+log/
 .vscode/
+.ignore/
+
+# Backend
 backend/data/app.db
 backend/data/backups/*
-log/
 __pycache__
-.ignore/
+
+# Frontend
+frontend/config.js

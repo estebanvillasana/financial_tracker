@@ -46,9 +46,9 @@ Personal finance tracker with multi-account support, currency conversion, and in
 ## 🔲 Phase 2 — Frontend
 
 ### Project Setup
-- [ ] Create `frontend/` directory structure
+- [x] Create `frontend/` directory structure
 - [ ] `index.html` — single entry point
-- [ ] `styles/global.css` — CSS variables, reset, typography
+- [x] `styles/global.css` — CSS variables, reset, typography
 - [ ] `styles/layout.css` — grid, containers, spacing system
 - [ ] `config.js` — API base URL (gitignored)
 - [ ] `services/api.js` — base fetch wrapper (handles errors, base URL, JSON parsing)
@@ -95,6 +95,7 @@ Personal finance tracker with multi-account support, currency conversion, and in
 #### Repetitive Movements
 - [ ] List with filters (type, active subscription, tax report)
 - [ ] Create / edit / soft delete
+- [ ] Section to handle subscriptions
 
 #### Reports *(later)*
 - [ ] Last month summary: income vs expenses
@@ -106,8 +107,7 @@ Personal finance tracker with multi-account support, currency conversion, and in
 - [ ] `SummaryCard` — balance display card
 - [ ] `SearchBar` — reusable filter input
 - [ ] `MovementsTable` — smart widget, owns fetch + state
-- [ ] `MovementRow` — dumb component
-- [ ] `AccountSelector` — dropdown populated from API
+- [ ] `Selector` — dropdown populated from API to select bank accounts or categories
 - [ ] `CategorySelector` — cascading: category → subcategory
 - [ ] `Modal` — reusable overlay for edit forms
 
