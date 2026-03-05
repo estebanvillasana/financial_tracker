@@ -13,7 +13,7 @@ from functions.screens import (
 )
 from functions.settings import settings_loop
 from utils.navigation import read_key
-from utils.render import app_terminal_session, render_screen
+from utils.render import app_terminal_session, flash_action, render_screen
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=False)
@@ -25,6 +25,7 @@ MENU_ITEMS = [
 	("2", "Add Movement"),
 	("9", "Exit"),
 ]
+MENU_LABELS = {key: label for key, label in MENU_ITEMS}
 
 
 def _route_screen(active_key: str, config) -> None:
@@ -63,14 +64,20 @@ def run() -> None:
 				continue
 
 			if pressed_key == "ENTER":
+				enter_pressed = True
 				choice = active_key
 			elif pressed_key in menu_keys:
+				enter_pressed = False
 				choice = pressed_key
 				active_key = choice
 			elif pressed_key == "ESC":
+				enter_pressed = False
 				choice = "9"
 			else:
 				continue
+
+			if enter_pressed:
+				flash_action(MENU_ITEMS, active_key, body, MENU_LABELS.get(choice, "Action"))
 
 			if choice == "9":
 				return
