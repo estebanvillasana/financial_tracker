@@ -47,6 +47,15 @@ class FxAllRatesResponse(BaseModel):
     rates: dict[str, float] = Field(description="Currency code to exchange rate mapping")
 
 
+class FxLatestPairRateResponse(BaseModel):
+    currency_pair: str
+    base_currency: str
+    quote_currency: str
+    resolved_date: str
+    rate: float = Field(description="How many quote currency units equal 1 base currency unit")
+    inverse_rate: float = Field(description="How many base currency units equal 1 quote currency unit")
+
+
 def _parse_date_or_latest(date_value: str | None) -> tuple[date | None, bool, str]:
     """
     Returns:
@@ -166,6 +175,50 @@ def route_get_latest_fx_date():
 
     latest_date, _ = latest
     return FxLatestDateResponse(latest_date=latest_date.isoformat())
+
+
+@router.get("/latest/{currency_pair}", response_model=FxLatestPairRateResponse)
+def route_get_latest_pair_rate(currency_pair: str):
+    """
+    Returns latest available conversion rate for a currency pair.
+
+    Example:
+    GET /fx-rates/latest/GELMXN
+    """
+
+    try:
+        base_currency, quote_currency = parse_currency_pair(currency_pair)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    latest = get_latest_available_rates(on_or_before=date.today())
+    if latest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No FX rates data is available.",
+        )
+
+    resolved_date, rates = latest
+
+    try:
+        rate = compute_pair_rate(
+            base_currency=base_currency,
+            quote_currency=quote_currency,
+            rates=rates,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    inverse_rate = 1 / rate if rate != 0 else 0.0
+
+    return FxLatestPairRateResponse(
+        currency_pair=f"{base_currency.upper()}{quote_currency.upper()}",
+        base_currency=base_currency.upper(),
+        quote_currency=quote_currency.upper(),
+        resolved_date=resolved_date.isoformat(),
+        rate=rate,
+        inverse_rate=inverse_rate,
+    )
 
 
 @router.get("/currencies", response_model=FxCurrenciesResponse)
