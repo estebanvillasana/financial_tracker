@@ -77,14 +77,13 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0; /* enable ellipsis on children */
 }
 
 .ft-account-card__header {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -94,17 +93,33 @@
   white-space: nowrap;
 }
 
-.ft-account-card__currency-tag {
-  background: var(--ft-color-surface);
-  border: 1px solid var(--ft-color-border);
-  border-radius: var(--ft-radius-widget);
+.ft-account-card__type-tag {
+  align-items: center;
+  background: var(--ft-color-surface-alt);
+  border-radius: 4px;
   color: var(--ft-color-text-muted);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.4px;
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 600;
+  gap: 5px;
+  letter-spacing: 0.2px;
   padding: 1px 6px;
+  text-transform: uppercase;
   white-space: nowrap;
 }
+
+.ft-account-card__type-dot {
+  border-radius: 50%;
+  height: 6px;
+  width: 6px;
+}
+
+/* Dot colors per account type (matching icon colors) */
+.ft-account-card[data-type="Bank Account"]  .ft-account-card__type-dot { background: var(--ft-color-accent);  }
+.ft-account-card[data-type="Credit Card"]   .ft-account-card__type-dot { background: var(--ft-color-warning); }
+.ft-account-card[data-type="Savings"]       .ft-account-card__type-dot { background: var(--ft-color-success); }
+.ft-account-card[data-type="Crypto Wallet"] .ft-account-card__type-dot { background: var(--ft-color-warning); }
+.ft-account-card[data-type="Money Bag"]     .ft-account-card__type-dot { background: var(--ft-color-success); }
 
 .ft-account-card__description {
   color: var(--ft-color-text-muted);
@@ -143,8 +158,17 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  gap: 3px;
+  gap: 4px;
   text-align: right;
+}
+
+.ft-account-card__currency-tag {
+  color: var(--ft-color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding-bottom: 2px;
+  white-space: nowrap;
 }
 
 .ft-account-card__balance-main {
@@ -152,6 +176,7 @@
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.3px;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
