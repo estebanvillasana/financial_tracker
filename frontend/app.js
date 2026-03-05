@@ -1,5 +1,7 @@
 // app.js — Hash-based SPA router
 
+import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
+
 const ROUTES = {
   dashboard:        'pages/dashboard.html',
   movements:        'pages/movements.html',

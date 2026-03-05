@@ -70,3 +70,5 @@ const SideBarMenu = (() => {
 
   return { init, setActivePage };
 })();
+
+export { SideBarMenu };
