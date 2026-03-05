@@ -9,18 +9,12 @@ SELECT
     ba.owner,
     ba.active,
     ROUND(ba.initial_balance / 100.0, 2) AS initial_balance,
-    ROUND(COALESCE(SUM(
-        CASE
-            WHEN m.type = 'Expense' THEN -m.value
-            WHEN m.type = 'Income'  THEN  m.value
-            ELSE 0
-        END
-    ), 0) / 100.0, 2) AS net_movements,
+    COUNT(CASE WHEN m.id IS NOT NULL THEN 1 END) AS net_movements,
     ROUND((
         ba.initial_balance + COALESCE(SUM(
             CASE
-                WHEN m.type = 'Expense' THEN -m.value
-                WHEN m.type = 'Income'  THEN  m.value
+                WHEN m.active = 1 AND m.type = 'Expense' THEN -m.value
+                WHEN m.active = 1 AND m.type = 'Income'  THEN  m.value
                 ELSE 0
             END
         ), 0)
