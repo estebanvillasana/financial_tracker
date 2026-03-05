@@ -1,0 +1,291 @@
+/* ============================================================
+   Info Card Component
+   ============================================================
+
+   Displays a single aggregated metric or info stat.
+   Used in dashboard stat rows (e.g. total balance, savings total,
+   number of active accounts, credit card debt, etc.).
+
+   Structure:
+   .ft-info-card[data-variant="default|accent|success|danger|warning"]
+     [data-clickable]        — present when the card is interactive
+     header.ft-info-card__header
+       .ft-info-card__icon-wrap          (optional)
+         .ft-info-card__icon             (material-symbols-outlined)
+       span.ft-info-card__label
+       .ft-info-card__trend              (optional)
+         [.ft-info-card__trend--up | --down | --neutral]
+         .ft-info-card__trend-icon       (material-symbols-outlined)
+         .ft-info-card__trend-value
+         .ft-info-card__trend-label      (optional)
+     .ft-info-card__body
+       p.ft-info-card__value
+       p.ft-info-card__sub-value         (optional)
+     footer.ft-info-card__footer         (optional)
+       span.ft-info-card__note
+
+   Loading skeleton:
+   .ft-info-card.ft-info-card--loading
+     header.ft-info-card__header
+       .ft-info-card__skeleton.ft-info-card__skeleton--icon
+       .ft-info-card__skeleton.ft-info-card__skeleton--label
+       .ft-info-card__skeleton.ft-info-card__skeleton--trend   (optional)
+     .ft-info-card__body
+       .ft-info-card__skeleton.ft-info-card__skeleton--value
+       .ft-info-card__skeleton.ft-info-card__skeleton--sub-value (optional)
+     footer.ft-info-card__footer                               (optional)
+       .ft-info-card__skeleton.ft-info-card__skeleton--note
+   ============================================================ */
+
+/* ─── Shimmer animation (used by all skeleton elements) ──── */
+
+@keyframes ft-info-card-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── Root ─────────────────────────────────────────────────── */
+
+.ft-info-card {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+  padding: calc(var(--ft-spacing) * 2.5);
+  transition: border-color 150ms ease;
+}
+
+/* ── Clickable state ──────────────────────────────────────── */
+
+/* Pointer cursor + hover border when the card has an onClick handler. */
+.ft-info-card[data-clickable] {
+  cursor: pointer;
+}
+
+.ft-info-card[data-clickable]:hover {
+  border-color: var(--ft-color-border-strong);
+}
+
+/* Focus ring for keyboard users (role="button" on clickable cards). */
+.ft-info-card[data-clickable]:focus-visible {
+  outline: 2px solid var(--ft-color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.ft-info-card__header {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+  min-width: 0; /* allow label to truncate */
+}
+
+/* Icon container — sized to match accountSummaryCard's icon-wrap at 32×32. */
+.ft-info-card__icon-wrap {
+  align-items: center;
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.ft-info-card__icon {
+  font-size: 18px;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+
+/* Icon + background color per variant.
+   'default' gets a neutral elevated bg with a muted icon.
+   All other variants use the semantic color at 10% opacity background. */
+
+.ft-info-card[data-variant="default"]  .ft-info-card__icon-wrap,
+.ft-info-card:not([data-variant])      .ft-info-card__icon-wrap { background: var(--ft-color-elevated);   }
+.ft-info-card[data-variant="default"]  .ft-info-card__icon,
+.ft-info-card:not([data-variant])      .ft-info-card__icon      { color:      var(--ft-color-text-muted); }
+
+.ft-info-card[data-variant="accent"]   .ft-info-card__icon-wrap { background: var(--ft-color-accent-10);  }
+.ft-info-card[data-variant="accent"]   .ft-info-card__icon      { color:      var(--ft-color-accent);     }
+
+.ft-info-card[data-variant="success"]  .ft-info-card__icon-wrap { background: var(--ft-color-success-10); }
+.ft-info-card[data-variant="success"]  .ft-info-card__icon      { color:      var(--ft-color-success);    }
+
+.ft-info-card[data-variant="danger"]   .ft-info-card__icon-wrap { background: var(--ft-color-danger-10);  }
+.ft-info-card[data-variant="danger"]   .ft-info-card__icon      { color:      var(--ft-color-danger);     }
+
+.ft-info-card[data-variant="warning"]  .ft-info-card__icon-wrap { background: var(--ft-color-warning-10); }
+.ft-info-card[data-variant="warning"]  .ft-info-card__icon      { color:      var(--ft-color-warning);    }
+
+/* Label — uppercase muted caption that names the metric. */
+.ft-info-card__label {
+  color: var(--ft-color-text-muted);
+  flex: 1; /* pushes the trend badge to the far right */
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Trend badge ──────────────────────────────────────────── */
+
+/* Small pill on the right side of the header showing the change direction. */
+.ft-info-card__trend {
+  align-items: center;
+  border-radius: var(--ft-radius-widget);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 2px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.ft-info-card__trend--up {
+  background: var(--ft-color-success-10);
+  color: var(--ft-color-success);
+}
+
+.ft-info-card__trend--down {
+  background: var(--ft-color-danger-10);
+  color: var(--ft-color-danger);
+}
+
+.ft-info-card__trend--neutral {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text-muted);
+}
+
+.ft-info-card__trend-icon {
+  font-size: 13px;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  height: 13px;
+  line-height: 1;
+  width: 13px;
+}
+
+.ft-info-card__trend-value {
+  /* inherits font-size and font-weight from .ft-info-card__trend */
+}
+
+/* The context label (e.g. "vs last month") is slightly de-emphasised. */
+.ft-info-card__trend-label {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+
+.ft-info-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Primary metric value — the most prominent element on the card. */
+.ft-info-card__value {
+  color: var(--ft-color-text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* For success/danger variants the value itself is coloured to reinforce
+   the semantic meaning (e.g. green total = healthy, red = owed/deficit). */
+.ft-info-card[data-variant="success"] .ft-info-card__value { color: var(--ft-color-success); }
+.ft-info-card[data-variant="danger"]  .ft-info-card__value { color: var(--ft-color-danger);  }
+
+/* Secondary value — muted context line below the main figure. */
+.ft-info-card__sub-value {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+
+/* The footer is only rendered when a note is provided.
+   margin-top: auto pushes it to the very bottom of the card, so when
+   cards in the same grid row have different heights (e.g. one has a
+   sub-value and one doesn't), the note lines always align consistently. */
+.ft-info-card__footer {
+  border-top: 1px solid var(--ft-color-border);
+  margin-top: auto;
+  padding-top: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-info-card__note {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+}
+
+/* ── Loading skeleton ─────────────────────────────────────── */
+
+/* Base skeleton block: shimmer gradient that sweeps left→right.
+   Applied as a modifier class on each placeholder element. */
+.ft-info-card__skeleton {
+  animation: ft-info-card-shimmer 1.4s ease infinite;
+  background: linear-gradient(
+    90deg,
+    var(--ft-color-elevated) 25%,
+    var(--ft-color-surface)  50%,
+    var(--ft-color-elevated) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Each skeleton element is sized to approximate the real element it replaces,
+   so the card dimensions stay stable as content loads in. */
+
+.ft-info-card__skeleton--icon {
+  border-radius: var(--ft-radius-wrapper); /* matches icon-wrap */
+  height: 32px;
+  width: 32px;
+}
+
+.ft-info-card__skeleton--label {
+  height: 10px;
+  width: 80px;
+}
+
+/* Trend skeleton pushed to the right, matching the real trend pill. */
+.ft-info-card__skeleton--trend {
+  height: 20px;
+  margin-left: auto;
+  width: 60px;
+}
+
+.ft-info-card__skeleton--value {
+  height: 26px;  /* approximates the 22px font at line-height 1.1 */
+  width: 140px;
+}
+
+.ft-info-card__skeleton--sub-value {
+  height: 12px;
+  width: 100px;
+}
+
+.ft-info-card__skeleton--note {
+  height: 10px;
+  width: 120px;
+}
