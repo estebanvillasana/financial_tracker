@@ -1,0 +1,32 @@
+<div class="ft-page">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Add Movements</h1>
+        <p class="ft-small ft-text-muted">Bulk-add new movements to any account</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="ft-btn ft-btn--ghost" id="btn-discard-movements" disabled>Discard</button>
+        <button class="ft-btn ft-btn--primary" id="btn-commit-movements" disabled>
+          <span class="material-symbols-outlined" aria-hidden="true">check</span>
+          Commit
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Account Selector Toolbar -->
+  <div class="ft-toolbar" id="widget-add-movements-toolbar">
+    <span class="ft-small ft-text-muted">Account selector will load here</span>
+  </div>
+
+  <!-- Bulk Input Grid -->
+  <section class="ft-section">
+    <div class="ft-table-wrapper" id="widget-add-movements-grid">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">post_add</span>
+        <p class="ft-small">Select an account to start adding movements</p>
+      </div>
+    </div>
+  </section>
+</div>
