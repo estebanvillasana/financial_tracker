@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-import typer
-
 from config import CliConfig, save_config
-from utils.navigation import read_key
-from utils.render import render_screen
 from functions.screens import render_settings_body
+from utils.inline_input import prompt_inline_text
+from utils.navigation import read_key
+from utils.render import flash_action, render_screen
 
 
 def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
     action_keys = ["1", "2", "9"]
     active_action = "9"
+    action_labels = {
+        "1": "Change API Base URL",
+        "2": "Change Main Currency",
+        "9": "Back",
+    }
 
     while True:
         render_screen(menu_items, "0", render_settings_body(config, active_action))
@@ -27,8 +31,10 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             continue
 
         if pressed_key == "ENTER":
+            enter_pressed = True
             choice = active_action
         elif pressed_key in action_keys:
+            enter_pressed = False
             choice = pressed_key
             active_action = choice
         elif pressed_key in {"b", "B", "ESC"}:
@@ -36,13 +42,37 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         else:
             continue
 
+        if enter_pressed:
+            flash_action(
+                menu_items,
+                "0",
+                render_settings_body(config, active_action),
+                action_labels.get(choice, "Action"),
+            )
+
         if choice == "1":
-            new_url = typer.prompt("API Base URL", default=config.api_base_url)
-            config.api_base_url = new_url.strip()
-            save_config(config)
+            new_url = prompt_inline_text(
+                menu_items,
+                "0",
+                "API Base URL",
+                config.api_base_url,
+                body_builder=lambda: render_settings_body(config, active_action),
+                render_screen=render_screen,
+            )
+            if new_url is not None:
+                config.api_base_url = new_url.strip()
+                save_config(config)
         elif choice == "2":
-            new_currency = typer.prompt("Main Currency", default=config.main_currency)
-            config.main_currency = new_currency.strip().lower()
-            save_config(config)
+            new_currency = prompt_inline_text(
+                menu_items,
+                "0",
+                "Main Currency",
+                config.main_currency,
+                body_builder=lambda: render_settings_body(config, active_action),
+                render_screen=render_screen,
+            )
+            if new_currency is not None:
+                config.main_currency = new_currency.strip().lower()
+                save_config(config)
         elif choice in {"9", "b", "B"}:
             return
