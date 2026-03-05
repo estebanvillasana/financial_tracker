@@ -1,4 +1,4 @@
-import { appConfig } from '../config.js';
+import { finalAppConfig } from '../defaults.js';
 
 /**
  * Custom error class for API-related failures
@@ -19,7 +19,7 @@ class ApiError extends Error {
  * @returns {string} - The complete URL
  */
 function buildUrl(path, query) {
-  const baseUrl = appConfig.apiBaseUrl.replace(/\/+$/, '');
+  const baseUrl = finalAppConfig.apiBaseUrl.replace(/\/+$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = new URL(`${baseUrl}${normalizedPath}`);
 
