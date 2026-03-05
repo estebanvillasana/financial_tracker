@@ -1,31 +1,78 @@
-<!--
-  sideBarMenu — Structure Reference
-  Built and injected dynamically by sideBarMenu.js into #app-nav
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SideBarMenu Preview</title>
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <!-- Main styles -->
+    <link rel="stylesheet" href="../../../styles/styles.css">
+    <!-- Component specific styles -->
+    <link rel="stylesheet" href="sideBarMenu.css">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background-color: var(--ft-color-background, #f4f4f4);
+        }
+        #app-nav {
+            height: 100vh;
+        }
+        .preview-content {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Target container for the sidebar -->
+    <div id="app-nav"></div>
 
-  <nav class="ft-nav [ft-nav--collapsed]" id="ft-nav">
+    <main class="preview-content">
+        <h1>SideBarMenu Preview</h1>
+        <div class="card">
+            <p>This is a preview page for the <code>SideBarMenu</code> component.</p>
+            <p>The sidebar should be visible on the left. You can toggle its collapsed state using the arrow button at the bottom.</p>
+        </div>
+        
+        <div class="card">
+            <h2>Current State</h2>
+            <p id="current-page-display">Active Page: dashboard</p>
+        </div>
+    </main>
 
-    <div class="ft-nav__brand">
-      <span class="ft-nav__brand-icon material-symbols-outlined">account_balance</span>
-      <span class="ft-nav__brand-name">Financial Tracker</span>
-    </div>
+    <!-- Component Script -->
+    <script src="sideBarMenu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the sidebar
+            SideBarMenu.init();
+            
+            // Set initial active page
+            SideBarMenu.setActivePage('dashboard');
 
-    <ul class="ft-nav__menu">
-      <li class="ft-nav__item" data-tooltip="Dashboard">
-        <a class="ft-nav__link [ft-nav__link--active]" href="#dashboard" data-page="dashboard">
-          <span class="ft-nav__link-icon material-symbols-outlined">home</span>
-          <span class="ft-nav__link-label">Dashboard</span>
-        </a>
-      </li>
-      <!-- ... repeated for each nav item ... -->
-    </ul>
-
-    <div class="ft-nav__footer">
-      <button class="ft-nav__collapse-btn" id="ft-nav-collapse-btn">
-        <span class="ft-nav__collapse-icon material-symbols-outlined">keyboard_double_arrow_left</span>
-      </button>
-    </div>
-
-  </nav>
-
-  Pages: dashboard | movements | add-movements | transfers | categories | repetitive
--->
+            // Listen for clicks on nav links to simulate page changes in the preview
+            document.addEventListener('click', (e) => {
+                const navLink = e.target.closest('.ft-nav__link');
+                if (navLink) {
+                    e.preventDefault();
+                    const page = navLink.dataset.page;
+                    SideBarMenu.setActivePage(page);
+                    document.getElementById('current-page-display').textContent = `Active Page: ${page}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

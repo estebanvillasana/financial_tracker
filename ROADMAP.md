@@ -47,7 +47,7 @@ Personal finance tracker with multi-account support, currency conversion, and in
 
 ### Project Setup
 - [x] Create `frontend/` directory structure
-- [ ] `index.html` — single entry point
+- [x] `index.html` — single entry point
 - [x] `styles/global.css` — CSS variables, reset, typography
 - [ ] `styles/layout.css` — grid, containers, spacing system
 - [ ] `config.js` — API base URL (gitignored)
