@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pagination Preview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+
+    <link rel="stylesheet" href="../../../styles/styles.css" />
+    <link rel="stylesheet" href="./pagination.css" />
+  </head>
+  <body class="ft-theme">
+    <main style="max-width: 980px; margin: 0 auto; padding: 24px;">
+      <div class="ft-page">
+        <header class="ft-page__header">
+          <h1 class="ft-h2">Pagination Preview</h1>
+          <p class="ft-small ft-text-muted">Standalone preview of the dumb pagination component</p>
+        </header>
+
+        <section class="ft-section">
+          <h2 class="ft-h3">Accounts Grid Pagination</h2>
+          <div id="pagination-preview-accounts"></div>
+        </section>
+
+        <section class="ft-section">
+          <h2 class="ft-h3">Movements Table Pagination</h2>
+          <div id="pagination-preview-movements"></div>
+        </section>
+
+        <section class="ft-section">
+          <h2 class="ft-h3">Large Dataset Pagination</h2>
+          <div id="pagination-preview-large"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { Pagination } from './pagination.js';
+
+      Pagination.render('#pagination-preview-accounts', {
+        totalItems: 48,
+        pageSize: 8,
+        page: 2,
+      });
+
+      Pagination.render('#pagination-preview-movements', {
+        totalItems: 327,
+        pageSize: 25,
+        page: 6,
+        maxVisiblePages: 7,
+      });
+
+      Pagination.render('#pagination-preview-large', {
+        totalItems: 1250,
+        pageSize: 20,
+        page: 32,
+        maxVisiblePages: 5,
+      });
+    </script>
+  </body>
+</html>
