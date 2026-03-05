@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filter Bar Preview</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+
+    <link rel="stylesheet" href="../../../styles/styles.css" />
+    <link rel="stylesheet" href="./filterBar.css" />
+  </head>
+  <body class="ft-theme">
+    <main id="preview-root" style="max-width: 1100px; margin: 0 auto; padding: 24px;">
+      <div class="ft-page">
+        <header class="ft-page__header">
+          <h1 class="ft-h2">Filter Bar Preview</h1>
+          <p class="ft-small ft-text-muted">Standalone preview for the reusable dumb component</p>
+        </header>
+
+        <section class="ft-section">
+          <h2 class="ft-h3">Movements Filters</h2>
+          <div id="preview-filter-bar-1"></div>
+        </section>
+
+        <section class="ft-section">
+          <h2 class="ft-h3">Transfers Filters</h2>
+          <div id="preview-filter-bar-2"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { FilterBar } from './filterBar.js';
+
+      FilterBar.render('#preview-filter-bar-1', {
+        fields: [
+          { id: 'search', label: 'Search', type: 'search', placeholder: 'Description or code', className: 'ft-filter-bar__field--search' },
+          { id: 'type', label: 'Type', type: 'select', value: 'all', options: [
+            { value: 'all', label: 'All' },
+            { value: 'income', label: 'Income' },
+            { value: 'expense', label: 'Expense' },
+          ]},
+          { id: 'fromDate', label: 'From', type: 'date' },
+          { id: 'toDate', label: 'To', type: 'date' },
+        ],
+        actions: [
+          { id: 'clear', label: 'Clear', variant: 'ghost' },
+          { id: 'apply', label: 'Apply Filters', icon: 'filter_alt', variant: 'primary' },
+        ],
+      });
+
+      FilterBar.render('#preview-filter-bar-2', {
+        fields: [
+          { id: 'account', label: 'Account', type: 'select', value: 'all', options: [
+            { value: 'all', label: 'All Accounts' },
+            { value: 'checking', label: 'Checking Account' },
+            { value: 'savings', label: 'Savings Account' },
+          ]},
+          { id: 'status', label: 'Status', type: 'select', value: 'all', options: [
+            { value: 'all', label: 'All' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'pending', label: 'Pending' },
+          ]},
+          { id: 'month', label: 'Month', type: 'month' },
+        ],
+        actions: [
+          { id: 'export', label: 'Export', icon: 'download', variant: 'ghost' },
+          { id: 'search', label: 'Search', icon: 'search', variant: 'primary' },
+        ],
+      });
+    </script>
+  </body>
+</html>
