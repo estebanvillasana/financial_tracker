@@ -1,0 +1,124 @@
+/* ============================================================
+   Accounts Summary — Smart Component Styles
+   ============================================================
+
+   Only widget-specific styles live here.
+   The following classes are reused from global CSS and component CSS files
+   and do NOT need to be redefined:
+
+   From layout.css:
+     .ft-accounts-grid   — the card grid layout
+     .ft-empty           — empty state container + icon
+     .ft-page__error     — full-widget error state
+
+   From accountSummaryCard.css  — the individual cards
+   From filterBar.css           — the filter dropdowns
+   From pagination.css          — the page navigation
+
+   Structure:
+   .ft-accounts-summary
+     header.ft-accounts-summary__header
+       h3.ft-accounts-summary__title
+       span.ft-accounts-summary__count        [data-accounts-summary-count]
+     div[data-accounts-summary-toolbar]       → FilterBar renders here
+     div.ft-accounts-grid[data-accounts-summary-grid]  → cards render here
+     div[data-accounts-summary-pagination]    → Pagination renders here
+
+   Loading skeleton (initial mount only):
+   .ft-accounts-summary[aria-busy="true"]
+     .ft-accounts-summary__skeleton.ft-accounts-summary__skeleton--title
+     .ft-accounts-summary__skeleton.ft-accounts-summary__skeleton--count
+     .ft-accounts-summary__skeleton.ft-accounts-summary__skeleton--toolbar
+     .ft-accounts-grid
+       .ft-accounts-summary__card-skeleton ×N
+     .ft-accounts-summary__skeleton.ft-accounts-summary__skeleton--pagination
+   ============================================================ */
+
+/* ── Root ─────────────────────────────────────────────────── */
+
+.ft-accounts-summary {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 2);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.ft-accounts-summary__header {
+  align-items: baseline;
+  display: flex;
+  gap: calc(var(--ft-spacing) * 1.5);
+  justify-content: space-between;
+}
+
+.ft-accounts-summary__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* The count chip shows "7 accounts" or "3 of 7" when a filter is active. */
+.ft-accounts-summary__count {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ── Loading skeleton ─────────────────────────────────────── */
+
+/* Shimmer sweep animation shared by all skeleton elements in this component. */
+@keyframes ft-accounts-summary-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* Base shimmer block. Applied to both .ft-accounts-summary__skeleton
+   (structural regions) and .ft-accounts-summary__card-skeleton (grid placeholders). */
+.ft-accounts-summary__skeleton,
+.ft-accounts-summary__card-skeleton {
+  animation: ft-accounts-summary-shimmer 1.4s ease infinite;
+  background: linear-gradient(
+    90deg,
+    var(--ft-color-elevated) 25%,
+    var(--ft-color-surface)  50%,
+    var(--ft-color-elevated) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+}
+
+/* Each skeleton modifier is sized to approximate the real element it replaces,
+   keeping the layout visually stable during the initial API fetch. */
+
+.ft-accounts-summary__skeleton--title {
+  height: 18px;
+  width: 140px;
+}
+
+.ft-accounts-summary__skeleton--count {
+  height: 14px;
+  width: 60px;
+}
+
+/* Approximates the FilterBar component height. */
+.ft-accounts-summary__skeleton--toolbar {
+  border-radius: var(--ft-radius-wrapper);
+  height: 54px;
+  width: 100%;
+}
+
+/* Approximates the Pagination bar height. */
+.ft-accounts-summary__skeleton--pagination {
+  border-radius: var(--ft-radius-wrapper);
+  height: 44px;
+  width: 100%;
+}
+
+/* Card skeleton: rendered in the grid during both the initial fetch and
+   subsequent page transitions while async FX conversions are in flight.
+   Height matches a real accountSummaryCard (~72px at default font sizes). */
+.ft-accounts-summary__card-skeleton {
+  border-radius: var(--ft-radius-card);
+  height: 72px;
+  width: 100%;
+}
