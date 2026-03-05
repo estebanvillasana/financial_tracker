@@ -26,6 +26,15 @@ const fxRates = {
   },
 
   /**
+   * Returns latest available conversion rate for a currency pair
+   * @param {string} currencyPair - Example: 'GELMXN'
+   */
+  getLatestByPair(currencyPair) {
+    const normalizedPair = String(currencyPair || '').toUpperCase();
+    return request(`/fx-rates/latest/${encodeURIComponent(normalizedPair)}`);
+  },
+
+  /**
    * Returns all available currency codes for a specific date
    */
   getCurrencies(date) {
