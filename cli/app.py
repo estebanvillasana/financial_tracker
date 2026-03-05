@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import sys
+import time
 from dataclasses import dataclass
 from typing import Callable
 
 import typer
 
 from config import CliConfig, load_config
+from db import db_exists
+from functions import api as api_client
 from screens import settings as settings_screen
 from utils.navigation import read_key
 from utils.render import app_terminal_session, flash_action, render_screen
@@ -45,11 +48,30 @@ def _route_screen(active_key: str, config: CliConfig) -> None:
 		screen.run(MENU_ITEMS, config)
 
 
+def _startup_checks(config: CliConfig) -> None:
+	"""Validate DB exists and warn if the backend is unreachable. Exits on fatal errors."""
+	if not db_exists(config.db_path):
+		typer.echo(f"Error: database not found at {config.db_path}", err=True)
+		typer.echo(
+			"Set DB_PATH in cli/.env or start the backend at least once so it creates the database.",
+			err=True,
+		)
+		raise typer.Exit(code=1)
+
+	if not api_client.check_backend(config.api_base_url):
+		typer.echo(
+			f"Warning: backend unreachable at {config.api_base_url}. "
+			"Read operations will work; writes will fail until the backend is running."
+		)
+		time.sleep(1.5)
+
+
 @app.command()
 def run() -> None:
 	"""Run the interactive Financial Tracker CLI."""
 
 	config = load_config()
+	_startup_checks(config)
 	active_key = SCREEN_DEFINITIONS[0].key if SCREEN_DEFINITIONS else "9"
 	menu_keys = [key for key, _ in MENU_ITEMS]
 

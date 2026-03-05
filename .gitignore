@@ -17,3 +17,4 @@ frontend/components/dumb/accountSummaryCard/test_js.html
 
 # CLI
 cli/.env
+cli/screens/test_inputs.py
