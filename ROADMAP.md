@@ -49,9 +49,22 @@ Personal finance tracker with multi-account support, currency conversion, and in
 - [x] Create `frontend/` directory structure
 - [x] `index.html` — single entry point
 - [x] `styles/global.css` — CSS variables, reset, typography
-- [ ] `styles/layout.css` — grid, containers, spacing system
-- [ ] `config.js` — API base URL (gitignored)
+- [x] `styles/layout.css` — grid, containers, spacing system
+- [x] `config.js` — API base URL (gitignored)
 - [ ] `services/api.js` — base fetch wrapper (handles errors, base URL, JSON parsing)
+
+### Create components
+
+#### Dumb
+- [x] Side Navigation Menu: shows all the pages so the user can start navigating
+- [ ] Account Summary Card: simple card that shows the most important info of a bank account
+- [ ] Filter Bar
+- [ ] Pagination: For the bottom of a table or a list
+#TODO
+
+#### Smart
+- [ ] Accounts Summary: Displays all the active bank accounts with a pagination
+#TODO
 
 ### Services (API Communication Layer)
 - [ ] `services/bankAccountsService.js`
@@ -60,69 +73,6 @@ Personal finance tracker with multi-account support, currency conversion, and in
 - [ ] `services/transfersService.js`
 - [ ] `services/repetitiveMovementsService.js`
 - [ ] `services/fxRatesService.js`
-
-### Pages
-
-#### Dashboard
-- [ ] Account cards with current balance per account
-- [ ] Total net worth summary (converted to a single currency)
-- [ ] Quick glance: last 5 movements
-
-#### Add Movements
-- [ ] Grid-style bulk input (add multiple rows before committing)
-- [ ] Auto-generate `movement_code` for the batch: `bulk_YYMMDDHHMMSS`
-- [ ] Row validation before POST
-- [ ] Commit / discard workflow
-- [ ] Account selector
-
-#### Movements History
-- [ ] Table view with all movements
-- [ ] Filters: account, category, date range, type
-- [ ] Pagination
-- [ ] Edit movement via modal
-- [ ] Soft delete from table
-
-#### Money Transfers
-- [ ] List of all internal transfers
-- [ ] Form to create new transfer (from / to account, amounts, date)
-- [ ] Edit and soft delete
-
-#### Categories
-- [ ] List categories with movement count and subcategory count
-- [ ] Create / edit / soft delete categories
-- [ ] Manage subcategories within each category
-
-#### Repetitive Movements
-- [ ] List with filters (type, active subscription, tax report)
-- [ ] Create / edit / soft delete
-- [ ] Section to handle subscriptions
-
-#### Reports *(later)*
-- [ ] Last month summary: income vs expenses
-- [ ] Top expense categories
-- [ ] Balance by currency
-
-### Components & Widgets
-- [ ] `Navigation` — persistent sidebar/header shell
-- [ ] `SummaryCard` — balance display card
-- [ ] `SearchBar` — reusable filter input
-- [ ] `MovementsTable` — smart widget, owns fetch + state
-- [ ] `Selector` — dropdown populated from API to select bank accounts or categories
-- [ ] `CategorySelector` — cascading: category → subcategory
-- [ ] `Modal` — reusable overlay for edit forms
-
----
-
-## 🔲 Phase 3 — Polish & Reliability
-
-- [ ] Frontend error states (API down, empty states, loading indicators)
-- [ ] `movement_code` generation for single movements (not just bulk)
-- [ ] Backup retention policy: auto-delete backups older than N days
-- [ ] `GET /reports/*` endpoints if frontend needs aggregated data server-side
-- [ ] Keyboard shortcuts for the Add Movements page (power-user flow)
-- [ ] Export movements to CSV
-
----
 
 ## Architecture Decisions Log
 
