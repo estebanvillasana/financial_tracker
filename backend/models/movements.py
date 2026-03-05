@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from database import get_connection
 from functions.queries import load_query
@@ -21,6 +21,24 @@ def _split_query_and_order(query: str) -> tuple[str, str]:
     base_query = normalized[:order_index].strip()
     order_clause = normalized[order_index:].strip()
     return base_query, order_clause
+
+
+def _current_datetime_code() -> str:
+    """Returns current date-time as human-readable string: yymmdd-hhmmss"""
+
+    return datetime.now().strftime("%y%m%d-%H%M%S")
+
+
+def _build_single_movement_code() -> str:
+    """Builds movement_code for single creates: MOV_yymmdd-hhmmss"""
+
+    return f"MOV_{_current_datetime_code()}"
+
+
+def _build_bulk_movement_code() -> str:
+    """Builds movement_code shared by one bulk insert operation: BMOV_yymmdd-hhmmss"""
+
+    return f"BMOV_{_current_datetime_code()}"
 
 
 def get_all_movements(
@@ -139,7 +157,6 @@ def create_movement(
     category_id: int | None = None,
     sub_category_id: int | None = None,
     repetitive_movement_id: int | None = None,
-    movement_code: str | None = None,
     invoice: int = 0,
     active: int = 1,
 ) -> dict:
@@ -156,7 +173,7 @@ def create_movement(
         category_id (int | None): Optional category id
         sub_category_id (int | None): Optional sub_category id
         repetitive_movement_id (int | None): Optional repetitive movement id
-        movement_code (str | None): Optional movement code
+        movement_code: Auto-generated as MOV_{timestamp}
         invoice (int): 0 or 1, default 0
         active (int): 0 or 1, default 1
 
@@ -165,6 +182,7 @@ def create_movement(
     """
 
     insert_query = load_query("movements/insert.sql")
+    movement_code = _build_single_movement_code()
 
     # Convert date object to string if needed
     date_str = movement_date.isoformat() if isinstance(movement_date, date) else movement_date
@@ -212,6 +230,7 @@ def create_bulk_movements(*, movements: list[dict]) -> list[dict]:
         return []
 
     insert_query = load_query("movements/insert.sql")
+    bulk_movement_code = _build_bulk_movement_code()
     inserted_ids: list[int] = []
 
     with get_connection() as conn:
@@ -233,7 +252,7 @@ def create_bulk_movements(*, movements: list[dict]) -> list[dict]:
                     item.get("category_id"),
                     item.get("sub_category_id"),
                     item.get("repetitive_movement_id"),
-                    item.get("movement_code"),
+                    bulk_movement_code,
                     item.get("invoice", 0),
                     item.get("active", 1),
                 ),
@@ -316,6 +335,13 @@ def update_movement(
 
     update_query = load_query("movements/update.sql")
 
+    existing = get_movement_by_id(id=id)
+    if existing is None:
+        return None
+
+    # Keep existing movement_code when update payload does not include one.
+    resolved_movement_code = existing["movement_code"] if movement_code is None else movement_code
+
     # Convert date object to string if needed
     date_str = movement_date.isoformat() if isinstance(movement_date, date) else movement_date
 
@@ -333,14 +359,11 @@ def update_movement(
                 category_id,
                 sub_category_id,
                 repetitive_movement_id,
-                movement_code,
+                resolved_movement_code,
                 invoice,
                 id,
             ),
         )
-
-        if cursor.rowcount == 0:
-            return None
 
     updated = get_movement_by_id(id=id)
     if updated is None:

@@ -54,7 +54,6 @@ class MovementCreateRequest(BaseModel):
     category_id: int | None = None
     sub_category_id: int | None = None
     repetitive_movement_id: int | None = None
-    movement_code: str | None = None
     invoice: int = Field(default=0, ge=0, le=1)
     active: int = Field(default=1, ge=0, le=1)
 
@@ -186,6 +185,7 @@ def route_create(payload: MovementCreateRequest):
     """Creates a new movement.
 
     Request body values are expected in cents for `value`.
+    `movement_code` is generated automatically as `MOV_{timestamp}`.
     """
 
     data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
@@ -210,6 +210,7 @@ def route_create_bulk(payload: MovementBulkCreateRequest):
     Behavior:
     - Atomic transaction: all rows are inserted, or none if one fails.
     - Maximum batch size: 1000 movements per request.
+    - All inserted rows share one auto-generated movement_code: `BMOV_{timestamp}`.
     """
 
     rows = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
