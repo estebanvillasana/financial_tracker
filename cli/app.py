@@ -11,6 +11,7 @@ import typer
 from config import CliConfig, load_config
 from db import db_exists
 from functions import api as api_client
+from screens import overview as overview_screen
 from screens import settings as settings_screen
 from utils.navigation import read_key
 from utils.render import app_terminal_session, flash_action, render_screen
@@ -29,6 +30,12 @@ class ScreenDefinition:
 
 
 SCREEN_DEFINITIONS = [
+	ScreenDefinition(
+		key="1",
+		label="Overview",
+		render_body=overview_screen.render_body,
+		run=overview_screen.run,
+	),
 	ScreenDefinition(
 		key="0",
 		label="Settings",
