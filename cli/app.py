@@ -13,7 +13,7 @@ from functions.screens import (
 )
 from functions.settings import settings_loop
 from utils.navigation import read_key
-from utils.render import app_terminal_session, clear_screen, render_screen
+from utils.render import app_terminal_session, render_screen
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=False)
@@ -73,7 +73,6 @@ def run() -> None:
 				continue
 
 			if choice == "9":
-				clear_screen()
 				return
 			if choice in {"0", "1", "2"}:
 				active_key = choice

@@ -30,26 +30,72 @@ def _read_env_file_value(key: str) -> str | None:
 
 TOP_MARGIN_ROWS = 1
 
+_LIVE = None
+_CONSOLE = None
+
+
+def _start_live() -> None:
+    global _LIVE
+    global _CONSOLE
+
+    if _LIVE is not None:
+        return
+
+    try:
+        from rich.console import Console
+        from rich.live import Live
+
+        _CONSOLE = Console()
+        _LIVE = Live(
+            console=_CONSOLE,
+            auto_refresh=False,
+            refresh_per_second=30,
+            screen=True,
+        )
+        _LIVE.start()
+    except Exception:
+        _LIVE = None
+        _CONSOLE = None
+
+
+def _stop_live() -> None:
+    global _LIVE
+    global _CONSOLE
+
+    if _LIVE is None:
+        return
+
+    try:
+        _LIVE.stop()
+    finally:
+        _LIVE = None
+        _CONSOLE = None
+
 
 @contextmanager
 def app_terminal_session():
     """Use terminal alternate screen so the CLI is the only visible content while running."""
     try:
-        print(ALT_SCREEN_ENTER, end="", flush=True)
+        _start_live()
         yield
     finally:
-        print(ALT_SCREEN_EXIT, end="", flush=True)
+        _stop_live()
 
 
-def clear_screen() -> None:
+def clear_screen(hard: bool = False) -> None:
     try:
         from rich.console import Console
 
-        print("\033[3J", end="", flush=True)
+        if hard:
+            # Full clear including scrollback is useful only when leaving the app.
+            print("\033[3J", end="", flush=True)
         Console().clear(home=True)
     except Exception:
-        # ANSI clear avoids spawning shell commands and reduces visual jitter.
-        print("\033[3J\033[2J\033[H", end="", flush=True)
+        # Soft clear reduces visible flicker while navigating between screens.
+        if hard:
+            print("\033[3J\033[2J\033[H", end="", flush=True)
+        else:
+            print("\033[2J\033[H", end="", flush=True)
 
 
 def render_menu(menu_items: Iterable[tuple[str, str]], active_key: str) -> str:
@@ -60,14 +106,12 @@ def render_menu(menu_items: Iterable[tuple[str, str]], active_key: str) -> str:
     return "\n".join(lines)
 
 
-def _render_rich_screen(menu_text: str, body: str) -> None:
-    from rich.console import Console
+def _build_rich_layout(menu_text: str, body: str):
     from rich.layout import Layout
     from rich.panel import Panel
     from rich.text import Text
     from rich import box
 
-    console = Console()
     terminal_width, terminal_height = shutil.get_terminal_size(fallback=(120, 30))
 
     # Keep menu width proportional so content remains readable on small terminals.
@@ -109,7 +153,7 @@ def _render_rich_screen(menu_text: str, body: str) -> None:
     layout["content"].update(content_panel)
 
     layout["top_spacer"].update("")
-    console.print(layout)
+    return layout
 
 
 def _render_plain_screen(menu_text: str, body: str) -> None:
@@ -121,9 +165,12 @@ def _render_plain_screen(menu_text: str, body: str) -> None:
 
 
 def render_screen(menu_items: Iterable[tuple[str, str]], active_key: str, body: str) -> None:
-    clear_screen()
     menu_text = render_menu(menu_items, active_key)
     try:
-        _render_rich_screen(menu_text, body)
+        layout = _build_rich_layout(menu_text, body)
+        if _LIVE is not None:
+            _LIVE.update(layout, refresh=True)
+        else:
+            _render_plain_screen(menu_text, body)
     except Exception:
         _render_plain_screen(menu_text, body)
