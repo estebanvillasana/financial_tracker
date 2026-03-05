@@ -1,0 +1,146 @@
+[
+  {
+    "code": "usd",
+    "uppercaseCode": "USD",
+    "symbol": "$",
+    "codePlusSymbol": "$ USD",
+    "name": "United States Dollar",
+    "active": true
+  },
+  {
+    "code": "eur",
+    "uppercaseCode": "EUR",
+    "symbol": "€",
+    "codePlusSymbol": "€ EUR",
+    "name": "Euro",
+    "active": true
+  },
+  {
+    "code": "gbp",
+    "uppercaseCode": "GBP",
+    "symbol": "£",
+    "codePlusSymbol": "£ GBP",
+    "name": "British Pound",
+    "active": false
+  },
+  {
+    "code": "jpy",
+    "uppercaseCode": "JPY",
+    "symbol": "¥",
+    "codePlusSymbol": "¥ JPY",
+    "name": "Japanese Yen",
+    "active": false
+  },
+  {
+    "code": "mxn",
+    "uppercaseCode": "MXN",
+    "symbol": "$",
+    "codePlusSymbol": "$ MXN",
+    "name": "Mexican Peso",
+    "active": true
+  },
+  {
+    "code": "cny",
+    "uppercaseCode": "CNY",
+    "symbol": "¥",
+    "codePlusSymbol": "¥ CNY",
+    "name": "Chinese Yuan",
+    "active": false
+  },
+  {
+    "code": "inr",
+    "uppercaseCode": "INR",
+    "symbol": "₹",
+    "codePlusSymbol": "₹ INR",
+    "name": "Indian Rupee",
+    "active": false
+  },
+  {
+    "code": "rub",
+    "uppercaseCode": "RUB",
+    "symbol": "₽",
+    "codePlusSymbol": "₽ RUB",
+    "name": "Russian Ruble",
+    "active": true
+  },
+  {
+    "code": "aud",
+    "uppercaseCode": "AUD",
+    "symbol": "$",
+    "codePlusSymbol": "$ AUD",
+    "name": "Australian Dollar",
+    "active": false
+  },
+  {
+    "code": "cad",
+    "uppercaseCode": "CAD",
+    "symbol": "$",
+    "codePlusSymbol": "$ CAD",
+    "name": "Canadian Dollar",
+    "active": false
+  },
+  {
+    "code": "gel",
+    "uppercaseCode": "GEL",
+    "symbol": "₾",
+    "codePlusSymbol": "₾ GEL",
+    "name": "Georgian Lari",
+    "active": true
+  },
+  {
+    "code": "amd",
+    "uppercaseCode": "AMD",
+    "symbol": "֏",
+    "codePlusSymbol": "֏ AMD",
+    "name": "Armenian Dram",
+    "active": false
+  },
+  {
+    "code": "pln",
+    "uppercaseCode": "PLN",
+    "symbol": "zł",
+    "codePlusSymbol": "zł PLN",
+    "name": "Polish Zloty",
+    "active": false
+  },
+  {
+    "code": "sek",
+    "uppercaseCode": "SEK",
+    "symbol": "kr",
+    "codePlusSymbol": "kr SEK",
+    "name": "Swedish Krona",
+    "active": false
+  },
+  {
+    "code": "chf",
+    "uppercaseCode": "CHF",
+    "symbol": "CHF",
+    "codePlusSymbol": "CHF CHF",
+    "name": "Swiss Franc",
+    "active": false
+  },
+  {
+    "code": "nok",
+    "uppercaseCode": "NOK",
+    "symbol": "kr",
+    "codePlusSymbol": "kr NOK",
+    "name": "Norwegian Krone",
+    "active": false
+  },
+  {
+    "code": "czk",
+    "uppercaseCode": "CZK",
+    "symbol": "Kč",
+    "codePlusSymbol": "Kč CZK",
+    "name": "Czech Koruna",
+    "active": false
+  },
+  {
+    "code": "huf",
+    "uppercaseCode": "HUF",
+    "symbol": "Ft",
+    "codePlusSymbol": "Ft HUF",
+    "name": "Hungarian Forint",
+    "active": false
+  }
+]
