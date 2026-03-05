@@ -51,28 +51,35 @@ Personal finance tracker with multi-account support, currency conversion, and in
 - [x] `styles/global.css` — CSS variables, reset, typography
 - [x] `styles/layout.css` — grid, containers, spacing system
 - [x] `config.js` — API base URL (gitignored)
-- [ ] `services/api.js` — base fetch wrapper (handles errors, base URL, JSON parsing)
+- [x] `services/api.js` — base fetch wrapper (handles errors, base URL, JSON parsing)
+  - [x] `services/bankAccountsService.js`
+  - [x] `services/movementsService.js`
+  - [x] `services/categoriesService.js`
+  - [x] `services/transfersService.js`
+  - [x] `services/repetitiveMovementsService.js`
+  - [x] `services/fxRatesService.js`
+  - [x] `services/http.js`
 
 ### Create components
 
 #### Dumb
 - [x] Side Navigation Menu: shows all the pages so the user can start navigating
-- [ ] Account Summary Card: simple card that shows the most important info of a bank account
+- [x] Account Summary Card: simple card that shows the most important info of a bank account
 - [ ] Filter Bar
 - [ ] Pagination: For the bottom of a table or a list
+- [ ] Change main currency selector
 #TODO
 
 #### Smart
 - [ ] Accounts Summary: Displays all the active bank accounts with a pagination
 #TODO
 
+#### Modals
+- [ ] Bank account
+- [ ] 
+
 ### Services (API Communication Layer)
-- [ ] `services/bankAccountsService.js`
-- [ ] `services/movementsService.js`
-- [ ] `services/categoriesService.js`
-- [ ] `services/transfersService.js`
-- [ ] `services/repetitiveMovementsService.js`
-- [ ] `services/fxRatesService.js`
+
 
 ## Architecture Decisions Log
 

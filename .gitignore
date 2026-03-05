@@ -11,3 +11,6 @@ __pycache__
 
 # Frontend
 frontend/config.js
+frontend/test-api.js
+frontend/tests.html
+frontend/components/dumb/accountSummaryCard/test_js.html
