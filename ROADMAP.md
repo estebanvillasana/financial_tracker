@@ -5,6 +5,11 @@ Personal finance tracker with multi-account support, currency conversion, and in
 **Stack:** Python · FastAPI · SQLite · Vanilla JS  
 **Started:** March 3, 2026
 
+| Date | Decision | File |
+|------|----------|------|
+| 2026-02-27 | Use Vanilla JS instead of a framework for the frontend | `docs/decisions/26-02-27 Use a JS Framework for Frontend.md` |
+
+
 ---
 
 ## ✅ Phase 1 — Backend (Completed March 5, 2026)
@@ -41,8 +46,6 @@ Personal finance tracker with multi-account support, currency conversion, and in
 - [x] `.gitignore` configured: database file, backups, `.env`, `__pycache__`
 - [x] `docs/decisions/` folder for architecture decision records
 
----
-
 ## 🔲 Phase 2 — Frontend
 
 ### Project Setup
@@ -76,13 +79,17 @@ Personal finance tracker with multi-account support, currency conversion, and in
 
 #### Modals
 - [ ] Bank account
-- [ ] 
-
-### Services (API Communication Layer)
 
 
-## Architecture Decisions Log
+## Phase 3 — CLI Application
 
-| Date | Decision | File |
-|------|----------|------|
-| 2026-02-27 | Use Vanilla JS instead of a framework for the frontend | `docs/decisions/26-02-27 Use a JS Framework for Frontend.md` |
+A terminal-based interface for direct database interaction and quick financial queries. This provides an alternative to the frontend GUI for power users who prefer command-line workflows.
+
+### Core Features
+- [ ] Direct app.db queries through terminal commands
+- [ ] View all active bank accounts with balances
+- [ ] Add new transactions/movements interactively
+- [ ] Reusable query library from `backend/data/explore/`:
+- [ ] User-friendly output formatting (tables, summaries)
+- [ ] Independent from frontend GUI — runs standalone
+
