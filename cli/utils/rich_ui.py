@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 from typing import Iterable
 from typing import Literal
@@ -15,6 +16,8 @@ INPUT_PANEL_START = "[[input_panel]]"
 INPUT_PANEL_END = "[[/input_panel]]"
 HINT_PANEL_START = "[[hint_panel]]"
 HINT_PANEL_END = "[[/hint_panel]]"
+GROUP_STYLE_START = "[[group:"
+GROUP_STYLE_END = "[[/group]]"
 
 
 def render_selectable_list(
@@ -86,7 +89,21 @@ def _build_rich_body_text(body: str):
         display_line = line.replace(ACTIVE_LINE_MARKER, "")
         line_style = "bold yellow" if is_marked_active or display_line.lstrip().startswith(">") else None
 
-        if DIM_START in display_line and DIM_END in display_line:
+        if GROUP_STYLE_START in display_line and GROUP_STYLE_END in display_line:
+            start = display_line.find(GROUP_STYLE_START)
+            marker_end = display_line.find("]]", start)
+            end = display_line.find(GROUP_STYLE_END)
+            if marker_end != -1 and end != -1:
+                before = display_line[:start]
+                color = display_line[start + len(GROUP_STYLE_START) : marker_end]
+                styled_text = display_line[marker_end + 2 : end]
+                after = display_line[end + len(GROUP_STYLE_END) :]
+                rich_text.append(before, style=line_style)
+                rich_text.append(styled_text, style=f"bold {color.strip()}")
+                rich_text.append(after, style=line_style)
+            else:
+                rich_text.append(display_line, style=line_style)
+        elif DIM_START in display_line and DIM_END in display_line:
             start = display_line.find(DIM_START)
             end = display_line.find(DIM_END)
             before = display_line[:start]
@@ -215,7 +232,7 @@ def build_rich_layout(
     layout["menu"].update(menu_panel)
     content_host = layout["content"]
     if clipped_options:
-        options_width = max(28, min(42, int(terminal_width * 0.24)))
+        options_width = max(40, min(62, int(terminal_width * 0.34)))
         content_host.split_row(
             Layout(name="content_main"),
             Layout(name="content_options", size=options_width),
@@ -264,6 +281,10 @@ def render_plain_screen(
     flash_message: str | None = None,
     top_margin_rows: int = 1,
 ) -> None:
+    def _strip_group_markers(value: str) -> str:
+        value = re.sub(r"\[\[group:[^\]]+\]\]", "", value)
+        return value.replace(GROUP_STYLE_END, "")
+
     body, options_text = _extract_marked_block(
         body,
         OPTIONS_PANEL_START,
@@ -282,18 +303,22 @@ def render_plain_screen(
     body = body.replace(ACTIVE_LINE_MARKER, "")
     body = body.replace(DIM_START, "")
     body = body.replace(DIM_END, "")
+    body = _strip_group_markers(body)
     if options_text:
         options_text = options_text.replace(ACTIVE_LINE_MARKER, "")
         options_text = options_text.replace(DIM_START, "")
         options_text = options_text.replace(DIM_END, "")
+        options_text = _strip_group_markers(options_text)
     if input_text:
         input_text = input_text.replace(ACTIVE_LINE_MARKER, "")
         input_text = input_text.replace(DIM_START, "")
         input_text = input_text.replace(DIM_END, "")
+        input_text = _strip_group_markers(input_text)
     if hint_text:
         hint_text = hint_text.replace(ACTIVE_LINE_MARKER, "")
         hint_text = hint_text.replace(DIM_START, "")
         hint_text = hint_text.replace(DIM_END, "")
+        hint_text = _strip_group_markers(hint_text)
     if top_margin_rows > 0:
         print("\n" * top_margin_rows, end="")
     print(menu_text)
