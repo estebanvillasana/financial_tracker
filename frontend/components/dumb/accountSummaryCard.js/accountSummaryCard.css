@@ -1,0 +1,166 @@
+/* ============================================================
+   Account Summary Card Component
+   ============================================================
+
+   Structure:
+   .ft-account-card[data-type="Bank Account | Credit Card | Savings | Crypto Wallet | Money Bag"]
+     .ft-account-card__icon-wrap
+       .ft-account-card__icon   (material-symbols-outlined)
+     .ft-account-card__info
+       .ft-account-card__header
+         .ft-account-card__name
+         .ft-account-card__currency-tag
+       .ft-account-card__description
+       .ft-account-card__owner
+         .ft-account-card__owner-icon  (material-symbols-outlined)
+         .ft-account-card__owner-name
+     .ft-account-card__balance
+       .ft-account-card__balance-main  [.ft-account-card__balance-main--negative]
+       .ft-account-card__balance-converted
+   ============================================================ */
+
+/* ── Root ─────────────────────────────────────────────── */
+
+.ft-account-card {
+  align-items: center;
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  gap: calc(var(--ft-spacing) * 1.5);
+  padding: calc(var(--ft-spacing) * 2);
+  transition: border-color 150ms ease;
+}
+
+.ft-account-card:hover {
+  border-color: var(--ft-color-border-strong);
+}
+
+/* ── Icon Wrap ────────────────────────────────────────── */
+
+.ft-account-card__icon-wrap {
+  align-items: center;
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-shrink: 0;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.ft-account-card__icon {
+  font-size: 20px;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+
+/* Icon color + bg per account type */
+
+.ft-account-card[data-type="Bank Account"]  .ft-account-card__icon-wrap { background: var(--ft-color-accent-10);  }
+.ft-account-card[data-type="Bank Account"]  .ft-account-card__icon      { color: var(--ft-color-accent);         }
+
+.ft-account-card[data-type="Credit Card"]   .ft-account-card__icon-wrap { background: var(--ft-color-warning-10); }
+.ft-account-card[data-type="Credit Card"]   .ft-account-card__icon      { color: var(--ft-color-warning);         }
+
+.ft-account-card[data-type="Savings"]       .ft-account-card__icon-wrap { background: var(--ft-color-success-10); }
+.ft-account-card[data-type="Savings"]       .ft-account-card__icon      { color: var(--ft-color-success);         }
+
+.ft-account-card[data-type="Crypto Wallet"] .ft-account-card__icon-wrap { background: var(--ft-color-warning-10); }
+.ft-account-card[data-type="Crypto Wallet"] .ft-account-card__icon      { color: var(--ft-color-warning);         }
+
+.ft-account-card[data-type="Money Bag"]     .ft-account-card__icon-wrap { background: var(--ft-color-success-10); }
+.ft-account-card[data-type="Money Bag"]     .ft-account-card__icon      { color: var(--ft-color-success);         }
+
+/* ── Info Section ─────────────────────────────────────── */
+
+.ft-account-card__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* enable ellipsis on children */
+}
+
+.ft-account-card__header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ft-account-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ft-account-card__currency-tag {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.ft-account-card__description {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-account-card__owner {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.ft-account-card__owner-icon {
+  color: var(--ft-color-text-muted);
+  flex-shrink: 0;
+  font-size: 13px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  height: 13px;
+  line-height: 1;
+  width: 13px;
+}
+
+.ft-account-card__owner-name {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+}
+
+/* ── Balance Section ──────────────────────────────────── */
+
+.ft-account-card__balance {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 3px;
+  text-align: right;
+}
+
+.ft-account-card__balance-main {
+  color: var(--ft-color-text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.ft-account-card__balance-main--negative {
+  color: var(--ft-color-danger);
+}
+
+.ft-account-card__balance-converted {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}

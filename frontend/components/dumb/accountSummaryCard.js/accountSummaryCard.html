@@ -1,1 +1,194 @@
-<!-- This is just a preview of accountSummaryCard -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Summary Card — Preview</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+
+    <!-- Global styles -->
+    <link rel="stylesheet" href="../../../styles/styles.css" />
+    <!-- Component styles -->
+    <link rel="stylesheet" href="accountSummaryCard.css" />
+
+    <style>
+      body {
+        background: var(--ft-color-surface-alt);
+        min-height: 100vh;
+        padding: 32px;
+      }
+
+      .preview-header {
+        color: var(--ft-color-text-muted);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.8px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+      }
+
+      .preview-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        max-width: 1100px;
+      }
+
+      .preview-label {
+        color: var(--ft-color-text-muted);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.6px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body class="ft-theme">
+
+    <p class="preview-header">accountSummaryCard — Component Preview</p>
+
+    <div class="preview-grid">
+
+      <!-- 1. Bank Account (MXN) -->
+      <!-- API: total_balance = 1330533 cents → $13,305.33 MXN | default USD → ≈ $665.27 USD -->
+      <div>
+        <p class="preview-label">Bank Account · MXN</p>
+        <article class="ft-account-card" data-type="Bank Account">
+          <div class="ft-account-card__icon-wrap">
+            <span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+          </div>
+          <div class="ft-account-card__info">
+            <div class="ft-account-card__header">
+              <span class="ft-account-card__name">BBVA</span>
+              <span class="ft-account-card__currency-tag">$ MXN</span>
+            </div>
+            <p class="ft-account-card__description">Card: 4152313657495730  CLABE: 012580004734123181</p>
+            <div class="ft-account-card__owner">
+              <span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+              <span class="ft-account-card__owner-name">Esteban Villasana</span>
+            </div>
+          </div>
+          <div class="ft-account-card__balance">
+            <span class="ft-account-card__balance-main">$13,305.33</span>
+            <span class="ft-account-card__balance-converted">≈ $665.27 USD</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- 2. Credit Card (USD) — negative balance -->
+      <!-- API: total_balance = -450000 cents → -$4,500.00 USD | same as default → no conversion -->
+      <div>
+        <p class="preview-label">Credit Card · USD (negative)</p>
+        <article class="ft-account-card" data-type="Credit Card">
+          <div class="ft-account-card__icon-wrap">
+            <span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">credit_card</span>
+          </div>
+          <div class="ft-account-card__info">
+            <div class="ft-account-card__header">
+              <span class="ft-account-card__name">HSBC Platinum</span>
+              <span class="ft-account-card__currency-tag">$ USD</span>
+            </div>
+            <p class="ft-account-card__description">Card: 4111 1111 1111 1111 · Expires 09/27</p>
+            <div class="ft-account-card__owner">
+              <span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+              <span class="ft-account-card__owner-name">Esteban Villasana</span>
+            </div>
+          </div>
+          <div class="ft-account-card__balance">
+            <span class="ft-account-card__balance-main ft-account-card__balance-main--negative">-$4,500.00</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- 3. Savings (EUR) -->
+      <!-- API: total_balance = 5000000 cents → €50,000.00 EUR | ≈ $54,500.00 USD -->
+      <div>
+        <p class="preview-label">Savings · EUR</p>
+        <article class="ft-account-card" data-type="Savings">
+          <div class="ft-account-card__icon-wrap">
+            <span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">savings</span>
+          </div>
+          <div class="ft-account-card__info">
+            <div class="ft-account-card__header">
+              <span class="ft-account-card__name">Cetelem Savings</span>
+              <span class="ft-account-card__currency-tag">€ EUR</span>
+            </div>
+            <p class="ft-account-card__description">IBAN: DE89 3704 0044 0532 0130 00</p>
+            <div class="ft-account-card__owner">
+              <span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+              <span class="ft-account-card__owner-name">Esteban Villasana</span>
+            </div>
+          </div>
+          <div class="ft-account-card__balance">
+            <span class="ft-account-card__balance-main">€50,000.00</span>
+            <span class="ft-account-card__balance-converted">≈ $54,500.00 USD</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- 4. Crypto Wallet (USD) -->
+      <!-- API: total_balance = 275000 cents → $2,750.00 USD | same as default → no conversion -->
+      <div>
+        <p class="preview-label">Crypto Wallet · USD</p>
+        <article class="ft-account-card" data-type="Crypto Wallet">
+          <div class="ft-account-card__icon-wrap">
+            <span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">currency_bitcoin</span>
+          </div>
+          <div class="ft-account-card__info">
+            <div class="ft-account-card__header">
+              <span class="ft-account-card__name">Trezor Wallet</span>
+              <span class="ft-account-card__currency-tag">$ USD</span>
+            </div>
+            <p class="ft-account-card__description">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</p>
+            <div class="ft-account-card__owner">
+              <span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+              <span class="ft-account-card__owner-name">Esteban Villasana</span>
+            </div>
+          </div>
+          <div class="ft-account-card__balance">
+            <span class="ft-account-card__balance-main">$2,750.00</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- 5. Money Bag (GEL) -->
+      <!-- API: total_balance = 200000 cents → ₾2,000.00 GEL | ≈ $730.00 USD -->
+      <div>
+        <p class="preview-label">Money Bag · GEL</p>
+        <article class="ft-account-card" data-type="Money Bag">
+          <div class="ft-account-card__icon-wrap">
+            <span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">account_balance_wallet</span>
+          </div>
+          <div class="ft-account-card__info">
+            <div class="ft-account-card__header">
+              <span class="ft-account-card__name">Travel Cash</span>
+              <span class="ft-account-card__currency-tag">₾ GEL</span>
+            </div>
+            <p class="ft-account-card__description">Physical cash · Georgian Lari</p>
+            <div class="ft-account-card__owner">
+              <span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+              <span class="ft-account-card__owner-name">Esteban Villasana</span>
+            </div>
+          </div>
+          <div class="ft-account-card__balance">
+            <span class="ft-account-card__balance-main">₾2,000.00</span>
+            <span class="ft-account-card__balance-converted">≈ $730.00 USD</span>
+          </div>
+        </article>
+      </div>
+
+    </div>
+  </body>
+</html>
