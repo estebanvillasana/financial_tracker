@@ -17,7 +17,12 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
     }
 
     while True:
-        render_screen(menu_items, "0", render_settings_body(config, active_action))
+        render_screen(
+            menu_items,
+            "0",
+            render_settings_body(config, active_action),
+            interaction_area="content",
+        )
         pressed_key = read_key()
 
         if pressed_key == "UP":
@@ -48,6 +53,7 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 "0",
                 render_settings_body(config, active_action),
                 action_labels.get(choice, "Action"),
+                interaction_area="content",
             )
 
         if choice == "1":
@@ -56,8 +62,13 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 "0",
                 "API Base URL",
                 config.api_base_url,
-                body_builder=lambda: render_settings_body(config, active_action),
+                body_builder=lambda: render_settings_body(
+                    config,
+                    active_action,
+                    show_action_cursor=False,
+                ),
                 render_screen=render_screen,
+                interaction_area="content",
             )
             if new_url is not None:
                 config.api_base_url = new_url.strip()
@@ -68,8 +79,13 @@ def settings_loop(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 "0",
                 "Main Currency",
                 config.main_currency,
-                body_builder=lambda: render_settings_body(config, active_action),
+                body_builder=lambda: render_settings_body(
+                    config,
+                    active_action,
+                    show_action_cursor=False,
+                ),
                 render_screen=render_screen,
+                interaction_area="content",
             )
             if new_currency is not None:
                 config.main_currency = new_currency.strip().lower()

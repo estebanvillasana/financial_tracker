@@ -4,6 +4,7 @@ import time
 from contextlib import contextmanager
 from typing import Any
 from typing import Iterable
+from typing import Literal
 
 from utils.rich_ui import build_rich_layout, render_menu_text, render_plain_screen
 
@@ -13,6 +14,8 @@ TOP_MARGIN_ROWS = 1
 
 _LIVE: Any | None = None
 _CONSOLE: Any | None = None
+
+InteractionArea = Literal["menu", "content"]
 
 
 def _start_live() -> None:
@@ -68,8 +71,9 @@ def render_screen(
     active_key: str,
     body: str,
     flash_message: str | None = None,
+    interaction_area: InteractionArea = "menu",
 ) -> None:
-    menu_text = render_menu_text(menu_items, active_key)
+    menu_text = render_menu_text(menu_items, active_key, interaction_area=interaction_area)
     try:
         layout = build_rich_layout(
             menu_items,
@@ -77,6 +81,7 @@ def render_screen(
             body,
             flash_message,
             top_margin_rows=TOP_MARGIN_ROWS,
+            interaction_area=interaction_area,
         )
         if _LIVE is not None:
             _LIVE.update(layout, refresh=True)
@@ -102,7 +107,14 @@ def flash_action(
     body: str,
     action_label: str,
     duration_seconds: float = 0.09,
+    interaction_area: InteractionArea = "menu",
 ) -> None:
     """Show a short execution flash so users get immediate feedback after Enter."""
-    render_screen(menu_items, active_key, body, flash_message=action_label)
+    render_screen(
+        menu_items,
+        active_key,
+        body,
+        flash_message=action_label,
+        interaction_area=interaction_area,
+    )
     time.sleep(duration_seconds)

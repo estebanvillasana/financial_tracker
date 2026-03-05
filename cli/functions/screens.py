@@ -1,18 +1,27 @@
 from __future__ import annotations
 
 from config import CliConfig
+from utils.rich_ui import render_selectable_list
 
 
-def render_settings_body(config: CliConfig, active_action: str = "9") -> str:
+def render_settings_body(
+    config: CliConfig,
+    active_action: str = "9",
+    show_action_cursor: bool = True,
+) -> str:
     actions = [
         ("1", "Change API Base URL"),
         ("2", "Change Main Currency"),
         ("9", "Back"),
     ]
-    action_lines = []
-    for key, label in actions:
-        prefix = ">" if key == active_action else " "
-        action_lines.append(f" {prefix} {key}. {label}")
+
+    # The list helper keeps cursor rules consistent across all future content screens.
+    action_lines = render_selectable_list(
+        actions,
+        active_action,
+        show_cursor=show_action_cursor,
+        indent=1,
+    )
 
     return (
         "Settings\n"
@@ -21,7 +30,7 @@ def render_settings_body(config: CliConfig, active_action: str = "9") -> str:
         f"Main Currency: {config.main_currency}\n"
         "\n"
         "Actions\n"
-        f"{'\n'.join(action_lines)}\n"
+        f"{action_lines}\n"
         "\n"
         "Use Up/Down + Enter, or press 1/2/9."
     )

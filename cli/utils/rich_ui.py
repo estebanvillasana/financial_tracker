@@ -2,23 +2,61 @@ from __future__ import annotations
 
 import shutil
 from typing import Iterable
+from typing import Literal
 
 
-def render_menu_text(menu_items: Iterable[tuple[str, str]], active_key: str) -> str:
-    lines = ["Navigation", ""]
-    for key, label in menu_items:
-        prefix = ">" if key == active_key else " "
-        lines.append(f"{prefix} {key}. {label}")
+InteractionArea = Literal["menu", "content"]
+
+
+def render_selectable_list(
+    items: Iterable[tuple[str, str]],
+    active_key: str,
+    show_cursor: bool = True,
+    indent: int = 1,
+) -> str:
+    """Render a selectable list where cursor ownership can be toggled per interaction area.
+
+    When `show_cursor` is False, no `>` marker is emitted. This keeps the cursor marker
+    exclusive to whichever area currently owns input focus (menu/content/input).
+    """
+    pad = " " * max(0, indent)
+    lines = []
+    for key, label in items:
+        prefix = ">" if show_cursor and key == active_key else " "
+        lines.append(f"{pad}{prefix} {key}. {label}")
     return "\n".join(lines)
 
 
-def _build_rich_menu_text(menu_items: Iterable[tuple[str, str]], active_key: str):
+def render_menu_text(
+    menu_items: Iterable[tuple[str, str]],
+    active_key: str,
+    interaction_area: InteractionArea = "menu",
+) -> str:
+    lines = ["Navigation", ""]
+    show_menu_cursor = interaction_area == "menu"
+    lines.append(
+        render_selectable_list(
+            menu_items,
+            active_key,
+            show_cursor=show_menu_cursor,
+            indent=0,
+        )
+    )
+    return "\n".join(lines)
+
+
+def _build_rich_menu_text(
+    menu_items: Iterable[tuple[str, str]],
+    active_key: str,
+    interaction_area: InteractionArea,
+):
     from rich.text import Text
 
     rich_text = Text("Navigation\n\n")
+    show_menu_cursor = interaction_area == "menu"
     menu_list = list(menu_items)
     for index, (key, label) in enumerate(menu_list):
-        prefix = ">" if key == active_key else " "
+        prefix = ">" if show_menu_cursor and key == active_key else " "
         style = "bold yellow" if key == active_key else None
         rich_text.append(f"{prefix} {key}. {label}", style=style)
         if index < len(menu_list) - 1:
@@ -47,6 +85,7 @@ def build_rich_layout(
     body: str,
     flash_message: str | None = None,
     top_margin_rows: int = 1,
+    interaction_area: InteractionArea = "menu",
 ):
     from rich import box
     from rich.layout import Layout
@@ -77,7 +116,7 @@ def build_rich_layout(
     content_title = "Screen" if not flash_message else f"Screen | Executed: {flash_message}"
 
     menu_panel = Panel(
-        _build_rich_menu_text(menu_items, active_key),
+        _build_rich_menu_text(menu_items, active_key, interaction_area),
         title="Financial Tracker",
         border_style=menu_border_style,
         box=box.ASCII,

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from typing import Callable
+from typing import Literal
 
 from utils.navigation import read_key
 
 
-RenderScreenFn = Callable[[list[tuple[str, str]], str, str], None]
+RenderScreenFn = Callable[..., None]
 BodyBuilderFn = Callable[[], str]
+InteractionArea = Literal["menu", "content"]
 
 
 def prompt_inline_text(
@@ -16,6 +18,7 @@ def prompt_inline_text(
     initial_value: str,
     body_builder: BodyBuilderFn,
     render_screen: RenderScreenFn,
+    interaction_area: InteractionArea = "menu",
 ) -> str | None:
     """Collect text input inside the app layout without leaving the live screen."""
     typed_value = initial_value
@@ -28,7 +31,12 @@ def prompt_inline_text(
             + f"> {label}: {typed_value}_\n"
             + "Enter to confirm, Esc to cancel, Backspace to edit."
         )
-        render_screen(menu_items, menu_active_key, body)
+        render_screen(
+            menu_items,
+            menu_active_key,
+            body,
+            interaction_area=interaction_area,
+        )
         pressed_key = read_key()
 
         if pressed_key == "ENTER":
