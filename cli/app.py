@@ -12,6 +12,7 @@ from functions.screens import (
 	render_settings_body,
 )
 from functions.settings import settings_loop
+from utils.navigation import read_key
 from utils.render import app_terminal_session, clear_screen, render_screen
 
 
@@ -38,6 +39,7 @@ def run() -> None:
 
 	config = load_config()
 	active_key = "1"
+	menu_keys = [key for key, _ in MENU_ITEMS]
 
 	with app_terminal_session():
 		while True:
@@ -48,16 +50,34 @@ def run() -> None:
 				body = render_add_movement_body()
 
 			render_screen(MENU_ITEMS, active_key, body)
+			pressed_key = read_key()
 
-			choice = typer.prompt("Select option", default=active_key)
+			if pressed_key == "UP":
+				current_index = menu_keys.index(active_key)
+				active_key = menu_keys[(current_index - 1) % len(menu_keys)]
+				continue
+
+			if pressed_key == "DOWN":
+				current_index = menu_keys.index(active_key)
+				active_key = menu_keys[(current_index + 1) % len(menu_keys)]
+				continue
+
+			if pressed_key == "ENTER":
+				choice = active_key
+			elif pressed_key in menu_keys:
+				choice = pressed_key
+				active_key = choice
+			elif pressed_key == "ESC":
+				choice = "9"
+			else:
+				continue
+
 			if choice == "9":
 				clear_screen()
 				return
 			if choice in {"0", "1", "2"}:
 				active_key = choice
 				_route_screen(active_key, config)
-			else:
-				typer.pause("Invalid option. Press any key to continue.")
 
 
 def main() -> None:
