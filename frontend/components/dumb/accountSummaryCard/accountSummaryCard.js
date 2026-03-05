@@ -92,6 +92,7 @@ const AccountSummaryCard = (() => {
 		const totalBalance = account.total_balance ?? 0;
 		const balanceMain = _formatMoney(totalBalance, currencyCode);
 		const isNegative = Number(totalBalance) < 0;
+		const isUpdated = account.updated === 1 || account.updated === true;
 
 		const convertedTotal = options.convertedTotalCents;
 		const convertedCurrency = _normalizeCurrency(options.convertedCurrency || defaultCurrency);
@@ -106,6 +107,9 @@ const AccountSummaryCard = (() => {
 
 		return `
 			<article class="ft-account-card" data-type="${_escapeHtml(type)}" data-account-id="${_escapeHtml(account.id ?? '')}">
+				<div class="ft-account-card__checkbox-wrap" aria-hidden="true">
+					<input type="checkbox" class="ft-account-card__checkbox" tabindex="-1"${isUpdated ? ' checked' : ''}>
+				</div>
 				<div class="ft-account-card__icon-wrap">
 					<span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">${icon}</span>
 				</div>

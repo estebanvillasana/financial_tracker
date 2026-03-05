@@ -4,18 +4,22 @@
 
    Structure:
    .ft-account-card[data-type="Bank Account | Credit Card | Savings | Crypto Wallet | Money Bag"]
+     .ft-account-card__checkbox-wrap    (aria-hidden, visual status indicator)
+       input.ft-account-card__checkbox  (checked = account.updated, pointer-events: none)
      .ft-account-card__icon-wrap
-       .ft-account-card__icon   (material-symbols-outlined)
+       .ft-account-card__icon           (material-symbols-outlined)
      .ft-account-card__info
        .ft-account-card__header
          .ft-account-card__name
-         .ft-account-card__currency-tag
+         .ft-account-card__type-tag
+           .ft-account-card__type-dot
        .ft-account-card__description
        .ft-account-card__owner
-         .ft-account-card__owner-icon  (material-symbols-outlined)
+         .ft-account-card__owner-icon   (material-symbols-outlined)
          .ft-account-card__owner-name
      .ft-account-card__balance
-       .ft-account-card__balance-main  [.ft-account-card__balance-main--negative]
+       .ft-account-card__currency-tag
+       .ft-account-card__balance-main   [.ft-account-card__balance-main--negative]
        .ft-account-card__balance-converted
    ============================================================ */
 
@@ -34,6 +38,48 @@
 
 .ft-account-card:hover {
   border-color: var(--ft-color-border-strong);
+}
+
+/* ── Checkbox (updated status indicator) ─────────────── */
+
+/* Wraps the checkbox and aligns it to the top of the flex row. */
+.ft-account-card__checkbox-wrap {
+  align-self: flex-start;
+  flex-shrink: 0;
+  padding-top: 3px; /* optical alignment with the top of the icon */
+}
+
+.ft-account-card__checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: 1.5px solid var(--ft-color-border-strong);
+  border-radius: 3px;
+  cursor: default;
+  display: block;
+  height: 14px;
+  pointer-events: none; /* read-only visual indicator, not interactive */
+  position: relative;
+  width: 14px;
+}
+
+.ft-account-card__checkbox:checked {
+  background: var(--ft-color-accent);
+  border-color: var(--ft-color-accent);
+}
+
+/* Checkmark drawn as a rotated L-shape using a pseudo-element. */
+.ft-account-card__checkbox:checked::after {
+  border: 1.5px solid #fff;
+  border-right: none;
+  border-top: none;
+  content: '';
+  height: 5px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transform: rotate(-45deg);
+  width: 8px;
 }
 
 /* ── Icon Wrap ────────────────────────────────────────── */
