@@ -69,6 +69,7 @@ class BankAccountResponse(BaseModel):
     currency:        str
     owner:           str
     active:          int
+    updated:         int
     initial_balance: int
     net_movements:   int
     total_balance:   int

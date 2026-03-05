@@ -9,6 +9,7 @@ SELECT
     ba.currency,
     ba.owner,
     ba.active,
+    ba.updated,
     ba.initial_balance,
     COALESCE(COUNT(m.id), 0) AS net_movements,
     ba.initial_balance + COALESCE(SUM(
@@ -24,7 +25,7 @@ LEFT JOIN movements m
    AND m.active = 1
 GROUP BY
     ba.id, ba.account, ba.description, ba.type,
-    ba.currency, ba.owner, ba.active, ba.initial_balance
+    ba.currency, ba.owner, ba.active, ba.updated, ba.initial_balance
 ORDER BY
     ba.active DESC,
     ba.owner,
