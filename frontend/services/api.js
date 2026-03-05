@@ -1,3 +1,11 @@
+/**
+ * Index (Barrel) file for API services.
+ * Use this to import any API resource in your modules.
+ *
+ * Example:
+ * import { movements, bankAccounts } from './services/api.js';
+ */
+
 export { ApiError, request, buildUrl } from './http.js';
 export { bankAccounts } from './bankAccounts.js';
 export { categories } from './categories.js';

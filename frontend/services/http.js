@@ -1,14 +1,23 @@
 import { appConfig } from '../config.js';
 
+/**
+ * Custom error class for API-related failures
+ */
 class ApiError extends Error {
   constructor(message, { status, data }) {
     super(message);
     this.name = 'ApiError';
-    this.status = status;
-    this.data = data;
+    this.status = status; // HTTP status code (0 for network errors)
+    this.data = data;     // Parsed response body
   }
 }
 
+/**
+ * Builds a full URL with query parameters
+ * @param {string} path - The API endpoint path
+ * @param {Object} query - Optional query parameters
+ * @returns {string} - The complete URL
+ */
 function buildUrl(path, query) {
   const baseUrl = appConfig.apiBaseUrl.replace(/\/+$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -28,6 +37,11 @@ function buildUrl(path, query) {
   return url.toString();
 }
 
+/**
+ * Parses the fetch response based on content type
+ * @param {Response} response - The fetch Response object
+ * @returns {Promise<any>} - Parsed JSON, text, or null
+ */
 async function parseResponse(response) {
   if (response.status === 204) return null;
 
@@ -47,6 +61,13 @@ async function parseResponse(response) {
   return text;
 }
 
+/**
+ * Core fetch wrapper with error handling and JSON support
+ * @param {string} path - API endpoint
+ * @param {Object} options - Request options (method, query, body, headers)
+ * @returns {Promise<any>} - Parsed response data
+ * @throws {ApiError}
+ */
 async function request(path, { method = 'GET', query, body, headers } = {}) {
   const url = buildUrl(path, query);
   const requestHeaders = {
@@ -65,12 +86,14 @@ async function request(path, { method = 'GET', query, body, headers } = {}) {
   try {
     response = await fetch(url, options);
   } catch (error) {
+    // Handle network errors (e.g., CORS, offline, DNS)
     throw new ApiError(error?.message || 'Network error', { status: 0, data: null });
   }
 
   const data = await parseResponse(response);
 
   if (!response.ok) {
+    // Attempt to extract error message from API response
     const message =
       data?.detail?.[0]?.msg ||
       data?.message ||
