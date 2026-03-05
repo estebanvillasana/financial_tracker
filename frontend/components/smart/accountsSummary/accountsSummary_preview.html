@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AccountsSummary — Component Preview</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+
+    <!-- Global + component styles -->
+    <link rel="stylesheet" href="../../../styles/styles.css" />
+    <link rel="stylesheet" href="../../dumb/accountSummaryCard/accountSummaryCard.css" />
+    <link rel="stylesheet" href="../../dumb/filterBar/filterBar.css" />
+    <link rel="stylesheet" href="../../dumb/pagination/pagination.css" />
+    <link rel="stylesheet" href="./accountsSummary.css" />
+
+    <style>
+      /* ── Preview page shell ──────────────────────────────────────── */
+      :root {
+        --preview-font:        'Onest', sans-serif;
+        --preview-mono:        'IBM Plex Mono', monospace;
+        --preview-accent:      #2196f3;
+        --preview-accent-glow: rgba(33, 150, 243, 0.15);
+        --preview-success:     #4caf50;
+        --preview-border:      rgba(255, 255, 255, 0.08);
+        --preview-surface:     rgba(255, 255, 255, 0.03);
+        --preview-muted:       #8a9bb0;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        background:  #1a2130;
+        color:       #e8edf3;
+        font-family: var(--preview-font);
+        line-height: 1.6;
+        margin:      0;
+        min-height:  100vh;
+      }
+
+      /* Keep component text using IBM Plex Sans */
+      .ft-accounts-summary,
+      .ft-account-card,
+      .ft-filter-bar,
+      .ft-pagination {
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+
+      /* ── Top bar ─────────────────────────────────────────────────── */
+      .pv-topbar {
+        align-items:      center;
+        background:       rgba(26, 33, 48, 0.85);
+        backdrop-filter:  blur(12px);
+        border-bottom:    1px solid var(--preview-border);
+        display:          flex;
+        justify-content:  space-between;
+        padding:          0 32px;
+        height:           52px;
+        position:         sticky;
+        top:              0;
+        z-index:          100;
+      }
+
+      .pv-topbar__breadcrumb {
+        align-items:  center;
+        display:      flex;
+        font-size:    13px;
+        gap:          6px;
+      }
+
+      .pv-topbar__seg {
+        color: var(--preview-muted);
+      }
+
+      .pv-topbar__seg--name {
+        color:       #e8edf3;
+        font-weight: 600;
+      }
+
+      .pv-topbar__sep {
+        color:     var(--preview-muted);
+        font-size: 16px;
+        opacity:   0.4;
+      }
+
+      .pv-topbar__badges {
+        align-items: center;
+        display:     flex;
+        gap:         8px;
+      }
+
+      .pv-badge {
+        align-items:   center;
+        border:        1px solid var(--preview-border);
+        border-radius: 4px;
+        display:       inline-flex;
+        font-family:   var(--preview-mono);
+        font-size:     10px;
+        font-weight:   500;
+        gap:           5px;
+        letter-spacing: 0.5px;
+        padding:       3px 8px;
+        text-transform: uppercase;
+      }
+
+      .pv-badge--live {
+        border-color: rgba(76, 175, 80, 0.4);
+        color:        var(--preview-success);
+      }
+
+      .pv-badge--smart {
+        color: var(--preview-muted);
+      }
+
+      .pv-badge__dot {
+        animation:    pv-pulse 2s ease-in-out infinite;
+        background:   var(--preview-success);
+        border-radius: 50%;
+        height:       6px;
+        width:        6px;
+      }
+
+      @keyframes pv-pulse {
+        0%, 100% { opacity: 1;    transform: scale(1);    }
+        50%       { opacity: 0.5; transform: scale(0.85); }
+      }
+
+      /* ── Page content ────────────────────────────────────────────── */
+      .pv-content {
+        margin:    0 auto;
+        max-width: 1000px;
+        padding:   48px 32px 80px;
+      }
+
+      /* ── Hero header ─────────────────────────────────────────────── */
+      .pv-hero {
+        border-bottom: 1px solid var(--preview-border);
+        margin-bottom: 56px;
+        padding-bottom: 40px;
+      }
+
+      .pv-hero__eyebrow {
+        color:         var(--preview-accent);
+        font-family:   var(--preview-mono);
+        font-size:     11px;
+        font-weight:   500;
+        letter-spacing: 1.2px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+      }
+
+      .pv-hero__title {
+        font-size:   42px;
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        line-height: 1.05;
+        margin:      0 0 16px;
+      }
+
+      .pv-hero__title em {
+        background:          linear-gradient(135deg, var(--preview-accent) 0%, #64b5f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip:     text;
+        font-style:          normal;
+      }
+
+      .pv-hero__desc {
+        color:     var(--preview-muted);
+        font-size: 15px;
+        margin:    0 0 24px;
+        max-width: 560px;
+      }
+
+      .pv-hero__pills {
+        display:   flex;
+        flex-wrap: wrap;
+        gap:       8px;
+      }
+
+      .pv-pill {
+        align-items:   center;
+        background:    var(--preview-surface);
+        border:        1px solid var(--preview-border);
+        border-radius: 20px;
+        color:         var(--preview-muted);
+        display:       inline-flex;
+        font-family:   var(--preview-mono);
+        font-size:     11px;
+        gap:           6px;
+        padding:       4px 12px;
+      }
+
+      .pv-pill .material-symbols-outlined {
+        font-size: 13px;
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+      }
+
+      /* ── Section ─────────────────────────────────────────────────── */
+      .pv-section {
+        margin-bottom: 64px;
+      }
+
+      .pv-section__header {
+        align-items:   baseline;
+        border-left:   2px solid var(--preview-accent);
+        display:       flex;
+        gap:           12px;
+        margin-bottom: 20px;
+        padding-left:  14px;
+      }
+
+      .pv-section__title {
+        font-size:   13px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        margin:      0;
+        text-transform: uppercase;
+      }
+
+      .pv-section__sub {
+        color:     var(--preview-muted);
+        font-family: var(--preview-mono);
+        font-size: 11px;
+        flex:      1;
+      }
+
+      .pv-section__tag {
+        background:    var(--preview-accent-glow);
+        border:        1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 3px;
+        color:         var(--preview-accent);
+        font-family:   var(--preview-mono);
+        font-size:     10px;
+        font-weight:   500;
+        letter-spacing: 0.4px;
+        padding:       2px 6px;
+        text-transform: uppercase;
+      }
+
+      /* ── Demo frame (wraps each live widget) ─────────────────────── */
+      .pv-demo {
+        border:        1px solid var(--preview-border);
+        border-radius: 12px;
+        overflow:      hidden;
+      }
+
+      .pv-demo__bar {
+        align-items:    center;
+        background:     rgba(255, 255, 255, 0.025);
+        border-bottom:  1px solid var(--preview-border);
+        display:        flex;
+        gap:            10px;
+        justify-content: space-between;
+        padding:        10px 16px;
+      }
+
+      .pv-demo__bar-left {
+        align-items: center;
+        display:     flex;
+        gap:         10px;
+      }
+
+      .pv-demo__dots {
+        display: flex;
+        gap:     6px;
+      }
+
+      .pv-demo__dot {
+        border-radius: 50%;
+        height:        10px;
+        width:         10px;
+      }
+      .pv-demo__dot:nth-child(1) { background: #ff5f57; }
+      .pv-demo__dot:nth-child(2) { background: #febc2e; }
+      .pv-demo__dot:nth-child(3) { background: #28c840; }
+
+      .pv-demo__label {
+        color:      var(--preview-muted);
+        font-family: var(--preview-mono);
+        font-size:  11px;
+      }
+
+      .pv-demo__props {
+        align-items: center;
+        display:     flex;
+        gap:         6px;
+      }
+
+      .pv-demo__prop {
+        background:   rgba(255, 255, 255, 0.05);
+        border:       1px solid var(--preview-border);
+        border-radius: 3px;
+        color:        var(--preview-muted);
+        font-family:  var(--preview-mono);
+        font-size:    10px;
+        padding:      2px 7px;
+      }
+
+      .pv-demo__prop span {
+        color: #64b5f6;
+      }
+
+      .pv-demo__body {
+        background: #1f2836;
+        padding:    24px;
+      }
+
+      /* ── States bento grid ───────────────────────────────────────── */
+      .pv-bento {
+        display:               grid;
+        gap:                   12px;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows:    auto auto;
+      }
+
+      .pv-bento__cell {
+        background:    rgba(255, 255, 255, 0.02);
+        border:        1px solid var(--preview-border);
+        border-radius: 10px;
+        overflow:      hidden;
+      }
+
+      .pv-bento__cell--wide {
+        grid-column: 1 / -1;
+      }
+
+      .pv-bento__label {
+        align-items:    center;
+        background:     rgba(255, 255, 255, 0.03);
+        border-bottom:  1px solid var(--preview-border);
+        display:        flex;
+        gap:            8px;
+        padding:        8px 14px;
+      }
+
+      .pv-bento__label-dot {
+        background:    var(--preview-muted);
+        border-radius: 50%;
+        height:        6px;
+        opacity:       0.5;
+        width:         6px;
+      }
+
+      .pv-bento__label-text {
+        color:       var(--preview-muted);
+        font-family: var(--preview-mono);
+        font-size:   10px;
+        font-weight: 500;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+      }
+
+      .pv-bento__content {
+        padding: 20px;
+      }
+
+      /* Tint the background of the error cell */
+      .pv-bento__cell--error .pv-bento__content {
+        background: rgba(244, 67, 54, 0.03);
+      }
+      .pv-bento__cell--error .pv-bento__label {
+        border-bottom-color: rgba(244, 67, 54, 0.15);
+      }
+      .pv-bento__cell--error .pv-bento__label-dot {
+        background: #f44336;
+        opacity:    0.7;
+      }
+
+      /* ── Usage block ─────────────────────────────────────────────── */
+      .pv-code-block {
+        background:    rgba(255, 255, 255, 0.025);
+        border:        1px solid var(--preview-border);
+        border-radius: 10px;
+        overflow:      hidden;
+      }
+
+      .pv-code-block__bar {
+        align-items:    center;
+        background:     rgba(255, 255, 255, 0.03);
+        border-bottom:  1px solid var(--preview-border);
+        display:        flex;
+        justify-content: space-between;
+        padding:        10px 16px;
+      }
+
+      .pv-code-block__title {
+        color:       var(--preview-muted);
+        font-family: var(--preview-mono);
+        font-size:   11px;
+        font-weight: 500;
+      }
+
+      .pv-code-block__lang {
+        background:    rgba(33, 150, 243, 0.1);
+        border:        1px solid rgba(33, 150, 243, 0.2);
+        border-radius: 3px;
+        color:         #64b5f6;
+        font-family:   var(--preview-mono);
+        font-size:     10px;
+        padding:       2px 6px;
+      }
+
+      .pv-code-block__body {
+        padding: 20px 22px;
+      }
+
+      pre {
+        font-family: var(--preview-mono);
+        font-size:   13px;
+        line-height: 1.7;
+        margin:      0;
+        white-space: pre-wrap;
+      }
+
+      .tok-comment  { color: #546e7a; }
+      .tok-keyword  { color: #64b5f6; }
+      .tok-string   { color: #a5d6a7; }
+      .tok-fn       { color: #90caf9; }
+      .tok-num      { color: #ffcc80; }
+      .tok-prop     { color: #e8edf3; }
+    </style>
+  </head>
+
+  <body class="ft-theme">
+
+    <!-- ── Top bar ──────────────────────────────────────────────────── -->
+    <header class="pv-topbar">
+      <div class="pv-topbar__breadcrumb">
+        <span class="pv-topbar__seg">components</span>
+        <span class="pv-topbar__sep">/</span>
+        <span class="pv-topbar__seg">smart</span>
+        <span class="pv-topbar__sep">/</span>
+        <span class="pv-topbar__seg--name">AccountsSummary</span>
+      </div>
+      <div class="pv-topbar__badges">
+        <span class="pv-badge pv-badge--live">
+          <span class="pv-badge__dot"></span>
+          live
+        </span>
+        <span class="pv-badge pv-badge--smart">smart component</span>
+        <span class="pv-badge pv-badge--smart">fetch mocked</span>
+      </div>
+    </header>
+
+    <div class="pv-content">
+
+      <!-- ── Hero ───────────────────────────────────────────────────── -->
+      <section class="pv-hero">
+        <p class="pv-hero__eyebrow">Smart Component · Accounts Summary</p>
+        <h1 class="pv-hero__title">
+          Filter. Page.<br><em>Stay in control.</em>
+        </h1>
+        <p class="pv-hero__desc">
+          Fetches all active bank accounts once, then filters and paginates entirely client-side.
+          Cards fetch FX conversion rates in parallel per page. All API calls are intercepted
+          with mock data in this preview — no server required.
+        </p>
+        <div class="pv-hero__pills">
+          <span class="pv-pill">
+            <span class="material-symbols-outlined">account_balance</span>
+            7 mock accounts
+          </span>
+          <span class="pv-pill">
+            <span class="material-symbols-outlined">currency_exchange</span>
+            MXN · USD · EUR · GEL
+          </span>
+          <span class="pv-pill">
+            <span class="material-symbols-outlined">person</span>
+            2 owners
+          </span>
+          <span class="pv-pill">
+            <span class="material-symbols-outlined">check_box</span>
+            updated field on cards
+          </span>
+          <span class="pv-pill">
+            <span class="material-symbols-outlined">hourglass_top</span>
+            600ms skeleton · 300ms FX delay
+          </span>
+        </div>
+      </section>
+
+      <!-- ── Live demo: 5 per page ──────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Interactive demo</h2>
+          <span class="pv-section__sub">pageSize: 5 · columns: 2 · defaultCurrency: USD</span>
+          <span class="pv-section__tag">Live</span>
+        </div>
+        <div class="pv-demo">
+          <div class="pv-demo__bar">
+            <div class="pv-demo__bar-left">
+              <div class="pv-demo__dots">
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+              </div>
+              <span class="pv-demo__label">AccountsSummary · 5 per page</span>
+            </div>
+            <div class="pv-demo__props">
+              <span class="pv-demo__prop">pageSize: <span>5</span></span>
+              <span class="pv-demo__prop">columns: <span>2</span></span>
+              <span class="pv-demo__prop">currency: <span>"USD"</span></span>
+            </div>
+          </div>
+          <div class="pv-demo__body">
+            <div id="preview-5pp"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Live demo: 3 per page ──────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Compact variant</h2>
+          <span class="pv-section__sub">pageSize: 3 — more pages, ellipsis visible</span>
+          <span class="pv-section__tag">Live</span>
+        </div>
+        <div class="pv-demo">
+          <div class="pv-demo__bar">
+            <div class="pv-demo__bar-left">
+              <div class="pv-demo__dots">
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+              </div>
+              <span class="pv-demo__label">AccountsSummary · 3 per page</span>
+            </div>
+            <div class="pv-demo__props">
+              <span class="pv-demo__prop">pageSize: <span>3</span></span>
+              <span class="pv-demo__prop">columns: <span>2</span></span>
+              <span class="pv-demo__prop">currency: <span>"USD"</span></span>
+            </div>
+          </div>
+          <div class="pv-demo__body">
+            <div id="preview-3pp"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Live demo: 1 column ───────────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Single-column variant</h2>
+          <span class="pv-section__sub">columns: 1 — full-width cards, suited for narrow panels</span>
+          <span class="pv-section__tag">Live</span>
+        </div>
+        <div class="pv-demo">
+          <div class="pv-demo__bar">
+            <div class="pv-demo__bar-left">
+              <div class="pv-demo__dots">
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+              </div>
+              <span class="pv-demo__label">AccountsSummary · 1 column</span>
+            </div>
+            <div class="pv-demo__props">
+              <span class="pv-demo__prop">pageSize: <span>4</span></span>
+              <span class="pv-demo__prop">columns: <span>1</span></span>
+              <span class="pv-demo__prop">currency: <span>"USD"</span></span>
+            </div>
+          </div>
+          <div class="pv-demo__body">
+            <div id="preview-1col"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Static states bento ────────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Component states</h2>
+          <span class="pv-section__sub">All states rendered statically for reference</span>
+          <span class="pv-section__tag">Static</span>
+        </div>
+        <div class="pv-bento">
+
+          <!-- Loading skeleton -->
+          <div class="pv-bento__cell">
+            <div class="pv-bento__label">
+              <span class="pv-bento__label-dot"></span>
+              <span class="pv-bento__label-text">loading</span>
+            </div>
+            <div class="pv-bento__content">
+              <div class="ft-accounts-summary" aria-busy="true">
+                <header class="ft-accounts-summary__header">
+                  <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--title"></div>
+                  <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--count"></div>
+                </header>
+                <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--toolbar"></div>
+                <div class="ft-accounts-grid" style="grid-template-columns: 1fr;">
+                  <div class="ft-accounts-summary__card-skeleton" aria-hidden="true"></div>
+                  <div class="ft-accounts-summary__card-skeleton" aria-hidden="true"></div>
+                  <div class="ft-accounts-summary__card-skeleton" aria-hidden="true"></div>
+                </div>
+                <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--pagination"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty: filter active -->
+          <div class="pv-bento__cell">
+            <div class="pv-bento__label">
+              <span class="pv-bento__label-dot"></span>
+              <span class="pv-bento__label-text">empty — filter active</span>
+            </div>
+            <div class="pv-bento__content">
+              <div class="ft-accounts-summary">
+                <header class="ft-accounts-summary__header">
+                  <h3 class="ft-accounts-summary__title">Active Accounts</h3>
+                  <span class="ft-accounts-summary__count">0 of 7</span>
+                </header>
+                <div class="ft-accounts-grid" style="grid-template-columns: 1fr;">
+                  <div class="ft-empty">
+                    <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+                    <span>No accounts match the selected filters.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty: no accounts -->
+          <div class="pv-bento__cell">
+            <div class="pv-bento__label">
+              <span class="pv-bento__label-dot"></span>
+              <span class="pv-bento__label-text">empty — no active accounts</span>
+            </div>
+            <div class="pv-bento__content">
+              <div class="ft-accounts-summary">
+                <header class="ft-accounts-summary__header">
+                  <h3 class="ft-accounts-summary__title">Active Accounts</h3>
+                  <span class="ft-accounts-summary__count">0 accounts</span>
+                </header>
+                <div class="ft-accounts-grid" style="grid-template-columns: 1fr;">
+                  <div class="ft-empty">
+                    <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+                    <span>No active accounts found.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error: full-width -->
+          <div class="pv-bento__cell pv-bento__cell--wide pv-bento__cell--error">
+            <div class="pv-bento__label">
+              <span class="pv-bento__label-dot"></span>
+              <span class="pv-bento__label-text">error — API unavailable</span>
+            </div>
+            <div class="pv-bento__content">
+              <div class="ft-page__error">
+                <span class="ft-page__error-icon material-symbols-outlined" aria-hidden="true">error_outline</span>
+                <span>Failed to load accounts. Network error — is the API server running?</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── Usage ──────────────────────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Usage</h2>
+          <span class="pv-section__sub">Import and call render() with a target element</span>
+        </div>
+        <div class="pv-code-block">
+          <div class="pv-code-block__bar">
+            <span class="pv-code-block__title">accountsSummary.js</span>
+            <span class="pv-code-block__lang">ES Module</span>
+          </div>
+          <div class="pv-code-block__body">
+<pre><span class="tok-keyword">import</span> { AccountsSummary } <span class="tok-keyword">from</span> <span class="tok-string">'./components/smart/accountsSummary/accountsSummary.js'</span>;
+
+<span class="tok-comment">// Minimal usage — falls back to finalAppConfig.currency</span>
+<span class="tok-keyword">await</span> AccountsSummary.<span class="tok-fn">render</span>(<span class="tok-string">'#my-container'</span>);
+
+<span class="tok-comment">// Full options</span>
+<span class="tok-keyword">await</span> AccountsSummary.<span class="tok-fn">render</span>(<span class="tok-string">'#my-container'</span>, {
+  <span class="tok-prop">pageSize</span>:        <span class="tok-num">5</span>,           <span class="tok-comment">// cards per page (default: 5)</span>
+  <span class="tok-prop">columns</span>:         <span class="tok-num">2</span>,           <span class="tok-comment">// grid columns: 1 or 2 (default: 2)</span>
+  <span class="tok-prop">defaultCurrency</span>: <span class="tok-string">'USD'</span>,      <span class="tok-comment">// target for FX conversion labels</span>
+  <span class="tok-prop">title</span>:           <span class="tok-string">'Active Accounts'</span>,
+});</pre>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /pv-content -->
+
+    <!-- ── Fetch interceptor ────────────────────────────────────────── -->
+    <script>
+      const MOCK_ACCOUNTS = [
+        { id: 1, account: 'BBVA',            owner: 'Esteban Villasana', type: 'Bank Account',   currency: 'MXN', description: 'Card: 4152 3136 5749 5730  ·  CLABE: 012580004734123181', total_balance: 1330533, net_movements: 87, active: 1, updated: 1, initial_balance: 0 },
+        { id: 2, account: 'HSBC Platinum',   owner: 'Esteban Villasana', type: 'Credit Card',    currency: 'USD', description: 'Card: 4111 1111 1111 1111  ·  Expires 09/27',             total_balance: -450000, net_movements: 34, active: 1, updated: 0, initial_balance: 0 },
+        { id: 3, account: 'Cetelem Savings', owner: 'Esteban Villasana', type: 'Savings',        currency: 'EUR', description: 'IBAN: DE89 3704 0044 0532 0130 00',                       total_balance: 5000000, net_movements: 12, active: 1, updated: 1, initial_balance: 0 },
+        { id: 4, account: 'Trezor Wallet',   owner: 'Esteban Villasana', type: 'Crypto Wallet',  currency: 'USD', description: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',             total_balance: 275000,  net_movements:  3, active: 1, updated: 0, initial_balance: 0 },
+        { id: 5, account: 'Travel Cash',     owner: 'Ana García',        type: 'Money Bag',      currency: 'GEL', description: 'Physical cash · Georgian Lari',                          total_balance: 200000,  net_movements:  6, active: 1, updated: 1, initial_balance: 0 },
+        { id: 6, account: 'Banamex',         owner: 'Ana García',        type: 'Bank Account',   currency: 'MXN', description: 'CLABE: 002180700573787520',                              total_balance: 320000,  net_movements: 45, active: 1, updated: 0, initial_balance: 0 },
+        { id: 7, account: 'PayPal',          owner: 'Esteban Villasana', type: 'Bank Account',   currency: 'USD', description: 'paypal@estebanvillasana.com',                            total_balance: 15300,   net_movements: 22, active: 1, updated: 1, initial_balance: 0 },
+      ];
+
+      const MOCK_FX_RATES = {
+        MXNUSD: { rate: 0.050,  inverse_rate: 20.00  },
+        EURUSD: { rate: 1.090,  inverse_rate:  0.917 },
+        GELUSD: { rate: 0.365,  inverse_rate:  2.740 },
+        USDMXN: { rate: 20.00,  inverse_rate:  0.050 },
+        USDEUR: { rate: 0.917,  inverse_rate:  1.090 },
+        USDGEL: { rate: 2.740,  inverse_rate:  0.365 },
+      };
+
+      function _mockJson(data, ms) {
+        return new Promise(resolve =>
+          setTimeout(() =>
+            resolve(new Response(JSON.stringify(data), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })), ms)
+        );
+      }
+
+      const _realFetch = window.fetch.bind(window);
+      window.fetch = function(url, opts) {
+        const s = String(url);
+        if (/\/bank-accounts/.test(s))           return _mockJson(MOCK_ACCOUNTS, 600);
+        const m = s.match(/\/fx-rates\/latest\/([A-Za-z]{6})/);
+        if (m)                                    return _mockJson(MOCK_FX_RATES[m[1].toUpperCase()] ?? null, 300);
+        return _realFetch(url, opts);
+      };
+    </script>
+
+    <script type="module">
+      import { AccountsSummary } from './accountsSummary.js';
+
+      await Promise.all([
+        AccountsSummary.render('#preview-5pp',  { pageSize: 5, columns: 2, defaultCurrency: 'USD', title: 'Active Accounts' }),
+        AccountsSummary.render('#preview-3pp',  { pageSize: 3, columns: 2, defaultCurrency: 'USD', title: 'Active Accounts' }),
+        AccountsSummary.render('#preview-1col', { pageSize: 4, columns: 1, defaultCurrency: 'USD', title: 'Active Accounts' }),
+      ]);
+    </script>
+  </body>
+</html>
