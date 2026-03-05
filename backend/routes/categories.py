@@ -8,6 +8,7 @@ from models.categories import (
     get_all_categories,
     get_category_by_id,
     update_category,
+    update_category_with_active,
     delete_category,
     soft_delete_category,
 )
@@ -60,6 +61,12 @@ class CategoryCreateRequest(BaseModel):
     category: str = Field(min_length=1)
     type: Literal["Income", "Expense"]
     active: int = Field(default=1, ge=0, le=1)
+
+
+class CategoryEditorUpdateRequest(BaseModel):
+    category: str = Field(min_length=1)
+    type: Literal["Income", "Expense"]
+    active: int = Field(ge=0, le=1)
 
 
 # ─────────────────────────────────────────────
@@ -154,6 +161,41 @@ def route_update(id: int, payload: CategoryUpdateRequest):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Category with id {id} not found"
+        )
+
+    return updated
+
+
+@router.post("/{id}/update", response_model=CategoryResponse)
+def route_editor_update(id: int, payload: CategoryEditorUpdateRequest):
+    """Editor-safe category update with movement-aware field restrictions."""
+    current = get_category_by_id(id=id)
+    if current is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category with id {id} not found",
+        )
+
+    data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+
+    if int(current["movements_count"]) > 0 and data["type"] != current["type"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot change category type when the category already has movements.",
+        )
+
+    try:
+        updated = update_category_with_active(id=id, **data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Category with id {id} not found",
         )
 
     return updated

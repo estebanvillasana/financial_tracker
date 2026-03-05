@@ -117,6 +117,34 @@ def update_sub_category(*, id: int, sub_category: str, category_id: int) -> dict
     return updated_sub_category
 
 
+def update_sub_category_with_active(
+    *,
+    id: int,
+    sub_category: str,
+    category_id: int,
+    active: int,
+) -> dict | None:
+    """
+    Updates an existing sub-category including active status and returns it.
+
+    Returns None if the sub-category id does not exist.
+    """
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE sub_categories SET sub_category = ?, category_id = ?, active = ? WHERE id = ?;",
+            (sub_category, category_id, active, id),
+        )
+        if cursor.rowcount == 0:
+            return None
+
+    updated_sub_category = get_sub_category_by_id(id=id)
+    if updated_sub_category is None:
+        raise RuntimeError("Sub-category was updated but could not be retrieved")
+
+    return updated_sub_category
+
+
 def delete_sub_category(*, id: int) -> bool:
     """
     Permanently deletes a sub-category.

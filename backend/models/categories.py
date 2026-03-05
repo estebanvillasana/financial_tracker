@@ -130,6 +130,28 @@ def update_category(*, id: int, category: str, type: str) -> dict | None:
     return updated_category
 
 
+def update_category_with_active(*, id: int, category: str, type: str, active: int) -> dict | None:
+    """
+    Updates an existing category including active status and returns it.
+
+    Returns None if the category id does not exist.
+    """
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE categories SET category = ?, type = ?, active = ? WHERE id = ?;",
+            (category, type, active, id),
+        )
+        if cursor.rowcount == 0:
+            return None
+
+    updated_category = get_category_by_id(id=id)
+    if updated_category is None:
+        raise RuntimeError("Category was updated but could not be retrieved")
+
+    return updated_category
+
+
 def delete_category(*, id: int) -> bool:
     """
     Permanently deletes a category.
