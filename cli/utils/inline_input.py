@@ -19,6 +19,9 @@ def prompt_inline_text(
     body_builder: BodyBuilderFn,
     render_screen: RenderScreenFn,
     interaction_area: InteractionArea = "menu",
+    max_length: int | None = None,
+    min_length: int = 0,
+    char_allowed: Callable[[str], bool] | None = None,
 ) -> str | None:
     """Collect text input inside the app layout without leaving the live screen."""
     typed_value = initial_value
@@ -40,6 +43,8 @@ def prompt_inline_text(
         pressed_key = read_key()
 
         if pressed_key == "ENTER":
+            if len(typed_value.strip()) < min_length:
+                continue
             return typed_value
         if pressed_key == "ESC":
             return None
@@ -48,4 +53,8 @@ def prompt_inline_text(
             continue
 
         if len(pressed_key) == 1 and pressed_key.isprintable():
+            if max_length is not None and len(typed_value) >= max_length:
+                continue
+            if char_allowed is not None and not char_allowed(pressed_key):
+                continue
             typed_value += pressed_key

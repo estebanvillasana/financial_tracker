@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Callable
 from typing import Literal
 
 from config import CliConfig, save_config
@@ -10,14 +12,65 @@ from utils.rich_ui import render_selectable_list
 from utils.selection import process_selection_key
 
 
-ACTIONS = [
-    ("1", "Change API Base URL"),
-    ("2", "Change Main Currency"),
-    ("9", "Back"),
+@dataclass(frozen=True)
+class InputSpec:
+    label: str
+    max_length: int | None = None
+    min_length: int = 0
+    letters_only: bool = False
+    normalize_to_lower: bool = False
+
+
+@dataclass(frozen=True)
+class ActionSpec:
+    key: str
+    label: str
+    kind: Literal["input", "back"]
+    input_spec: InputSpec | None = None
+    config_field: str | None = None
+
+
+ACTIONS_SPEC = [
+    ActionSpec(
+        key="1",
+        label="Change API Base URL",
+        kind="input",
+        input_spec=InputSpec(label="API Base URL"),
+        config_field="api_base_url",
+    ),
+    ActionSpec(
+        key="2",
+        label="Change Main Currency",
+        kind="input",
+        input_spec=InputSpec(
+            label="Main Currency",
+            max_length=3,
+            min_length=3,
+            letters_only=True,
+            normalize_to_lower=True,
+        ),
+        config_field="main_currency",
+    ),
+    ActionSpec(key="9", label="Back", kind="back"),
 ]
+ACTIONS_BY_KEY = {action.key: action for action in ACTIONS_SPEC}
+ACTIONS = [(action.key, action.label) for action in ACTIONS_SPEC]
 ACTION_KEYS = [key for key, _ in ACTIONS]
 ACTION_LABELS = {key: label for key, label in ACTIONS}
 RenderMode = Literal["preview", "content", "input"]
+
+
+def _char_allowed_for(input_spec: InputSpec) -> Callable[[str], bool] | None:
+    if input_spec.letters_only:
+        return str.isalpha
+    return None
+
+
+def _normalize_value(value: str, input_spec: InputSpec) -> str:
+    normalized = value.strip()
+    if input_spec.normalize_to_lower:
+        normalized = normalized.lower()
+    return normalized
 
 
 def render_body(
@@ -78,39 +131,35 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 interaction_area="content",
             )
 
-        if event.choice == "1":
-            new_url = prompt_inline_text(
-                menu_items,
-                "0",
-                "API Base URL",
-                config.api_base_url,
-                body_builder=lambda: render_body(
-                    config,
-                    active_action,
-                    mode="input",
-                ),
-                render_screen=render_screen,
-                interaction_area="content",
-            )
-            if new_url is not None:
-                config.api_base_url = new_url.strip()
-                save_config(config)
-        elif event.choice == "2":
-            new_currency = prompt_inline_text(
-                menu_items,
-                "0",
-                "Main Currency",
-                config.main_currency,
-                body_builder=lambda: render_body(
-                    config,
-                    active_action,
-                    mode="input",
-                ),
-                render_screen=render_screen,
-                interaction_area="content",
-            )
-            if new_currency is not None:
-                config.main_currency = new_currency.strip().lower()
-                save_config(config)
-        elif event.choice == "9":
+        action = ACTIONS_BY_KEY.get(event.choice)
+        if action is None:
+            continue
+
+        if action.kind == "back":
             return
+
+        if action.kind == "input" and action.input_spec is not None and action.config_field is not None:
+            current_value = str(getattr(config, action.config_field))
+            new_value = prompt_inline_text(
+                menu_items,
+                "0",
+                action.input_spec.label,
+                current_value,
+                body_builder=lambda: render_body(
+                    config,
+                    active_action,
+                    mode="input",
+                ),
+                render_screen=render_screen,
+                interaction_area="content",
+                max_length=action.input_spec.max_length,
+                min_length=action.input_spec.min_length,
+                char_allowed=_char_allowed_for(action.input_spec),
+            )
+            if new_value is not None:
+                setattr(
+                    config,
+                    action.config_field,
+                    _normalize_value(new_value, action.input_spec),
+                )
+                save_config(config)
