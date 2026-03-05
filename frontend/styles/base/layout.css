@@ -1,9 +1,32 @@
-/* Generic page shell — applied to every page's <main> element. */
+/* ── App Shell ────────────────────────────────────────── */
+
+.ft-app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app-content {
+  background: var(--ft-color-surface-alt);
+  flex: 1;
+  opacity: 0;
+  overflow-y: auto;
+  padding: calc(var(--ft-spacing) * 3);
+  transition: opacity 150ms ease;
+}
+
+#app-content.ft-content--visible {
+  opacity: 1;
+}
+
+/* ── Page Shell ───────────────────────────────────────── */
+
 .ft-page {
   background: var(--ft-color-surface-alt);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--ft-spacing) * 2);
+  gap: calc(var(--ft-spacing) * 3);
+  min-height: 100%;
 }
 
 .ft-page__header {
@@ -11,4 +34,180 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.ft-page__header-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* ── Sections ─────────────────────────────────────────── */
+
+.ft-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-section__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ── Grids ────────────────────────────────────────────── */
+
+.ft-stats-row {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.ft-accounts-grid {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* ── Cards ────────────────────────────────────────────── */
+
+.ft-card {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+.ft-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 0.5);
+}
+
+.ft-stat-card__value {
+  line-height: 1.2;
+  margin: 0;
+}
+
+.ft-stat-card__value--success { color: var(--ft-color-success); }
+.ft-stat-card__value--danger  { color: var(--ft-color-danger);  }
+
+/* ── Containers ───────────────────────────────────────── */
+
+.ft-table-wrapper {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-wrapper);
+  overflow: hidden;
+}
+
+.ft-toolbar {
+  align-items: center;
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  padding: calc(var(--ft-spacing) * 1.5);
+}
+
+/* ── Empty State ──────────────────────────────────────── */
+
+.ft-empty {
+  align-items: center;
+  color: var(--ft-color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ft-spacing);
+  padding: calc(var(--ft-spacing) * 6);
+  text-align: center;
+}
+
+.ft-empty__icon {
+  font-size: 40px;
+  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48;
+  line-height: 1;
+  opacity: 0.35;
+}
+
+/* ── Error State ──────────────────────────────────────── */
+
+.ft-page__error {
+  align-items: center;
+  color: var(--ft-color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ft-spacing);
+  padding: calc(var(--ft-spacing) * 8);
+  text-align: center;
+}
+
+.ft-page__error-icon {
+  font-size: 40px;
+  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48;
+  line-height: 1;
+  opacity: 0.4;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+
+.ft-btn {
+  align-items: center;
+  border-radius: var(--ft-radius-widget);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  transition: background 120ms ease;
+  white-space: nowrap;
+}
+
+.ft-btn .material-symbols-outlined {
+  font-size: 16px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+}
+
+.ft-btn--primary {
+  background: var(--ft-color-accent);
+  border: 1px solid transparent;
+  color: #fff;
+}
+
+.ft-btn--primary:hover {
+  background: #1a84d8;
+}
+
+.ft-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--ft-color-border);
+  color: var(--ft-color-text-muted);
+}
+
+.ft-btn--ghost:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* ── Links ────────────────────────────────────────────── */
+
+.ft-link {
+  color: var(--ft-color-accent);
+  text-decoration: none;
+  transition: opacity 120ms ease;
+}
+
+.ft-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
