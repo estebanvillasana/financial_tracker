@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from database import initialize_database
 from routes.bank_accounts import router as bank_accounts_router
 from routes.categories import router as categories_router
@@ -71,6 +72,22 @@ app = FastAPI(
     description="Personal finance tracker — backend API",
     version="0.1.0",
     lifespan=lifespan
+)
+
+
+# ─────────────────────────────────────────────
+# MIDDLEWARE
+# ─────────────────────────────────────────────
+
+# Enable CORS (Cross-Origin Resource Sharing)
+# This allows our frontend (e.g., localhost:3000)
+# to communicate with our backend (localhost:8000).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Since it's a local app, we allow all origins.
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
