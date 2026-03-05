@@ -38,10 +38,12 @@ def process_selection_key(
             enter_pressed=True,
         )
 
-    if pressed_key in keys:
+    normalized_key = pressed_key.upper() if len(pressed_key) == 1 and pressed_key.isalpha() else pressed_key
+
+    if normalized_key in keys:
         return SelectionEvent(
-            active_key=pressed_key,
-            choice=pressed_key,
+            active_key=normalized_key,
+            choice=normalized_key,
             enter_pressed=False,
         )
 

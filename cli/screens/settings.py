@@ -5,7 +5,11 @@ from typing import Callable
 from typing import Literal
 
 from config import CliConfig, save_config
-from utils.inline_input import prompt_inline_text
+from utils.inline_input import (
+    prompt_inline_autocomplete_choice,
+    prompt_inline_numbered_choice,
+    prompt_inline_text,
+)
 from utils.navigation import read_key
 from utils.render import flash_action, render_screen
 from utils.rich_ui import render_selectable_list
@@ -15,6 +19,8 @@ from utils.selection import process_selection_key
 @dataclass(frozen=True)
 class InputSpec:
     label: str
+    control: Literal["text", "numbered_choice", "autocomplete_choice"] = "text"
+    options: list[str] | None = None
     max_length: int | None = None
     min_length: int = 0
     letters_only: bool = False
@@ -71,6 +77,47 @@ def _normalize_value(value: str, input_spec: InputSpec) -> str:
     if input_spec.normalize_to_lower:
         normalized = normalized.lower()
     return normalized
+
+
+def _prompt_for_action_input(
+    menu_items: list[tuple[str, str]],
+    config: CliConfig,
+    active_action: str,
+    action: ActionSpec,
+) -> str | None:
+    input_spec = action.input_spec
+    if input_spec is None or action.config_field is None:
+        return None
+
+    current_value = str(getattr(config, action.config_field))
+    common_kwargs = {
+        "menu_items": menu_items,
+        "menu_active_key": "0",
+        "label": input_spec.label,
+        "body_builder": lambda: render_body(config, active_action, mode="input"),
+        "render_screen": render_screen,
+        "interaction_area": "content",
+    }
+
+    if input_spec.control == "numbered_choice":
+        options = input_spec.options or []
+        return prompt_inline_numbered_choice(options=options, **common_kwargs)
+
+    if input_spec.control == "autocomplete_choice":
+        options = input_spec.options or []
+        return prompt_inline_autocomplete_choice(
+            options=options,
+            initial_value=current_value,
+            **common_kwargs,
+        )
+
+    return prompt_inline_text(
+        initial_value=current_value,
+        max_length=input_spec.max_length,
+        min_length=input_spec.min_length,
+        char_allowed=_char_allowed_for(input_spec),
+        **common_kwargs,
+    )
 
 
 def render_body(
@@ -139,23 +186,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             return
 
         if action.kind == "input" and action.input_spec is not None and action.config_field is not None:
-            current_value = str(getattr(config, action.config_field))
-            new_value = prompt_inline_text(
-                menu_items,
-                "0",
-                action.input_spec.label,
-                current_value,
-                body_builder=lambda: render_body(
-                    config,
-                    active_action,
-                    mode="input",
-                ),
-                render_screen=render_screen,
-                interaction_area="content",
-                max_length=action.input_spec.max_length,
-                min_length=action.input_spec.min_length,
-                char_allowed=_char_allowed_for(action.input_spec),
-            )
+            new_value = _prompt_for_action_input(menu_items, config, active_action, action)
             if new_value is not None:
                 setattr(
                     config,
