@@ -14,6 +14,7 @@ from functions import api as api_client
 from screens import add_movements as add_movements_screen
 from screens import categories as categories_screen
 from screens import money_transfers as money_transfers_screen
+from screens import movements as movements_screen
 from screens import overview as overview_screen
 from screens import settings as settings_screen
 from utils.debug_shortcuts import DebugRestartRequested, handle_debug_restart, prime_debug_mode
@@ -57,6 +58,12 @@ SCREEN_DEFINITIONS = [
 		label="Internal Transfers",
 		render_body=money_transfers_screen.render_body,
 		run=money_transfers_screen.run,
+	),
+	ScreenDefinition(
+		key="5",
+		label="Movements",
+		render_body=movements_screen.render_body,
+		run=movements_screen.run,
 	),
 	ScreenDefinition(
 		key="0",

@@ -85,11 +85,13 @@ def _fetch_transfers(config: CliConfig) -> list[dict]:
     return api.get(config.api_base_url, "/money-transfers")
 
 
-def _render_transfers_table(rows: list[dict]) -> str:
+def _render_transfers_table(rows: list[dict], page: int, page_size: int = 8) -> tuple[str, int]:
     headers = ["Date", "From", "To", "Sent", "Received", "Description"]
     if not rows:
-        return "No internal transfers found."
-    recent = rows[:10]
+        return "No internal transfers found.", 1
+    total_pages = max(1, (len(rows) + page_size - 1) // page_size)
+    current_page = max(0, min(page, total_pages - 1))
+    recent = rows[current_page * page_size : current_page * page_size + page_size]
     cells = [
         [
             str(r["date"]),
@@ -116,15 +118,16 @@ def _render_transfers_table(rows: list[dict]) -> str:
     lines = [top, fmt_row(headers), mid]
     lines.extend(fmt_row(c, numeric={3, 4}) for c in cells)
     lines.append(bot)
-    if len(rows) > len(recent):
-        lines.append(f"Showing last {len(recent)} of {len(rows)} transfers.")
-    return "\n".join(lines)
+    return "\n".join(lines), total_pages
 
 
 def _build_body(
     active_action: str,
     mode: RenderMode,
     transfers: list[dict],
+    page: int,
+    total_pages: int,
+    table_text: str,
     message: str | None = None,
 ) -> str:
     show_cursor = mode == "content"
@@ -140,6 +143,7 @@ def _build_body(
         "Internal Money Transfers",
         "",
         f"Transfers found: {len(transfers)}",
+        f"Page: {page + 1}/{total_pages}  |  Left/Right or P/N to browse",
         "",
         "Actions",
         action_lines,
@@ -147,7 +151,7 @@ def _build_body(
         "Use Up/Down + Enter, or press 1/5/9.",
         "",
         "Transfers (latest first)",
-        _render_transfers_table(transfers),
+        table_text,
         "",
         "Backend transfer endpoint creates paired Expense + Income rows.",
     ]
@@ -161,7 +165,8 @@ def render_body(config: CliConfig) -> str:
         transfers = _fetch_transfers(config)
     except Exception as exc:
         return f"Internal Money Transfers\n\nCould not load transfers: {_api_error_message(exc)}"
-    return _build_body("9", "preview", transfers)
+    table_text, total_pages = _render_transfers_table(transfers, page=0)
+    return _build_body("9", "preview", transfers, 0, total_pages, table_text)
 
 
 def _choose_account(
@@ -405,6 +410,7 @@ def _create_transfer(
 
 def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
     active_action = "9"
+    page = 0
     message: str | None = None
     while True:
         try:
@@ -419,14 +425,24 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 return
             continue
 
-        body_builder = lambda: _build_body(active_action, "input", transfers, message=message)
-        body = _build_body(active_action, "content", transfers, message=message)
+        table_text, total_pages = _render_transfers_table(transfers, page)
+        if page >= total_pages:
+            page = max(0, total_pages - 1)
+            table_text, total_pages = _render_transfers_table(transfers, page)
+        body_builder = lambda: _build_body(active_action, "input", transfers, page, total_pages, table_text, message=message)
+        body = _build_body(active_action, "content", transfers, page, total_pages, table_text, message=message)
         render_screen(menu_items, "4", body, interaction_area="content")
         pressed_key = read_key()
         handle_debug_restart(pressed_key)
 
         if pressed_key in {"b", "B", "ESC"}:
             return
+        if pressed_key in {"RIGHT", "n", "N"}:
+            page = min(total_pages - 1, page + 1)
+            continue
+        if pressed_key in {"LEFT", "p", "P"}:
+            page = max(0, page - 1)
+            continue
 
         event = process_selection_key(pressed_key, active_action, ACTION_KEYS)
         active_action = event.active_key
@@ -444,6 +460,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
 
         if event.choice == "1":
             message = _create_transfer(menu_items, config, accounts, body_builder)
+            page = 0
             continue
         if event.choice == "5":
             message = "Data refreshed."

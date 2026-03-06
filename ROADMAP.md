@@ -87,10 +87,10 @@ Personal finance tracker with multi-account support, currency conversion, and in
 A terminal-based interface for direct database interaction and quick financial queries. This provides an alternative to the frontend GUI for power users who prefer command-line workflows.
 
 ### Core Features
-- [ ] Direct app.db queries through terminal commands
-- [ ] View all active bank accounts with balances
-- [ ] Add new transactions/movements interactively
-- [ ] Reusable query library from `backend/data/explore/`:
+- [x] Direct app.db queries through terminal commands
+- [x] View all active bank accounts with balances
+- [x] Add new transactions/movements interactively
+- [x] Reusable query library from `backend/data/explore/`:
 - [ ] User-friendly output formatting (tables, summaries)
 - [ ] Independent from frontend GUI — runs standalone
 
