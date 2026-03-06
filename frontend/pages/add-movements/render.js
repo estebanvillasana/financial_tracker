@@ -5,34 +5,13 @@
  * - Unified toolbar (account selector + type toggle + action buttons)
  * - Balance summary cards
  * - Button state management
- *
- * Feedback banners are now handled by the shared FeedbackBanner component.
  */
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
-import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
-import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
-import { getSelectedAccount, toSignedCents } from './utils.js';
-
-/* ── Feedback Delegates ────────────────────────────────────────────────────── */
-/* Thin wrappers around the shared FeedbackBanner component.                  */
-
-function renderFeedback(feedbackEl, message, tone = 'error') {
-  FeedbackBanner.render(feedbackEl, message, tone);
-}
-
-function renderFeedbackWithActions(feedbackEl, message, actions = []) {
-  FeedbackBanner.renderWithActions(feedbackEl, message, actions);
-}
+import { normalizeCurrency, formatMoneyFromCents, toSignedCents } from '../../utils/formatters.js';
+import { getSelectedAccount } from './utils.js';
 
 /* ── Button State Management ──────────────────────────────────────────────── */
 
-/**
- * Enables/disables page-level commit/discard actions.
- *
- * @param {object}       state       - Page state
- * @param {HTMLElement}  commitBtn   - Commit button
- * @param {HTMLElement}  discardBtn  - Discard button
- */
 function updateHeaderButtons(state, commitBtn, discardBtn) {
   const hasRows = state.rows.length > 0;
   const hasAccount = Number.isFinite(Number(state.selectedAccountId));
@@ -40,12 +19,6 @@ function updateHeaderButtons(state, commitBtn, discardBtn) {
   if (commitBtn) commitBtn.disabled = !hasRows || !hasAccount || state.isCommitting;
 }
 
-/**
- * Enables/disables row-action buttons tied to current selection.
- *
- * @param {object}       state             - Page state
- * @param {HTMLElement}  removeSelectedBtn  - Remove selected button
- */
 function updateTableActionButtons(state, removeSelectedBtn) {
   if (!removeSelectedBtn) return;
   const selectedCount = state.gridApi ? state.gridApi.getSelectedRows().length : 0;
@@ -54,12 +27,6 @@ function updateTableActionButtons(state, removeSelectedBtn) {
 
 /* ── Balance Cards ────────────────────────────────────────────────────────── */
 
-/**
- * Renders current and projected balance cards for the selected account.
- *
- * @param {HTMLElement}  target  - Container for the balance cards
- * @param {object}       state   - Page state with accounts, rows, selectedAccountId
- */
 function renderBalanceCards(target, state) {
   if (!target) return;
   target.innerHTML = '';
@@ -101,24 +68,9 @@ function renderBalanceCards(target, state) {
 
 /* ── Unified Toolbar ──────────────────────────────────────────────────────── */
 
-/**
- * Renders the unified toolbar containing:
- * - Account selector (stable — only created once, not re-rendered on state changes)
- * - Type toggle (Expense / Income)
- * - Action buttons (Remove, Discard, Commit)
- *
- * On subsequent calls (when the <select> already exists), only the select's
- * value is synchronized — the element is NOT recreated. This prevents focus
- * loss and unnecessary DOM churn.
- *
- * @param {HTMLElement}  toolbarEl  - Toolbar container
- * @param {object}       state      - Page state
- * @param {object}       domRefs    - DOM references for action buttons
- */
 function renderAccountToolbar(toolbarEl, state, domRefs) {
   const existingSelect = toolbarEl.querySelector('#add-movements-account-select');
 
-  /* ── First render: build the full toolbar structure ── */
   if (!existingSelect) {
     const optionsHtml = state.accounts
       .map(account => {
@@ -152,22 +104,18 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
       </div>
     `;
 
-    /* Update domRefs to point at the newly created buttons */
     domRefs.commitBtn = toolbarEl.querySelector('#btn-commit-movements');
     domRefs.discardBtn = toolbarEl.querySelector('#btn-discard-movements');
     domRefs.removeSelectedBtn = toolbarEl.querySelector('#btn-remove-selected-drafts');
     return;
   }
 
-  /* ── Subsequent renders: only sync the select value ── */
   if (existingSelect.value !== String(state.selectedAccountId)) {
     existingSelect.value = String(state.selectedAccountId);
   }
 }
 
 export {
-  renderFeedback,
-  renderFeedbackWithActions,
   updateHeaderButtons,
   updateTableActionButtons,
   renderBalanceCards,

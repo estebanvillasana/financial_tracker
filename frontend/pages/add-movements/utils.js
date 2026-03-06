@@ -1,61 +1,37 @@
 /**
- * Add Movements shared pure utilities.
- * These helpers are intentionally side-effect free to simplify testing/reuse.
+ * Add Movements page-specific utilities.
+ *
+ * General-purpose helpers (validation, formatting, lookups) live in
+ * shared utils/ modules. This file re-exports what the page needs and
+ * adds page-specific helpers like clipboard paste parsing.
  */
-import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
+import {
+  categoryLabelById as _categoryLabelById,
+  subCategoryLabelById as _subCategoryLabelById,
+  getCategoriesByType as _getCategoriesByType,
+  getSubCategoriesByTypeAndCategory,
+} from '../../utils/lookups.js';
 
-/** Validates YYYY-MM-DD dates expected by backend API. */
-function isValidIsoDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
-  return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
+/** State-aware wrappers that match existing call-sites (pass state, extract the list). */
+function categoryLabelById(state, id) {
+  return _categoryLabelById(state.categories, id);
 }
 
-/** Parses numeric inputs while preserving empty/null values. */
-function parseNumberOrNull(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+function subCategoryLabelById(state, id) {
+  return _subCategoryLabelById(state.subCategories, id);
 }
 
-/** Converts draft amount/type into signed cents impact. */
-function toSignedCents(row) {
-  const amount = Number(row?.amount);
-  if (!Number.isFinite(amount) || amount <= 0) return 0;
-  const absCents = Math.round(Math.abs(amount) * 100);
-  return row?.type === 'Income' ? absCents : -absCents;
+function getCategoriesByType(state, type) {
+  return _getCategoriesByType(state.categories, type);
+}
+
+function getSubCategoriesForRow(state, row) {
+  return getSubCategoriesByTypeAndCategory(state.subCategories, row?.type, row?.category_id);
 }
 
 /** Finds the currently selected account in state. */
 function getSelectedAccount(state) {
   return state.accounts.find(account => Number(account.id) === Number(state.selectedAccountId)) || null;
-}
-
-/** Resolves category label by ID for grid display. */
-function categoryLabelById(state, id) {
-  const match = state.categories.find(item => Number(item.id) === Number(id));
-  return match ? match.category : '';
-}
-
-/** Resolves sub-category label by ID for grid display. */
-function subCategoryLabelById(state, id) {
-  const match = state.subCategories.find(item => Number(item.id) === Number(id));
-  return match ? match.sub_category : '';
-}
-
-/** Returns categories matching the target movement type. */
-function getCategoriesByType(state, type) {
-  return state.categories.filter(item => item.type === type);
-}
-
-/** Returns sub-categories compatible with row type/category. */
-function getSubCategoriesForRow(state, row) {
-  const type = row?.type;
-  const categoryId = Number(row?.category_id);
-  return state.subCategories.filter(item => {
-    if (item.type !== type) return false;
-    if (!Number.isFinite(categoryId)) return true;
-    return Number(item.category_id) === categoryId;
-  });
 }
 
 /** Parses clipboard values into typed grid values per column. */
@@ -94,10 +70,6 @@ function parsePastedCellValue(state, columnId, rawValue, rowType, categoryId) {
 }
 
 export {
-  formatMoneyFromCents,
-  isValidIsoDate,
-  parseNumberOrNull,
-  toSignedCents,
   getSelectedAccount,
   categoryLabelById,
   subCategoryLabelById,

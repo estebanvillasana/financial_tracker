@@ -7,7 +7,8 @@
  * - handleAccountChange: currency warning + grid refresh
  */
 import { bankAccounts, movements } from '../../services/api.js';
-import { normalizeCurrency, createSentinelRow, isAddRow } from './constants.js';
+import { createSentinelRow, isAddRow } from './constants.js';
+import { normalizeCurrency } from '../../utils/formatters.js';
 import { getSelectedAccount } from './utils.js';
 import { validateAllDrafts } from './validation.js';
 import { commitSentinelRow, syncRowsFromGrid, applyRowTypeAttributes, clearErrorHighlights, highlightErrorCells } from './grid.js';

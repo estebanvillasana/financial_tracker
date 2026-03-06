@@ -64,8 +64,6 @@ function hasUserData(row) {
   });
 }
 
-/** Re-export from shared formatters for backward compatibility within this module. */
-import { normalizeCurrency } from '../../utils/formatters.js';
 
 export {
   TYPE_VALUES,
@@ -76,5 +74,4 @@ export {
   createSentinelRow,
   isAddRow,
   hasUserData,
-  normalizeCurrency,
 };

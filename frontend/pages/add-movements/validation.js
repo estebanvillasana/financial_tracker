@@ -5,7 +5,7 @@
  * the backend payload shape expected by POST /movements/bulk.
  */
 import { TYPE_VALUES, isAddRow } from './constants.js';
-import { isValidIsoDate, parseNumberOrNull } from './utils.js';
+import { isValidIsoDate, parseNumberOrNull } from '../../utils/validators.js';
 
 /**
  * Validates one draft row and transforms it into the backend payload shape.
