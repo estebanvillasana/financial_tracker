@@ -179,11 +179,10 @@ async function initAddMovementsPage(root = document) {
   const feedbackEl = root.querySelector('#widget-add-movements-feedback');
   const commitBtn = root.querySelector('#btn-commit-movements');
   const discardBtn = root.querySelector('#btn-discard-movements');
-  const addDraftBtn = root.querySelector('#btn-add-draft-row');
   const removeSelectedBtn = root.querySelector('#btn-remove-selected-drafts');
-  const draftTypeSelect = root.querySelector('#add-movements-type-filter');
+  const typeToggle = root.querySelector('#add-movements-type-toggle');
 
-  if (!toolbarEl || !balancesEl || !gridWrapperEl || !commitBtn || !discardBtn || !addDraftBtn || !removeSelectedBtn || !draftTypeSelect) {
+  if (!toolbarEl || !balancesEl || !gridWrapperEl || !commitBtn || !discardBtn || !removeSelectedBtn || !typeToggle) {
     return;
   }
 
@@ -232,7 +231,7 @@ async function initAddMovementsPage(root = document) {
     categories: activeCategories,
     subCategories: activeSubCategories,
     selectedAccountId: Number(accounts[0].id),
-    draftType: String(draftTypeSelect.value || 'Expense'),
+    draftType: typeToggle.querySelector('.ft-add-type-toggle__btn--active')?.dataset.type || 'Expense',
     gridApi: null,
     rows: [],
     isCommitting: false,
@@ -254,19 +253,12 @@ async function initAddMovementsPage(root = document) {
   updateHeaderButtons(state, commitBtn, discardBtn);
   updateTableActionButtons(state, removeSelectedBtn);
 
-  addDraftBtn.addEventListener('click', () => {
-    commitSentinelRow(state);
-    const sentinel = state.gridApi.getRowNode(SENTINEL_ID);
-    if (sentinel) {
-      state.gridApi.setFocusedCell(sentinel.rowIndex, 'movement');
-      state.gridApi.startEditingCell({ rowIndex: sentinel.rowIndex, colKey: 'movement' });
-    }
-    refreshSummaryState(state, domRefs);
-    renderFeedback(feedbackEl, '');
-  });
-
-  draftTypeSelect.addEventListener('change', event => {
-    const nextType = String(event.target.value || 'Expense');
+  typeToggle.addEventListener('click', event => {
+    const btn = event.target.closest('.ft-add-type-toggle__btn');
+    if (!btn || btn.classList.contains('ft-add-type-toggle__btn--active')) return;
+    typeToggle.querySelectorAll('.ft-add-type-toggle__btn').forEach(b => b.classList.remove('ft-add-type-toggle__btn--active'));
+    btn.classList.add('ft-add-type-toggle__btn--active');
+    const nextType = String(btn.dataset.type || 'Expense');
     state.draftType = TYPE_VALUES.includes(nextType) ? nextType : 'Expense';
     const sentinel = state.gridApi.getRowNode(SENTINEL_ID);
     if (sentinel?.data) {

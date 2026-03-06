@@ -31,22 +31,19 @@
   <!-- Bulk Input Grid -->
   <section class="ft-section">
     <div class="ft-section__header ft-add-movements-grid-header">
-      <h2 class="ft-h3">Draft Movements</h2>
       <div class="ft-add-movements-grid-controls">
-        <label class="ft-add-movements-grid-controls__label" for="add-movements-type-filter">Type</label>
-        <select id="add-movements-type-filter" class="ft-add-movements-grid-controls__select">
-          <option value="Expense" selected>Expense</option>
-          <option value="Income">Income</option>
-        </select>
-        <button class="ft-btn ft-btn--ghost" id="btn-add-draft-row">
-          <span class="material-symbols-outlined" aria-hidden="true">add</span>
-          Add Draft Row
-        </button>
+        <div class="ft-add-type-toggle" id="add-movements-type-toggle">
+          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--expense ft-add-type-toggle__btn--active" data-type="Expense">Expense</button>
+          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--income" data-type="Income">Income</button>
+        </div>
         <button class="ft-btn ft-btn--ghost" id="btn-remove-selected-drafts" disabled>
           <span class="material-symbols-outlined" aria-hidden="true">delete</span>
           Remove
         </button>
       </div>
+      <span class="ft-add-movements-grid-hint">
+        <kbd>Tab</kbd> navigate · <kbd>Enter</kbd> add row · <kbd>Esc</kbd> clear
+      </span>
     </div>
     <div id="widget-add-movements-feedback"></div>
     <div class="ft-table-wrapper" id="widget-add-movements-grid">

@@ -54,26 +54,21 @@ function syncRowsFromGrid(state) {
   state.rows = rows;
 }
 
-/** Builds pill-like renderer used by category/sub-category dropdown columns. */
-function buildDropdownRenderer(state, kind) {
+/** Builds category/sub-category cell renderer with colored bar indicator. */
+function buildCategoryRenderer(state, kind) {
   return params => {
-    if (isAddRow(params.data)) {
-      return '<div class="ft-add-dropdown-display"><span class="ft-add-pill ft-add-pill--placeholder">Select…</span><span class="ag-icon ag-icon-small-down ft-add-dropdown-icon" aria-hidden="true"></span></div>';
-    }
-
     const label = kind === 'category'
       ? categoryLabelById(state, params.value)
       : subCategoryLabelById(state, params.value);
 
     if (!label) {
-      return '<div class="ft-add-dropdown-display"><span class="ft-add-pill ft-add-pill--placeholder">Select…</span><span class="ag-icon ag-icon-small-down ft-add-dropdown-icon" aria-hidden="true"></span></div>';
+      return '<span class="ft-add-cell-placeholder">Select\u2026</span>';
     }
 
-    const typeClass = params.data?.type === 'Income'
-      ? 'ft-add-pill--income'
-      : 'ft-add-pill--expense';
-    const hierarchyClass = kind === 'sub-category' ? 'ft-add-pill--sub' : '';
-    return `<div class="ft-add-dropdown-display"><span class="ft-add-pill ${typeClass} ${hierarchyClass}">${label}</span><span class="ag-icon ag-icon-small-down ft-add-dropdown-icon" aria-hidden="true"></span></div>`;
+    const type = params.data?.type || 'Expense';
+    const colorClass = type === 'Income' ? 'ft-add-cat--income' : 'ft-add-cat--expense';
+    const kindClass = kind === 'sub-category' ? ' ft-add-cat--sub' : '';
+    return `<span class="ft-add-cat ${colorClass}${kindClass}"><span class="ft-add-cat__bar"></span>${label}</span>`;
   };
 }
 
@@ -118,7 +113,7 @@ function buildGridOptions(state, domRefs, handlers) {
         editable: true,
         cellRenderer: params => {
           if (isAddRow(params.data)) {
-            return '<span class="ft-add-movement-cell ft-add-movement-cell--placeholder"><span class="ft-add-movement-type-dot ft-add-movement-type-dot--placeholder"></span><span>Add new movement...</span></span>';
+            return '<span class="ft-add-movement-cell ft-add-movement-cell--placeholder"><span class="ft-add-movement-type-dot ft-add-movement-type-dot--placeholder"></span><span>New movement\u2026</span></span>';
           }
           const typeClass = params.data?.type === 'Income'
             ? 'ft-add-movement-type-dot--income'
@@ -138,29 +133,45 @@ function buildGridOptions(state, domRefs, handlers) {
       {
         field: 'date',
         headerName: 'Date',
-        minWidth: 120,
+        minWidth: 130,
         editable: true,
+        cellRenderer: params => {
+          const raw = String(params.value || '');
+          if (!raw) return '';
+          const d = new Date(`${raw}T00:00:00`);
+          if (isNaN(d.getTime())) return raw;
+          const day = String(d.getDate()).padStart(2, '0');
+          const mon = d.toLocaleString('en-US', { month: 'short' });
+          return `<span class="ft-add-date">${day} ${mon}. ${d.getFullYear()}</span>`;
+        },
       },
       {
         field: 'amount',
         headerName: 'Amount',
-        minWidth: 120,
+        minWidth: 130,
         editable: true,
-        valueParser: params => parseNumberOrNull(params.newValue),
+        valueParser: params => {
+          const raw = String(params.newValue ?? '').replace(/[^0-9.\-]/g, '');
+          return parseNumberOrNull(raw);
+        },
         valueFormatter: params => {
           const value = Number(params.value);
-          return Number.isFinite(value) ? value.toFixed(2) : '';
+          if (!Number.isFinite(value)) return '';
+          const acct = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+          const cur = (acct?.currency || 'USD').toUpperCase();
+          try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(value); }
+          catch { return value.toFixed(2); }
         },
       },
       {
         field: 'category_id',
         headerName: 'Category',
         minWidth: 150,
-        editable: params => !isAddRow(params.data),
+        editable: true,
         singleClickEdit: true,
         valueFormatter: params => categoryLabelById(state, params.value),
         valueParser: params => parseNumberOrNull(params.newValue),
-        cellRenderer: buildDropdownRenderer(state, 'category'),
+        cellRenderer: buildCategoryRenderer(state, 'category'),
         cellEditor: 'agRichSelectCellEditor',
         cellEditorParams: params => ({
           values: getCategoriesByType(state, params.data?.type).map(item => Number(item.id)),
@@ -175,11 +186,11 @@ function buildGridOptions(state, domRefs, handlers) {
         field: 'sub_category_id',
         headerName: 'Sub-category',
         minWidth: 160,
-        editable: params => !isAddRow(params.data),
+        editable: true,
         singleClickEdit: true,
         valueFormatter: params => subCategoryLabelById(state, params.value),
         valueParser: params => parseNumberOrNull(params.newValue),
-        cellRenderer: buildDropdownRenderer(state, 'sub-category'),
+        cellRenderer: buildCategoryRenderer(state, 'sub-category'),
         cellEditor: 'agRichSelectCellEditor',
         cellEditorParams: params => ({
           values: getSubCategoriesForRow(state, params.data).map(item => Number(item.id)),
@@ -192,6 +203,22 @@ function buildGridOptions(state, domRefs, handlers) {
       },
     ],
     onCellValueChanged: params => {
+      /* ── Auto-promote sentinel after overlay edits (popup text, rich-select) ── */
+      if (isAddRow(params.data) && hasUserData(params.data)) {
+        const isOverlay = params.colDef.cellEditorPopup ||
+          params.colDef.cellEditor === 'agRichSelectCellEditor';
+        if (isOverlay) {
+          const colId = params.column.getColId();
+          requestAnimationFrame(() => {
+            commitSentinelRow(state);
+            handlers.refreshSummaryState(state, domRefs);
+            const count = params.api.getDisplayedRowCount();
+            if (count >= 2) params.api.setFocusedCell(count - 2, colId);
+          });
+          return;
+        }
+      }
+
       if (params.colDef.field === 'category_id') {
         const subCategory = state.subCategories.find(item => Number(item.id) === Number(params.data?.sub_category_id));
         if (subCategory && Number(subCategory.category_id) !== Number(params.data?.category_id)) {
@@ -203,7 +230,7 @@ function buildGridOptions(state, domRefs, handlers) {
       handlers.renderFeedback(domRefs.feedbackEl, '');
     },
     onCellClicked: params => {
-      if (['category_id', 'sub_category_id'].includes(params.colDef.field) && !isAddRow(params.data)) {
+      if (['category_id', 'sub_category_id'].includes(params.colDef.field)) {
         params.api.startEditingCell({ rowIndex: params.rowIndex, colKey: params.column.getColId() });
       }
     },

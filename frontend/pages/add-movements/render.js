@@ -92,7 +92,6 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
       </select>
     </div>
     <div class="ft-add-movements-toolbar__meta">
-      <span class="ft-add-movements-toolbar__chip">New rows: ${state.draftType || 'Expense'}</span>
       <span class="ft-add-movements-toolbar__chip">Currency: ${accountCurrency || '—'}</span>
       <span class="ft-add-movements-toolbar__chip">Drafts: ${state.rows.length}</span>
     </div>

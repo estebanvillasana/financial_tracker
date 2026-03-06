@@ -68,21 +68,57 @@
   gap: 8px;
 }
 
-.ft-add-movements-grid-controls__label {
-  color: var(--ft-color-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.ft-add-movements-grid-controls__select {
+/* Type toggle (Expense / Income segmented control) */
+.ft-add-type-toggle {
   background: var(--ft-color-surface);
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-widget);
-  color: var(--ft-color-text);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.ft-add-type-toggle__btn {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
-  height: 34px;
-  min-width: 110px;
-  padding: 0 8px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 14px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-add-type-toggle__btn:hover:not(.ft-add-type-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-add-type-toggle__btn--active.ft-add-type-toggle__btn--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-add-type-toggle__btn--active.ft-add-type-toggle__btn--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+/* Keyboard shortcuts hint */
+.ft-add-movements-grid-hint {
+  color: var(--ft-color-text-muted-30);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.ft-add-movements-grid-hint kbd {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
 }
 
 /* Feedback banners */
@@ -138,6 +174,25 @@
   background: var(--ft-color-accent-10) !important;
 }
 
+/* Grid header polish */
+.ft-add-movements-grid .ag-header {
+  border-bottom: 1px solid var(--ft-color-border-strong) !important;
+}
+
+.ft-add-movements-grid .ag-header-cell-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Inline editing state */
+.ft-add-movements-grid .ag-cell-inline-editing {
+  background: var(--ft-color-surface) !important;
+  padding-bottom: 0;
+  padding-top: 0;
+}
+
 /* Movement label with type indicator */
 .ft-add-movement-cell {
   align-items: center;
@@ -169,58 +224,57 @@
   opacity: 0.5;
 }
 
-/* Dropdown-in-cell visuals for category/sub-category */
-.ft-add-dropdown-display {
+/* Placeholder text inside editable cells */
+.ft-add-cell-placeholder {
+  color: var(--ft-color-text-muted-30);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Category / sub-category cell with colored bar indicator */
+.ft-add-cat {
   align-items: center;
   display: inline-flex;
   gap: 6px;
-  width: 100%;
-}
-
-.ft-add-dropdown-icon {
-  color: var(--ft-color-text-muted);
-  margin-left: auto;
-  opacity: 1 !important;
-}
-
-.ft-add-pill {
-  border-radius: 999px;
-  display: inline-flex;
-  font-size: 11px;
-  font-weight: 600;
-  max-width: calc(100% - 20px);
   overflow: hidden;
-  padding: 3px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ft-add-pill--expense {
-  background: var(--ft-color-danger-10);
+.ft-add-cat__bar {
+  background: currentColor;
+  border-radius: 1px;
+  flex-shrink: 0;
+  height: 14px;
+  width: 3px;
+}
+
+.ft-add-cat--expense {
   color: var(--ft-color-danger);
 }
 
-.ft-add-pill--income {
-  background: var(--ft-color-success-10);
+.ft-add-cat--income {
   color: var(--ft-color-success);
 }
 
-.ft-add-pill--sub {
-  filter: saturate(0.7);
-  opacity: 0.9;
+.ft-add-cat--sub {
+  opacity: 0.55;
 }
 
-.ft-add-pill--placeholder {
-  background: var(--ft-color-elevated);
-  color: var(--ft-color-text-muted);
+/* Human-readable date display */
+.ft-add-date {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 /* Sentinel "add new row" visual treatment */
 .ag-row-add-phantom {
-  border-top: 1px dashed var(--ft-color-border) !important;
-  opacity: 0.65;
+  border-top: 1px dashed var(--ft-color-border-strong) !important;
+  opacity: 0.45;
+  transition: opacity 150ms ease;
 }
 
-.ag-row-add-phantom:hover {
-  opacity: 0.9;
+.ag-row-add-phantom:hover,
+.ag-row-add-phantom:focus-within {
+  opacity: 0.85;
 }
