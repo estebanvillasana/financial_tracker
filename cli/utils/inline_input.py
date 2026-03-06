@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 from typing import Literal
+from typing import Mapping
 
 from utils.navigation import read_key
 
@@ -79,16 +80,33 @@ def _format_option_lines(
     options: list[str],
     selected_index: int | None,
     numbered: bool,
+    group_labels: list[str] | None = None,
+    group_colors: Mapping[str, str] | None = None,
+    number_offset: int = 0,
 ) -> list[str]:
     lines = [title]
     if not options:
         lines.append("    (no options)")
         return lines
 
+    last_group: str | None = None
     for index, option in enumerate(options):
+        current_group = group_labels[index] if group_labels and index < len(group_labels) else None
+        if current_group and current_group != last_group:
+            if last_group is not None:
+                lines.append("")
+            heading = f"[{current_group}]"
+            centered_heading = heading.center(38)
+            color = (group_colors or {}).get(current_group)
+            if color:
+                lines.append(f"[[group:{color}]]{centered_heading}[[/group]]")
+            else:
+                lines.append(centered_heading)
+            lines.append("")
+            last_group = current_group
         marker = "->" if selected_index == index else "  "
         if numbered:
-            lines.append(f"    {marker} {index + 1}. {option}")
+            lines.append(f"    {marker} {number_offset + index + 1}. {option}")
         else:
             lines.append(f"    {marker} {option}")
     return lines
@@ -160,6 +178,9 @@ def prompt_inline_numbered_choice(
     body_builder: BodyBuilderFn,
     render_screen: RenderScreenFn,
     interaction_area: InteractionArea = "menu",
+    group_labels: list[str] | None = None,
+    group_colors: Mapping[str, str] | None = None,
+    max_visible_options: int = 10,
 ) -> str | None:
     """Select one option from a numbered list via arrows or numeric jump."""
     if not options:
@@ -167,14 +188,43 @@ def prompt_inline_numbered_choice(
 
     selected_index = 0
     typed_number = "1"
+    window_start = 0
 
     while True:
+        max_visible = max(5, max_visible_options)
+        if group_labels:
+            max_visible = min(max_visible, 8)
+        if len(options) <= max_visible:
+            visible_start = 0
+            visible_end = len(options)
+        else:
+            if selected_index < window_start:
+                window_start = selected_index
+            elif selected_index >= window_start + max_visible:
+                window_start = selected_index - max_visible + 1
+            visible_start = max(0, min(window_start, len(options) - max_visible))
+            visible_end = visible_start + max_visible
+
+        visible_options = options[visible_start:visible_end]
+        visible_groups = group_labels[visible_start:visible_end] if group_labels else None
+        selected_visible_index = selected_index - visible_start
+
         options_lines = _format_option_lines(
             "Options",
-            options,
-            selected_index,
+            visible_options,
+            selected_visible_index,
             numbered=True,
+            group_labels=visible_groups,
+            group_colors=group_colors,
+            number_offset=visible_start,
         )
+        if visible_start > 0 or visible_end < len(options):
+            hints: list[str] = []
+            if visible_start > 0:
+                hints.append("↑ more options above")
+            if visible_end < len(options):
+                hints.append("↓ more options below")
+            options_lines.insert(1, f"{DIM_START}    {' | '.join(hints)}{DIM_END}")
 
         body = _build_prompt_body(
             body_builder,
