@@ -8,6 +8,7 @@ from config import CliConfig
 from functions import api
 from utils.api_errors import api_error_message
 from utils.money import fetch_active_accounts, parse_major_to_cents
+from utils.pagination import next_page, paginate, previous_page
 from utils.table import build_table, clip
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
@@ -56,9 +57,8 @@ def _render_transfers_table(rows: list[dict], page: int, page_size: int = 8) -> 
     headers = ["Date", "From", "To", "Sent", "Received", "Description"]
     if not rows:
         return "No internal transfers found.", 1
-    total_pages = max(1, (len(rows) + page_size - 1) // page_size)
-    current_page = max(0, min(page, total_pages - 1))
-    recent = rows[current_page * page_size : current_page * page_size + page_size]
+    page_window = paginate(rows, page, page_size)
+    recent = page_window.items
     cells = [
         [
             str(r["date"]),
@@ -70,7 +70,7 @@ def _render_transfers_table(rows: list[dict], page: int, page_size: int = 8) -> 
         ]
         for r in recent
     ]
-    return build_table(headers, cells, numeric_cols={3, 4}), total_pages
+    return build_table(headers, cells, numeric_cols={3, 4}), page_window.total_pages
 
 
 def _build_body(
@@ -390,10 +390,10 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         if pressed_key in {"b", "B", "ESC"}:
             return
         if pressed_key in {"RIGHT", "n", "N"}:
-            page = min(total_pages - 1, page + 1)
+            page = next_page(page, total_pages)
             continue
         if pressed_key in {"LEFT", "p", "P"}:
-            page = max(0, page - 1)
+            page = previous_page(page)
             continue
 
         event = process_selection_key(pressed_key, active_action, ACTION_KEYS)
