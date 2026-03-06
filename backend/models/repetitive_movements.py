@@ -4,23 +4,27 @@ from database import get_connection
 from functions.queries import load_query
 
 
-def _split_query_and_order(query: str) -> tuple[str, str]:
-    """
-    Splits a SELECT query into:
-    - base_query (everything before ORDER BY)
-    - order_clause (the ORDER BY block)
-    """
-
+def _split_query_clauses(query: str) -> tuple[str, str, str]:
+    """Split a SELECT query into select/from part, group-by clause, and order-by clause."""
     normalized = query.strip().rstrip(";")
     upper_normalized = normalized.upper()
-    order_index = upper_normalized.rfind("ORDER BY")
-
+    order_index = upper_normalized.rfind("\nORDER BY")
     if order_index == -1:
-        return normalized, ""
+        order_index = upper_normalized.rfind("ORDER BY")
+    order_clause = normalized[order_index:].strip() if order_index != -1 else ""
+    before_order = normalized[:order_index].strip() if order_index != -1 else normalized
 
-    base_query = normalized[:order_index].strip()
-    order_clause = normalized[order_index:].strip()
-    return base_query, order_clause
+    upper_before_order = before_order.upper()
+    group_index = upper_before_order.rfind("\nGROUP BY")
+    if group_index == -1:
+        group_index = upper_before_order.rfind("GROUP BY")
+
+    if group_index == -1:
+        return before_order, "", order_clause
+
+    select_from = before_order[:group_index].strip()
+    group_clause = before_order[group_index:].strip()
+    return select_from, group_clause, order_clause
 
 
 def get_all_repetitive_movements(
@@ -37,7 +41,7 @@ def get_all_repetitive_movements(
     """
 
     query = load_query("repetitive_movements/select.sql")
-    base_query, order_clause = _split_query_and_order(query)
+    select_from, group_clause, order_clause = _split_query_clauses(query)
 
     filters: list[str] = []
     params: list[int | str] = []
@@ -66,7 +70,7 @@ def get_all_repetitive_movements(
     if filters:
         where_clause = "\nWHERE " + "\n  AND ".join(filters)
 
-    paginated_query = f"{base_query}{where_clause}\n{order_clause}\nLIMIT ?\nOFFSET ?;"
+    paginated_query = f"{select_from}{where_clause}\n{group_clause}\n{order_clause}\nLIMIT ?\nOFFSET ?;"
     params.extend([limit, offset])
 
     with get_connection() as conn:
@@ -83,11 +87,12 @@ def get_repetitive_movement_by_id(id: int) -> dict | None:
     """
 
     query = load_query("repetitive_movements/select.sql")
-    base_query, order_clause = _split_query_and_order(query)
+    select_from, group_clause, order_clause = _split_query_clauses(query)
 
     by_id_query = f"""
-{base_query}
+{select_from}
 WHERE rm.id = ?
+{group_clause}
 {order_clause}
 LIMIT 1;
 """

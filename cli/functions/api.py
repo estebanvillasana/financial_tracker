@@ -30,6 +30,10 @@ def post(base_url: str, path: str, body: dict[str, Any]) -> Any:
 	return _request("POST", base_url, path, body)
 
 
+def put(base_url: str, path: str, body: dict[str, Any]) -> Any:
+	return _request("PUT", base_url, path, body)
+
+
 def patch(base_url: str, path: str, body: dict[str, Any]) -> Any:
 	return _request("PATCH", base_url, path, body)
 
