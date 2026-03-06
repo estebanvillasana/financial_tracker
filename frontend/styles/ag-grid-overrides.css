@@ -1,0 +1,80 @@
+/* ============================================================
+   AG Grid — Shared Visual Overrides
+   ============================================================
+   App-wide integration styles for AG Grid instances.
+   Applied to any container using the .ft-ag-grid class.
+
+   Covers:
+   - Border stripping for seamless card integration
+   - Compact uppercase headers
+   - Alternating row tint for readability
+   - Focused cell highlight (accent color)
+   - Range selection highlight
+   - Inline editing state
+   - Large text editor padding
+   - Right-aligned header utility class
+   ============================================================ */
+
+/* ── Seamless Card Integration ────────────────────────────── */
+
+.ft-ag-grid .ag-root-wrapper,
+.ft-ag-grid .ag-header,
+.ft-ag-grid .ag-row {
+  border: 0 !important;
+}
+
+.ft-ag-grid .ag-cell,
+.ft-ag-grid .ag-header-cell {
+  border-color: var(--ft-color-border) !important;
+}
+
+/* ── Compact Header ───────────────────────────────────────── */
+
+.ft-ag-grid .ag-header {
+  border-bottom: 1px solid var(--ft-color-border-strong) !important;
+}
+
+.ft-ag-grid .ag-header-cell-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Alternating Row Tint ─────────────────────────────────── */
+
+.ft-ag-grid .ag-row-odd:not(.ag-row-add-phantom) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* ── Focused Cell Highlight ───────────────────────────────── */
+
+.ft-ag-grid .ag-cell-focus {
+  background: var(--ft-color-accent-10) !important;
+  outline: 2px solid var(--ft-color-accent) !important;
+  outline-offset: -2px;
+}
+
+.ft-ag-grid .ag-cell-range-selected:not(.ag-cell-focus) {
+  background: var(--ft-color-accent-10) !important;
+}
+
+/* ── Inline Editing State ─────────────────────────────────── */
+
+.ft-ag-grid .ag-cell-inline-editing {
+  background: var(--ft-color-surface) !important;
+  padding-bottom: 0;
+  padding-top: 0;
+}
+
+/* ── Large Text Editor (description popup) ────────────────── */
+
+.ft-ag-grid .ag-text-area-input {
+  padding: 8px;
+}
+
+/* ── Right-Aligned Header (utility class for amount cols) ── */
+
+.ft-ag-grid .ag-header-cell.ft-ag-header-right .ag-header-cell-label {
+  justify-content: flex-end;
+}
