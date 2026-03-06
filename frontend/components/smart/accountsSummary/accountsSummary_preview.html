@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="../../dumb/accountSummaryCard/accountSummaryCard.css" />
     <link rel="stylesheet" href="../../dumb/filterBar/filterBar.css" />
     <link rel="stylesheet" href="../../dumb/pagination/pagination.css" />
+    <link rel="stylesheet" href="../../modals/bankAccountModal/bankAccountModal.css" />
     <link rel="stylesheet" href="./accountsSummary.css" />
 
     <style>
@@ -246,6 +247,12 @@
         letter-spacing: 0.4px;
         padding:       2px 6px;
         text-transform: uppercase;
+      }
+
+      .pv-section__tag--real {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: rgba(76, 175, 80, 0.35);
+        color: var(--preview-success);
       }
 
       /* ── Demo frame (wraps each live widget) ─────────────────────── */
@@ -577,6 +584,35 @@
         </div>
       </section>
 
+      <!-- ── Live: real API data ────────────────────────────────────── -->
+      <section class="pv-section">
+        <div class="pv-section__header">
+          <h2 class="pv-section__title">Real API data</h2>
+          <span class="pv-section__sub">Bypasses mock — requires the dev server to be running</span>
+          <span class="pv-section__tag pv-section__tag--real">Real API</span>
+        </div>
+        <div class="pv-demo">
+          <div class="pv-demo__bar">
+            <div class="pv-demo__bar-left">
+              <div class="pv-demo__dots">
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+                <span class="pv-demo__dot"></span>
+              </div>
+              <span class="pv-demo__label">AccountsSummary · live accounts from DB</span>
+            </div>
+            <div class="pv-demo__props">
+              <span class="pv-demo__prop">pageSize: <span>6</span></span>
+              <span class="pv-demo__prop">columns: <span>2</span></span>
+              <span class="pv-demo__prop">fetch: <span>real</span></span>
+            </div>
+          </div>
+          <div class="pv-demo__body">
+            <div id="preview-real"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── Static states bento ────────────────────────────────────── -->
       <section class="pv-section">
         <div class="pv-section__header">
@@ -702,7 +738,7 @@
 
     <!-- ── Fetch interceptor ────────────────────────────────────────── -->
     <script>
-      const MOCK_ACCOUNTS = [
+      let MOCK_ACCOUNTS = [
         { id: 1, account: 'BBVA',            owner: 'Esteban Villasana', type: 'Bank Account',   currency: 'MXN', description: 'Card: 4152 3136 5749 5730  ·  CLABE: 012580004734123181', total_balance: 1330533, net_movements: 87, active: 1, updated: 1, initial_balance: 0 },
         { id: 2, account: 'HSBC Platinum',   owner: 'Esteban Villasana', type: 'Credit Card',    currency: 'USD', description: 'Card: 4111 1111 1111 1111  ·  Expires 09/27',             total_balance: -450000, net_movements: 34, active: 1, updated: 0, initial_balance: 0 },
         { id: 3, account: 'Cetelem Savings', owner: 'Esteban Villasana', type: 'Savings',        currency: 'EUR', description: 'IBAN: DE89 3704 0044 0532 0130 00',                       total_balance: 5000000, net_movements: 12, active: 1, updated: 1, initial_balance: 0 },
@@ -731,12 +767,59 @@
         );
       }
 
+      // Set to true from the module script to bypass the mock and hit the real API.
+      window._previewBypassMock = false;
+
       const _realFetch = window.fetch.bind(window);
       window.fetch = function(url, opts) {
+        if (window._previewBypassMock) return _realFetch(url, opts);
+
         const s = String(url);
-        if (/\/bank-accounts/.test(s))           return _mockJson(MOCK_ACCOUNTS, 600);
+        const method = (opts?.method || 'GET').toUpperCase();
+
+        // PATCH /bank-accounts/:id/soft-delete
+        const softDeleteMatch = s.match(/\/bank-accounts\/(\d+)\/soft-delete/);
+        if (softDeleteMatch && method === 'PATCH') {
+          const id = Number(softDeleteMatch[1]);
+          MOCK_ACCOUNTS = MOCK_ACCOUNTS.filter(a => a.id !== id);
+          return _mockJson({ success: true }, 200);
+        }
+
+        // PUT /bank-accounts/:id  — update and return the refreshed record
+        const updateMatch = s.match(/\/bank-accounts\/(\d+)$/);
+        if (updateMatch && method === 'PUT') {
+          const id = Number(updateMatch[1]);
+          const idx = MOCK_ACCOUNTS.findIndex(a => a.id === id);
+          if (idx !== -1) {
+            const payload = JSON.parse(opts?.body || '{}');
+            const prev = MOCK_ACCOUNTS[idx];
+            // Recompute total_balance when initial_balance changes.
+            const newInitial = payload.initial_balance ?? prev.initial_balance;
+            MOCK_ACCOUNTS[idx] = {
+              ...prev, ...payload,
+              initial_balance: newInitial,
+              total_balance: newInitial + (prev.net_movements ?? 0),
+            };
+          }
+          return _mockJson(MOCK_ACCOUNTS[MOCK_ACCOUNTS.findIndex(a => a.id === id)], 200);
+        }
+
+        // GET /bank-accounts/:id
+        const getOneMatch = s.match(/\/bank-accounts\/(\d+)$/);
+        if (getOneMatch && method === 'GET') {
+          const id = Number(getOneMatch[1]);
+          return _mockJson(MOCK_ACCOUNTS.find(a => a.id === id) ?? null, 100);
+        }
+
+        // GET /bank-accounts (list)
+        if (/\/bank-accounts/.test(s) && method === 'GET') {
+          return _mockJson(MOCK_ACCOUNTS.filter(a => a.active === 1), 600);
+        }
+
+        // FX rates
         const m = s.match(/\/fx-rates\/latest\/([A-Za-z]{6})/);
-        if (m)                                    return _mockJson(MOCK_FX_RATES[m[1].toUpperCase()] ?? null, 300);
+        if (m) return _mockJson(MOCK_FX_RATES[m[1].toUpperCase()] ?? null, 300);
+
         return _realFetch(url, opts);
       };
     </script>
@@ -744,11 +827,17 @@
     <script type="module">
       import { AccountsSummary } from './accountsSummary.js';
 
+      // Render all mock demos in parallel first.
       await Promise.all([
         AccountsSummary.render('#preview-5pp',  { pageSize: 5, columns: 2, defaultCurrency: 'USD', title: 'Active Accounts' }),
         AccountsSummary.render('#preview-3pp',  { pageSize: 3, columns: 2, defaultCurrency: 'USD', title: 'Active Accounts' }),
         AccountsSummary.render('#preview-1col', { pageSize: 4, columns: 1, defaultCurrency: 'USD', title: 'Active Accounts' }),
       ]);
+
+      // Bypass the mock interceptor so the real-API section (and its card
+      // interactions: save, soft-delete) hit the actual dev server.
+      window._previewBypassMock = true;
+      await AccountsSummary.render('#preview-real', { pageSize: 6, columns: 2, defaultCurrency: 'USD', title: 'Active Accounts' });
     </script>
   </body>
 </html>

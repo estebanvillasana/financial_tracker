@@ -64,6 +64,18 @@
   white-space: nowrap;
 }
 
+/* ── Card interactivity ───────────────────────────────────── */
+
+/* Cards inside the summary grid are always clickable (open the detail modal). */
+[data-accounts-summary-grid] .ft-account-card {
+  cursor: pointer;
+}
+
+[data-accounts-summary-grid] .ft-account-card:hover {
+  background: var(--ft-color-accent-10);
+  border-color: var(--ft-color-accent);
+}
+
 /* ── Loading skeleton ─────────────────────────────────────── */
 
 /* Shimmer sweep animation shared by all skeleton elements in this component. */

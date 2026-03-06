@@ -56,6 +56,7 @@ import { bankAccounts }   from '../../../services/api.js';
 import { AccountSummaryCard } from '../../dumb/accountSummaryCard/accountSummaryCard.js';
 import { FilterBar }          from '../../dumb/filterBar/filterBar.js';
 import { Pagination }         from '../../dumb/pagination/pagination.js';
+import { BankAccountModal }   from '../../modals/bankAccountModal/bankAccountModal.js';
 
 const AccountsSummary = (() => {
 
@@ -413,7 +414,11 @@ const AccountsSummary = (() => {
       if (token !== renderToken) return;
 
       gridEl.innerHTML = '';
-      elements.forEach(el => { if (el) gridEl.appendChild(el); });
+      elements.forEach((el, i) => {
+        if (!el) return;
+        el.addEventListener('click', () => _openAccountModal(pageAccounts[i]));
+        gridEl.appendChild(el);
+      });
     }
 
     // ── Full view update ──────────────────────────────────────────────────────────
@@ -429,6 +434,38 @@ const AccountsSummary = (() => {
       _updateCount(countEl, filteredAccounts.length, allAccounts.length);
       await _renderCurrentPageCards();
       _renderPagination(paginationEl, filteredAccounts.length, currentPage, pageSize);
+    }
+
+    // ── Account modal opener ──────────────────────────────────────────────────────
+    /**
+     * Opens the bank account modal for the given account.
+     * Wires onSave → PUT API + re-fetch + grid refresh.
+     * Wires onSoftDelete → PATCH API + remove from arrays + close modal + grid refresh.
+     */
+    function _openAccountModal(account) {
+      BankAccountModal.open(account, {
+        defaultCurrency,
+
+        onSave: async (id, payload) => {
+          await bankAccounts.update(id, payload);
+          // Re-fetch to get the server-computed total_balance after initial_balance change.
+          const updated = await bankAccounts.getOne(id);
+          const idx = allAccounts.findIndex(a => String(a.id) === String(id));
+          if (idx !== -1) {
+            allAccounts[idx] = updated;
+            filteredAccounts = _filterAccounts(allAccounts, currentFilters);
+            await updateView();
+          }
+        },
+
+        onSoftDelete: async (id) => {
+          await bankAccounts.softDelete(id);
+          allAccounts      = allAccounts.filter(a => String(a.id) !== String(id));
+          filteredAccounts = _filterAccounts(allAccounts, currentFilters);
+          BankAccountModal.close();
+          await updateView();
+        },
+      });
     }
 
     // ── 4. FilterBar ──────────────────────────────────────────────────────────────
