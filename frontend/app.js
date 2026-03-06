@@ -12,6 +12,7 @@ const ROUTES = {
 };
 
 const DEFAULT_ROUTE = 'dashboard';
+let pageLoadToken = 0;
 
 function getPage() {
   return window.location.hash.replace('#', '').trim() || DEFAULT_ROUTE;
@@ -20,6 +21,8 @@ function getPage() {
 async function loadPage(page) {
   const path = ROUTES[page] ?? ROUTES[DEFAULT_ROUTE];
   const content = document.getElementById('app-content');
+  const currentToken = ++pageLoadToken;
+  let pageLoaded = false;
 
   content.classList.remove('ft-content--visible');
 
@@ -27,6 +30,7 @@ async function loadPage(page) {
     const res = await fetch(path);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     content.innerHTML = await res.text();
+    pageLoaded = true;
   } catch {
     content.innerHTML = `
       <div class="ft-page">
@@ -35,6 +39,17 @@ async function loadPage(page) {
           <p class="ft-text-muted ft-small">Failed to load this page.</p>
         </div>
       </div>`;
+  }
+
+  if (pageLoaded && currentToken === pageLoadToken && page === 'dashboard') {
+    try {
+      const { initDashboardPage } = await import('./pages/dashboard.js');
+      if (currentToken === pageLoadToken) {
+        await initDashboardPage(content);
+      }
+    } catch (error) {
+      console.error('Failed to initialize dashboard page:', error);
+    }
   }
 
   requestAnimationFrame(() => content.classList.add('ft-content--visible'));
