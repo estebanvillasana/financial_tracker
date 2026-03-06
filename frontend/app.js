@@ -6,7 +6,7 @@ const ROUTES = {
   dashboard:        'pages/dashboard.html',
   movements:        'pages/movements.html',
   'add-movements':  'pages/add-movements/add-movements.html',
-  transfers:        'pages/transfers.html',
+  transfers:        'pages/transfers/transfers.html',
   categories:       'pages/categories.html',
   repetitive:       'pages/repetitive-movements.html',
 };
@@ -16,6 +16,7 @@ let pageLoadToken = 0;
 const PAGE_INITIALIZERS = {
   dashboard: async () => (await import('./pages/dashboard.js')).initDashboardPage,
   'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
+  transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
 };
 
 function getPage() {

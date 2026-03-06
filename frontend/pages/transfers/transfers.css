@@ -1,0 +1,27 @@
+/* ============================================================
+   Internal Transfers — Page-Specific Styles
+   ============================================================
+   Form styles    → components/dumb/transferForm/transferForm.css
+   Cell renderers → styles/ag-grid-overrides.css  (ft-grid-*)
+   Only the grid host height and transfer-specific cells remain.
+   ============================================================ */
+
+/* ── Grid Host ──────────────────────────────────────────────── */
+
+.ft-transfers-grid {
+  height: calc(100vh - 380px);
+  min-height: 260px;
+  width: 100%;
+}
+
+/* ── Arrow Column (transfer-specific) ───────────────────────── */
+
+.ft-transfer-arrow-cell {
+  text-align: center;
+}
+
+.ft-transfer-arrow {
+  color: var(--ft-color-text-muted-30);
+  font-size: 16px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+}
