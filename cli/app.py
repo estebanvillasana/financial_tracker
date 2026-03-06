@@ -15,6 +15,7 @@ from screens import add_movements as add_movements_screen
 from screens import categories as categories_screen
 from screens import overview as overview_screen
 from screens import settings as settings_screen
+from utils.debug_shortcuts import DebugRestartRequested, handle_debug_restart, prime_debug_mode
 from utils.navigation import read_key
 from utils.render import app_terminal_session, flash_action, render_screen
 from utils.selection import process_selection_key
@@ -90,41 +91,46 @@ def _startup_checks(config: CliConfig) -> None:
 @app.command()
 def run() -> None:
 	"""Run the interactive Financial Tracker CLI."""
+	while True:
+		config = load_config()
+		prime_debug_mode(config.debug_mode)
+		_startup_checks(config)
+		active_key = SCREEN_DEFINITIONS[0].key if SCREEN_DEFINITIONS else "9"
+		menu_keys = [key for key, _ in MENU_ITEMS]
 
-	config = load_config()
-	_startup_checks(config)
-	active_key = SCREEN_DEFINITIONS[0].key if SCREEN_DEFINITIONS else "9"
-	menu_keys = [key for key, _ in MENU_ITEMS]
+		try:
+			with app_terminal_session():
+				while True:
+					screen = SCREENS_BY_KEY.get(active_key)
+					body = screen.render_body(config) if screen is not None else ""
 
-	with app_terminal_session():
-		while True:
-			screen = SCREENS_BY_KEY.get(active_key)
-			body = screen.render_body(config) if screen is not None else ""
+					render_screen(MENU_ITEMS, active_key, body)
+					pressed_key = read_key()
+					handle_debug_restart(pressed_key)
 
-			render_screen(MENU_ITEMS, active_key, body)
-			pressed_key = read_key()
+					if pressed_key == "ESC":
+						choice = "9"
+						enter_pressed = False
+					else:
+						event = process_selection_key(pressed_key, active_key, menu_keys)
+						active_key = event.active_key
 
-			if pressed_key == "ESC":
-				choice = "9"
-				enter_pressed = False
-			else:
-				event = process_selection_key(pressed_key, active_key, menu_keys)
-				active_key = event.active_key
+						if event.moved or event.choice is None:
+							continue
 
-				if event.moved or event.choice is None:
-					continue
+						choice = event.choice
+						enter_pressed = event.enter_pressed
 
-				choice = event.choice
-				enter_pressed = event.enter_pressed
+					if enter_pressed:
+						flash_action(MENU_ITEMS, active_key, body, MENU_LABELS.get(choice, "Action"))
 
-			if enter_pressed:
-				flash_action(MENU_ITEMS, active_key, body, MENU_LABELS.get(choice, "Action"))
-
-			if choice == "9":
-				return
-			if choice in SCREENS_BY_KEY:
-				active_key = choice
-				_route_screen(active_key, config)
+					if choice == "9":
+						return
+					if choice in SCREENS_BY_KEY:
+						active_key = choice
+						_route_screen(active_key, config)
+		except DebugRestartRequested:
+			continue
 
 
 def main() -> None:

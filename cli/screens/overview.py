@@ -9,6 +9,7 @@ from db import query
 from functions import api
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
+from utils.debug_shortcuts import handle_debug_restart
 from utils.navigation import read_key
 from utils.render import render_screen
 
@@ -305,6 +306,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         body = _build_body(rows, rates, config.main_currency, include_back=True, page=page, groups_per_page=groups_per_page)
         render_screen(menu_items, "1", body, interaction_area="content")
         key = read_key()
+        handle_debug_restart(key)
         if key in {"b", "B", "ESC"}:
             return
         if key in {"RIGHT", "n", "N"}:
@@ -319,5 +321,7 @@ def _show_error(menu_items: list[tuple[str, str]], message: str) -> None:
     body = f"Overview\n\n{message}\n\nB/ESC  Back"
     while True:
         render_screen(menu_items, "1", body, interaction_area="content")
-        if read_key() in {"b", "B", "ESC"}:
+        key = read_key()
+        handle_debug_restart(key)
+        if key in {"b", "B", "ESC"}:
             return

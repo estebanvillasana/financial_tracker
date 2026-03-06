@@ -10,6 +10,7 @@ from utils.inline_input import (
     prompt_inline_numbered_choice,
     prompt_inline_text,
 )
+from utils.debug_shortcuts import handle_debug_restart
 from utils.navigation import read_key
 from utils.render import flash_action, render_screen
 from utils.rich_ui import render_selectable_list
@@ -159,6 +160,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             interaction_area="content",
         )
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
 
         if pressed_key in {"b", "B", "ESC"}:
             return

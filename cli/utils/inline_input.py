@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Literal
 from typing import Mapping
 
+from utils.debug_shortcuts import handle_debug_restart
 from utils.navigation import read_key
 
 
@@ -19,6 +20,7 @@ INPUT_PANEL_START = "[[input_panel]]"
 INPUT_PANEL_END = "[[/input_panel]]"
 HINT_PANEL_START = "[[hint_panel]]"
 HINT_PANEL_END = "[[/hint_panel]]"
+BACK_TOKEN = "__BACK__"
 
 
 def _build_prompt_body(
@@ -147,16 +149,18 @@ def prompt_inline_text(
     max_length: int | None = None,
     min_length: int = 0,
     char_allowed: Callable[[str], bool] | None = None,
+    back_key: str | None = None,
 ) -> str | None:
     """Collect text input inside the app layout without leaving the live screen."""
     typed_value = initial_value
 
+    back_hint = f", {back_key.upper()} to go back" if back_key else ""
     while True:
         body = _build_prompt_body(
             body_builder,
             label,
             typed_value,
-            "Enter to confirm, Esc to cancel, Backspace to edit.",
+            f"Enter to confirm, Esc to cancel, Backspace to edit{back_hint}.",
         )
         render_screen(
             menu_items,
@@ -165,6 +169,8 @@ def prompt_inline_text(
             interaction_area=interaction_area,
         )
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
+        normalized = pressed_key.upper() if len(pressed_key) == 1 and pressed_key.isalpha() else pressed_key
 
         if pressed_key == "ENTER":
             if len(typed_value.strip()) < min_length:
@@ -172,6 +178,8 @@ def prompt_inline_text(
             return typed_value
         if pressed_key == "ESC":
             return None
+        if back_key is not None and normalized == back_key.upper():
+            return BACK_TOKEN
         if pressed_key in {"\x08", "\x7f"}:
             typed_value = typed_value[:-1]
             continue
@@ -196,6 +204,7 @@ def prompt_inline_numbered_choice(
     group_colors: Mapping[str, str] | None = None,
     max_visible_options: int = 10,
     option_text_width: int = 36,
+    back_key: str | None = None,
 ) -> str | None:
     """Select one option from a numbered list via arrows or numeric jump."""
     if not options:
@@ -205,6 +214,7 @@ def prompt_inline_numbered_choice(
     typed_number = "1"
     window_start = 0
 
+    back_hint = f", {back_key.upper()} to go back" if back_key else ""
     while True:
         max_visible = max(5, max_visible_options)
         if group_labels:
@@ -246,7 +256,7 @@ def prompt_inline_numbered_choice(
             body_builder,
             label,
             str(selected_index + 1),
-            ">       Up/Down to browse, Enter to choose, number to jump, Esc to cancel.",
+            f">       Up/Down to browse, Enter to choose, number to jump, Esc to cancel{back_hint}.",
             options_above=options_lines,
         )
         render_screen(
@@ -256,6 +266,11 @@ def prompt_inline_numbered_choice(
             interaction_area=interaction_area,
         )
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
+        normalized = pressed_key.upper() if len(pressed_key) == 1 and pressed_key.isalpha() else pressed_key
+
+        if back_key is not None and normalized == back_key.upper():
+            return BACK_TOKEN
 
         if pressed_key == "UP":
             selected_index = _move_index(selected_index, len(options), "UP")
@@ -342,6 +357,7 @@ def prompt_inline_autocomplete_choice(
             interaction_area=interaction_area,
         )
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
 
         if pressed_key == "UP":
             if visible_matches:

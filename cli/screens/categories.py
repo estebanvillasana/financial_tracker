@@ -7,6 +7,7 @@ from typing import Literal
 
 from config import CliConfig
 from functions import api
+from utils.debug_shortcuts import handle_debug_restart
 from utils.inline_input import prompt_inline_numbered_choice, prompt_inline_text
 from utils.navigation import read_key
 from utils.render import flash_action, render_screen
@@ -450,7 +451,9 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         except Exception as exc:
             body = f"Categories & Sub-categories\n\nCould not load data: {_api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "2", body, interaction_area="content")
-            if read_key() in {"b", "B", "ESC"}:
+            key = read_key()
+            handle_debug_restart(key)
+            if key in {"b", "B", "ESC"}:
                 return
             continue
 
@@ -458,6 +461,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         body = _build_body(active_action, "content", categories, sub_categories, message=message)
         render_screen(menu_items, "2", body, interaction_area="content")
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
 
         if pressed_key in {"b", "B", "ESC"}:
             return

@@ -8,6 +8,7 @@ from pathlib import Path
 # Fallback configuration if .env is not configured
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_MAIN_CURRENCY = "usd"
+DEFAULT_DEBUG_MODE = False
 DEFAULT_DB_PATH = str(
 	Path(__file__).resolve().parent.parent / "backend" / "data" / "app.db"
 )
@@ -20,6 +21,7 @@ class CliConfig:
 	api_base_url: str = DEFAULT_API_BASE_URL
 	main_currency: str = DEFAULT_MAIN_CURRENCY
 	db_path: str = DEFAULT_DB_PATH
+	debug_mode: bool = DEFAULT_DEBUG_MODE
 
 
 def load_config() -> CliConfig:
@@ -38,11 +40,14 @@ def load_config() -> CliConfig:
 	api_base_url = data.get("API_BASE_URL", DEFAULT_API_BASE_URL)
 	main_currency = data.get("MAIN_CURRENCY", DEFAULT_MAIN_CURRENCY).lower()
 	db_path = data.get("DB_PATH", DEFAULT_DB_PATH)
+	debug_mode_raw = data.get("DEBUG_MODE", "false").strip().lower()
+	debug_mode = debug_mode_raw in {"1", "true", "yes", "on"}
 
 	return CliConfig(
 		api_base_url=api_base_url,
 		main_currency=main_currency,
 		db_path=db_path,
+		debug_mode=debug_mode,
 	)
 
 
@@ -53,6 +58,7 @@ def save_config(config: CliConfig) -> None:
 		f"API_BASE_URL={config.api_base_url}",
 		f"MAIN_CURRENCY={config.main_currency.lower()}",
 		f"DB_PATH={config.db_path}",
+		f"DEBUG_MODE={'true' if config.debug_mode else 'false'}",
 		"",
 	]
 
