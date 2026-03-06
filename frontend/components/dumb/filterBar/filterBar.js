@@ -23,18 +23,21 @@ const FilterBar = (() => {
     }).join('');
   }
 
-  function _buildField(field = {}) {
+  function _buildField(field = {}, options = {}) {
     const id = _escapeHtml(field.id ?? '');
     const label = _escapeHtml(field.label ?? field.id ?? '');
     const type = String(field.type || 'text').toLowerCase();
     const placeholder = _escapeHtml(field.placeholder ?? '');
     const value = _escapeHtml(field.value ?? '');
     const extraClass = field.className ? ` ${_escapeHtml(field.className)}` : '';
+    const labelHTML = options.hideLabels
+      ? ''
+      : `<span class="ft-filter-bar__label">${label}</span>`;
 
     if (type === 'select') {
       return `
         <label class="ft-filter-bar__field ft-filter-bar__field--select${extraClass}">
-          <span class="ft-filter-bar__label">${label}</span>
+          ${labelHTML}
           <select class="ft-filter-bar__control" data-filter-id="${id}" aria-label="${label}">
             ${_buildSelectOptions(field.options, field.value)}
           </select>
@@ -44,7 +47,7 @@ const FilterBar = (() => {
     const inputType = ['date', 'month', 'number', 'search'].includes(type) ? type : 'text';
     return `
       <label class="ft-filter-bar__field ft-filter-bar__field--${inputType}${extraClass}">
-        <span class="ft-filter-bar__label">${label}</span>
+        ${labelHTML}
         <input
           class="ft-filter-bar__control"
           type="${inputType}"
@@ -67,15 +70,20 @@ const FilterBar = (() => {
       </button>`;
   }
 
+  // config.variant    — 'default' (boxed, default) | 'bare' (no container box)
+  // config.hideLabels — true: omit the label text above each control (optional)
   function buildHTML(config = {}) {
     const fields = _toArray(config.fields);
     const actions = _toArray(config.actions);
+    const isBare = String(config.variant || '') === 'bare';
+    const fieldOptions = { hideLabels: config.hideLabels === true };
 
-    const fieldsHTML = fields.map(_buildField).join('');
+    const rootClass = isBare ? 'ft-filter-bar ft-filter-bar--bare' : 'ft-filter-bar';
+    const fieldsHTML = fields.map(f => _buildField(f, fieldOptions)).join('');
     const actionsHTML = actions.map(_buildAction).join('');
 
     return `
-      <section class="ft-filter-bar" aria-label="Filters">
+      <section class="${rootClass}" aria-label="Filters">
         <div class="ft-filter-bar__fields">${fieldsHTML}</div>
         <div class="ft-filter-bar__actions">${actionsHTML}</div>
       </section>`;

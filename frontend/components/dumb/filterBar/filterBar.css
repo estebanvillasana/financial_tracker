@@ -74,6 +74,17 @@
   gap: var(--ft-spacing);
 }
 
+/* ── Bare variant ─────────────────────────────────────── */
+
+/* No background box, no border, no padding — just the raw controls inline. */
+.ft-filter-bar--bare {
+  align-items: center; /* vertically center controls (no label height to align against) */
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
 @media (max-width: 900px) {
   .ft-filter-bar {
     align-items: stretch;

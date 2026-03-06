@@ -434,14 +434,18 @@ const AccountsSummary = (() => {
     // ── 4. FilterBar ──────────────────────────────────────────────────────────────
     // Rendered once from data-derived options. Stays mounted; only the card grid
     // and pagination change when filters are applied.
-    FilterBar.render(toolbarEl, _buildFilterConfig(allAccounts, currentFilters), {
-      onFilterChange: values => {
-        currentFilters   = values;
-        currentPage      = 1; // Reset to first page on any filter change.
-        filteredAccounts = _filterAccounts(allAccounts, currentFilters);
-        updateView();
-      },
-    });
+    FilterBar.render(
+      toolbarEl,
+      { ..._buildFilterConfig(allAccounts, currentFilters), variant: 'bare', hideLabels: false },
+      {
+        onFilterChange: values => {
+          currentFilters   = values;
+          currentPage      = 1; // Reset to first page on any filter change.
+          filteredAccounts = _filterAccounts(allAccounts, currentFilters);
+          updateView();
+        },
+      }
+    );
 
     // ── 5. Pagination (event delegation on persistent container) ──────────────────
     // We delegate clicks on the outer `paginationEl` wrapper (not the inner
