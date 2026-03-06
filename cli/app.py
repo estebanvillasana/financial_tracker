@@ -13,7 +13,7 @@ from db import db_exists
 from functions import api as api_client
 from screens import add_movements as add_movements_screen
 from screens import categories as categories_screen
-from screens import money_transfers as money_transfers_screen
+from screens import internal_transfers as internal_transfers_screen
 from screens import movements as movements_screen
 from screens import overview as overview_screen
 from screens import settings as settings_screen
@@ -56,8 +56,8 @@ SCREEN_DEFINITIONS = [
 	ScreenDefinition(
 		key="4",
 		label="Internal Transfers",
-		render_body=money_transfers_screen.render_body,
-		run=money_transfers_screen.run,
+		render_body=internal_transfers_screen.render_body,
+		run=internal_transfers_screen.run,
 	),
 	ScreenDefinition(
 		key="5",
