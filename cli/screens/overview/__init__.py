@@ -13,7 +13,8 @@ from utils.navigation import read_key
 from utils.render import render_screen
 
 from screens.overview.data import build_rates, compute_summaries, fetch_rows
-from screens.overview.render import build_body, build_preview_body
+from screens.overview.preview import build_preview_body
+from screens.overview.render import build_body
 
 
 # ── Preview (main-menu sidebar) ──────────────────────────────
