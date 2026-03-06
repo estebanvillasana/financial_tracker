@@ -94,6 +94,14 @@ function formatMoneyFromCents(cents, currencyCode, options = {}) {
   return formatMoney((Number(cents) || 0) / 100, currencyCode, options);
 }
 
+/** Converts a draft row's amount + type into signed cents impact. */
+function toSignedCents(row) {
+  const amount = Number(row?.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  const absCents = Math.round(Math.abs(amount) * 100);
+  return row?.type === 'Income' ? absCents : -absCents;
+}
+
 export {
   normalizeCurrency,
   getCurrencyDefinition,
@@ -101,4 +109,5 @@ export {
   getCurrencyLabel,
   formatMoney,
   formatMoneyFromCents,
+  toSignedCents,
 };
