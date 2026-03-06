@@ -157,15 +157,16 @@ async function initAddMovementsPage(root = document) {
   let activeRepetitiveMovements = [];
 
   try {
-    [accounts, activeCategories, activeSubCategories, activeRepetitiveMovements] = await Promise.all([
+    [accounts, activeCategories, activeSubCategories] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
-      repetitiveMovements.getAll({ active: 1 }),
     ]);
     accounts = Array.isArray(accounts) ? accounts : [];
     activeCategories = Array.isArray(activeCategories) ? activeCategories : [];
     activeSubCategories = Array.isArray(activeSubCategories) ? activeSubCategories : [];
+    /* Repetitive movements are optional — load separately so a failure doesn't block the page */
+    activeRepetitiveMovements = await repetitiveMovements.getAll({ active: 1 }).catch(() => []);
     activeRepetitiveMovements = Array.isArray(activeRepetitiveMovements) ? activeRepetitiveMovements : [];
   } catch (error) {
     FeedbackBanner.render(feedbackEl, error?.message || 'Failed to load add movement data.');
