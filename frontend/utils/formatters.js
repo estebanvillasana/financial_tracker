@@ -71,8 +71,18 @@ function getCurrencyLabel(currencyCode) {
   return symbol === normalized ? normalized : `${symbol} ${normalized}`.trim();
 }
 
-/**
- * Formats a decimal amount using the app's preferred money display.
+/** Formats an ISO date string (YYYY-MM-DD) for display: "06 Mar. 2026". */
+function formatDateDisplay(isoDate) {
+  const raw = String(isoDate || '');
+  if (!raw) return '';
+  const d = new Date(`${raw}T00:00:00`);
+  if (isNaN(d.getTime())) return raw;
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = d.toLocaleString('en-US', { month: 'short' });
+  return `${day} ${mon}. ${d.getFullYear()}`;
+}
+
+/** Formats a decimal amount using the app's preferred money display.
  * Example: 13316.01 + MXN -> "$13,316.01 MXN"
  */
 function formatMoney(amount, currencyCode, options = {}) {
@@ -107,6 +117,7 @@ export {
   getCurrencyDefinition,
   getCurrencySymbol,
   getCurrencyLabel,
+  formatDateDisplay,
   formatMoney,
   formatMoneyFromCents,
   toSignedCents,

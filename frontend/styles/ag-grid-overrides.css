@@ -78,3 +78,69 @@
 .ft-ag-grid .ag-header-cell.ft-ag-header-right .ag-header-cell-label {
   justify-content: flex-end;
 }
+
+/* ── Shared Cell Renderers ────────────────────────────────── */
+/* Used by gridRenderers.js across multiple page grids.       */
+
+.ft-grid-date {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.ft-grid-amount {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  width: 100%;
+}
+
+.ft-grid-account {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-grid-account__currency {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 4px;
+  text-transform: uppercase;
+}
+
+/* ── Shared Actions Column ────────────────────────────────── */
+
+.ft-grid-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.ft-grid-actions__btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+  width: 26px;
+}
+
+.ft-grid-actions__btn .material-symbols-outlined {
+  font-size: 16px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+}
+
+.ft-grid-actions__btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-grid-actions__btn--danger:hover {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
