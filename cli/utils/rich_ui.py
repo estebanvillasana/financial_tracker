@@ -84,50 +84,64 @@ def _build_rich_menu_text(
 def _build_rich_body_text(body: str):
     from rich.text import Text
 
+    def _append_with_markers(rich_text: Text, value: str, base_style: str | None) -> None:
+        remaining = value
+        while remaining:
+            marker_positions: list[tuple[int, str]] = []
+            for marker, end_marker in (
+                (NUM_STYLE_START, NUM_STYLE_END),
+                (GROUP_STYLE_START, GROUP_STYLE_END),
+                (DIM_START, DIM_END),
+            ):
+                start = remaining.find(marker)
+                if start != -1:
+                    marker_positions.append((start, marker))
+            if not marker_positions:
+                rich_text.append(remaining, style=base_style)
+                return
+
+            start, marker = min(marker_positions, key=lambda item: item[0])
+            if start > 0:
+                rich_text.append(remaining[:start], style=base_style)
+            chunk = remaining[start:]
+
+            if marker == NUM_STYLE_START:
+                end = chunk.find(NUM_STYLE_END)
+                if end == -1:
+                    rich_text.append(chunk, style=base_style)
+                    return
+                token = chunk[len(NUM_STYLE_START) : end]
+                rich_text.append(token, style="bold cyan")
+                remaining = chunk[end + len(NUM_STYLE_END) :]
+                continue
+
+            if marker == GROUP_STYLE_START:
+                marker_end = chunk.find("]]")
+                end = chunk.find(GROUP_STYLE_END)
+                if marker_end == -1 or end == -1:
+                    rich_text.append(chunk, style=base_style)
+                    return
+                color = chunk[len(GROUP_STYLE_START) : marker_end]
+                token = chunk[marker_end + 2 : end]
+                rich_text.append(token, style=f"bold {color.strip()}")
+                remaining = chunk[end + len(GROUP_STYLE_END) :]
+                continue
+
+            end = chunk.find(DIM_END)
+            if end == -1:
+                rich_text.append(chunk, style=base_style)
+                return
+            token = chunk[len(DIM_START) : end]
+            rich_text.append(token, style="dim")
+            remaining = chunk[end + len(DIM_END) :]
+
     rich_text = Text()
     lines = body.splitlines()
     for index, line in enumerate(lines):
         is_marked_active = ACTIVE_LINE_MARKER in line
         display_line = line.replace(ACTIVE_LINE_MARKER, "")
         line_style = "bold yellow" if is_marked_active or display_line.lstrip().startswith(">") else None
-
-        if NUM_STYLE_START in display_line and NUM_STYLE_END in display_line:
-            start = display_line.find(NUM_STYLE_START)
-            end = display_line.find(NUM_STYLE_END)
-            if end != -1:
-                before = display_line[:start]
-                num_text = display_line[start + len(NUM_STYLE_START) : end]
-                after = display_line[end + len(NUM_STYLE_END) :]
-                rich_text.append(before, style=line_style)
-                rich_text.append(num_text, style="bold cyan")
-                rich_text.append(after, style=line_style)
-            else:
-                rich_text.append(display_line, style=line_style)
-        elif GROUP_STYLE_START in display_line and GROUP_STYLE_END in display_line:
-            start = display_line.find(GROUP_STYLE_START)
-            marker_end = display_line.find("]]", start)
-            end = display_line.find(GROUP_STYLE_END)
-            if marker_end != -1 and end != -1:
-                before = display_line[:start]
-                color = display_line[start + len(GROUP_STYLE_START) : marker_end]
-                styled_text = display_line[marker_end + 2 : end]
-                after = display_line[end + len(GROUP_STYLE_END) :]
-                rich_text.append(before, style=line_style)
-                rich_text.append(styled_text, style=f"bold {color.strip()}")
-                rich_text.append(after, style=line_style)
-            else:
-                rich_text.append(display_line, style=line_style)
-        elif DIM_START in display_line and DIM_END in display_line:
-            start = display_line.find(DIM_START)
-            end = display_line.find(DIM_END)
-            before = display_line[:start]
-            dim_text = display_line[start + len(DIM_START) : end]
-            after = display_line[end + len(DIM_END) :]
-            rich_text.append(before, style=line_style)
-            rich_text.append(dim_text, style="dim")
-            rich_text.append(after, style=line_style)
-        else:
-            rich_text.append(display_line, style=line_style)
+        _append_with_markers(rich_text, display_line, line_style)
 
         if index < len(lines) - 1:
             rich_text.append("\n")

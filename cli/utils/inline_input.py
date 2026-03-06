@@ -78,6 +78,46 @@ def _prefix_matches(options: list[str], typed_value: str) -> list[str]:
     return [opt for opt in options if opt.lower().startswith(normalized)]
 
 
+def _wrap_option_text(option: str, width: int) -> list[str]:
+    group_start = option.find("[[group:")
+    group_end = option.find("[[/group]]")
+    if group_start == -1 or group_end == -1:
+        return textwrap.wrap(
+            option,
+            width=width,
+            break_long_words=False,
+            break_on_hyphens=False,
+        ) or [""]
+
+    marker_end = option.find("]]", group_start)
+    if marker_end == -1 or marker_end >= group_end:
+        return textwrap.wrap(
+            option,
+            width=width,
+            break_long_words=False,
+            break_on_hyphens=False,
+        ) or [""]
+
+    before = option[:group_start]
+    color = option[group_start + len("[[group:") : marker_end].strip()
+    styled = option[marker_end + 2 : group_end]
+    after = option[group_end + len("[[/group]]") :]
+    plain = before + styled + after
+    wrapped_plain = textwrap.wrap(
+        plain,
+        width=width,
+        break_long_words=False,
+        break_on_hyphens=False,
+    ) or [""]
+
+    token = f"[[group:{color}]]{styled}[[/group]]"
+    for i, part in enumerate(wrapped_plain):
+        if styled and styled in part:
+            wrapped_plain[i] = part.replace(styled, token, 1)
+            break
+    return wrapped_plain
+
+
 def _format_option_lines(
     title: str,
     options: list[str],
@@ -112,12 +152,7 @@ def _format_option_lines(
         if numbered:
             number_label = f"{number_offset + index + 1}."
             visible_prefix = f"    {marker} {number_label} "
-            wrapped_option = textwrap.wrap(
-                option,
-                width=max(12, option_text_width),
-                break_long_words=False,
-                break_on_hyphens=False,
-            ) or [""]
+            wrapped_option = _wrap_option_text(option, width=max(12, option_text_width))
             lines.append(f"    {marker} [[num]]{number_label}[[/num]] {wrapped_option[0]}")
             continuation_prefix = " " * len(visible_prefix)
             for part in wrapped_option[1:]:
