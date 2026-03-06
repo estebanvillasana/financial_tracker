@@ -27,6 +27,7 @@ function createDraftRow(type = 'Expense') {
     amount: null,
     category_id: null,
     sub_category_id: null,
+    repetitive_movement_id: null,
   };
 }
 
@@ -42,6 +43,7 @@ function createSentinelRow(type = 'Expense') {
     amount: null,
     category_id: null,
     sub_category_id: null,
+    repetitive_movement_id: null,
   };
 }
 

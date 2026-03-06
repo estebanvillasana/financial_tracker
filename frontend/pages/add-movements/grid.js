@@ -6,7 +6,8 @@
  * - sentinel row commit logic (auto-promote on focus leave),
  * - custom DatePicker cell editor integration,
  * - row type visual indicator via data attribute,
- * - bulk paste insertion from clipboard.
+ * - bulk paste insertion from clipboard,
+ * - error cell highlighting for validation feedback.
  */
 import {
   TYPE_VALUES,
@@ -27,14 +28,10 @@ import {
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { formatMoney } from '../../utils/formatters.js';
 
+const ERROR_CELL_CLASS = 'ft-add-cell--error';
+
 /* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
 
-/**
- * Commits the sentinel row into a normal draft row when it has user data.
- * The sentinel is removed and replaced by the committed row + a fresh sentinel.
- *
- * @param {object} state - Page state (must include gridApi, draftType)
- */
 function commitSentinelRow(state) {
   if (!state.gridApi) return;
   const sentinelNode = state.gridApi.getRowNode(SENTINEL_ID);
@@ -55,11 +52,6 @@ function commitSentinelRow(state) {
   });
 }
 
-/**
- * Syncs state.rows from AG Grid, excluding the sentinel row.
- *
- * @param {object} state - Page state (gridApi will be iterated)
- */
 function syncRowsFromGrid(state) {
   if (!state.gridApi) return;
   const rows = [];
@@ -69,15 +61,37 @@ function syncRowsFromGrid(state) {
   state.rows = rows;
 }
 
-/* ── Cell Renderers ───────────────────────────────────────────────────────── */
+/* ── Error Cell Highlighting ──────────────────────────────────────────────── */
 
 /**
- * Builds a category/sub-category cell renderer with colored bar indicator.
- *
- * @param {object}              state  - Page state (categories, subCategories)
- * @param {'category'|'sub-category'} kind
- * @returns {function}          AG Grid cellRenderer function
+ * Highlights specific cells with an error class for a given row.
  */
+function highlightErrorCells(gridApi, rowId, fieldNames) {
+  if (!gridApi || !fieldNames?.length) return;
+  const rowNode = gridApi.getRowNode(rowId);
+  if (!rowNode) return;
+
+  const rowEl = document.querySelector(`[row-id="${rowNode.id}"]`);
+  if (!rowEl) return;
+
+  fieldNames.forEach(field => {
+    const cellEl = rowEl.querySelector(`[col-id="${field}"]`);
+    if (cellEl) cellEl.classList.add(ERROR_CELL_CLASS);
+  });
+}
+
+/**
+ * Clears all error highlights from the grid.
+ */
+function clearErrorHighlights(gridApi) {
+  if (!gridApi) return;
+  const gridEl = document.querySelector('.ft-add-movements-grid');
+  if (!gridEl) return;
+  gridEl.querySelectorAll(`.${ERROR_CELL_CLASS}`).forEach(el => el.classList.remove(ERROR_CELL_CLASS));
+}
+
+/* ── Cell Renderers ───────────────────────────────────────────────────────── */
+
 function buildCategoryRenderer(state, kind) {
   return params => {
     const label = kind === 'category'
@@ -95,14 +109,18 @@ function buildCategoryRenderer(state, kind) {
   };
 }
 
+function buildRepetitiveRenderer(state) {
+  return params => {
+    if (isAddRow(params.data)) return '';
+    const id = params.value;
+    if (!id) return '<span class="ft-add-cell-placeholder">None</span>';
+    const match = state.repetitiveMovements?.find(rm => Number(rm.id) === Number(id));
+    return match ? match.movement : '';
+  };
+}
+
 /* ── Row Type Attribute ───────────────────────────────────────────────────── */
 
-/**
- * Post-processes rows to add a data-row-type attribute for CSS styling.
- * This enables the colored left border via CSS box-shadow.
- *
- * @param {object} params - AG Grid onRowDataUpdated/onModelUpdated params
- */
 function applyRowTypeAttributes(api) {
   api.forEachNode(node => {
     if (!node.data) return;
@@ -119,16 +137,7 @@ function applyRowTypeAttributes(api) {
 
 /* ── Grid Options Builder ─────────────────────────────────────────────────── */
 
-/**
- * Creates full AG Grid options for the Add Movements screen.
- *
- * @param {object} state    - Page state
- * @param {object} domRefs  - DOM element references
- * @param {object} handlers - Callback functions from index.js
- * @returns {object}        AG Grid configuration object
- */
 function buildGridOptions(state, domRefs, handlers) {
-  /** Reusable AG Grid cell editor class for the date column. */
   const DateCellEditor = DatePicker.createCellEditor();
 
   return {
@@ -150,6 +159,30 @@ function buildGridOptions(state, domRefs, handlers) {
       minWidth: 120,
     },
     columnDefs: [
+      /* ── Row number ── */
+      {
+        colId: '__rowNum',
+        headerName: '#',
+        width: 38,
+        minWidth: 38,
+        maxWidth: 38,
+        editable: false,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressNavigable: true,
+        cellClass: 'ft-add-row-num',
+        valueGetter: params => {
+          if (isAddRow(params.data)) return '';
+          let idx = 0;
+          params.api.forEachNode(n => {
+            if (n === params.node) return;
+            if (!isAddRow(n.data)) idx++;
+          });
+          return idx + 1;
+        },
+      },
+
       /* ── Row selection checkbox ── */
       {
         colId: '__select',
@@ -180,7 +213,7 @@ function buildGridOptions(state, domRefs, handlers) {
         },
       },
 
-      /* ── Description (popup text area) ── */
+      /* ── Description ── */
       {
         field: 'description',
         headerName: 'Description',
@@ -190,11 +223,13 @@ function buildGridOptions(state, domRefs, handlers) {
         cellEditorPopup: true,
       },
 
-      /* ── Date (custom DatePicker cell editor) ── */
+      /* ── Date ── */
       {
         field: 'date',
         headerName: 'Date',
-        minWidth: 130,
+        minWidth: 110,
+        maxWidth: 140,
+        flex: 0.6,
         editable: true,
         cellEditor: DateCellEditor,
         cellEditorPopup: true,
@@ -209,11 +244,13 @@ function buildGridOptions(state, domRefs, handlers) {
         },
       },
 
-      /* ── Amount (right-aligned, financial formatting) ── */
+      /* ── Amount ── */
       {
         field: 'amount',
         headerName: 'Amount',
-        minWidth: 170,
+        minWidth: 110,
+        maxWidth: 160,
+        flex: 0.7,
         editable: true,
         headerClass: 'ft-ag-header-right',
         cellStyle: { textAlign: 'right' },
@@ -237,8 +274,7 @@ function buildGridOptions(state, domRefs, handlers) {
         },
       },
 
-
-      /* ── Category (rich select dropdown) ── */
+      /* ── Category ── */
       {
         field: 'category_id',
         headerName: 'Category',
@@ -259,7 +295,7 @@ function buildGridOptions(state, domRefs, handlers) {
         }),
       },
 
-      /* ── Sub-category (rich select, filtered by parent category) ── */
+      /* ── Sub-category ── */
       {
         field: 'sub_category_id',
         headerName: 'Sub-category',
@@ -279,12 +315,44 @@ function buildGridOptions(state, domRefs, handlers) {
           highlightMatch: true,
         }),
       },
+
+      /* ── Repetitive Movement ── */
+      {
+        field: 'repetitive_movement_id',
+        headerName: 'Repetitive',
+        minWidth: 140,
+        editable: true,
+        singleClickEdit: true,
+        valueFormatter: params => {
+          if (!params.value) return '';
+          const match = state.repetitiveMovements?.find(rm => Number(rm.id) === Number(params.value));
+          return match ? match.movement : '';
+        },
+        valueParser: params => parseNumberOrNull(params.newValue),
+        cellRenderer: buildRepetitiveRenderer(state),
+        cellEditor: 'agRichSelectCellEditor',
+        cellEditorParams: () => ({
+          values: [null, ...(state.repetitiveMovements || []).map(rm => Number(rm.id))],
+          formatValue: value => {
+            if (!value) return '\u2014 None';
+            const match = state.repetitiveMovements?.find(rm => Number(rm.id) === Number(value));
+            return match ? match.movement : '';
+          },
+          searchType: 'matchAny',
+          allowTyping: true,
+          filterList: true,
+          highlightMatch: true,
+        }),
+      },
     ],
 
     /* ── Grid Event Handlers ── */
 
     onCellValueChanged: params => {
-      /* Auto-promote sentinel after overlay edits (popup text, rich-select, date picker) */
+      /* Clear error highlight when user edits a cell */
+      const cellEl = document.querySelector(`[row-id="${params.node.id}"] [col-id="${params.column.getColId()}"]`);
+      if (cellEl) cellEl.classList.remove(ERROR_CELL_CLASS);
+
       if (isAddRow(params.data) && hasUserData(params.data)) {
         const isOverlay = params.colDef.cellEditorPopup ||
           params.colDef.cellEditor === 'agRichSelectCellEditor';
@@ -301,7 +369,6 @@ function buildGridOptions(state, domRefs, handlers) {
         }
       }
 
-      /* Clear sub-category when category changes and they're incompatible */
       if (params.colDef.field === 'category_id') {
         const subCategory = state.subCategories.find(item => Number(item.id) === Number(params.data?.sub_category_id));
         if (subCategory && Number(subCategory.category_id) !== Number(params.data?.category_id)) {
@@ -316,7 +383,7 @@ function buildGridOptions(state, domRefs, handlers) {
     },
 
     onCellClicked: params => {
-      if (['category_id', 'sub_category_id'].includes(params.colDef.field)) {
+      if (['category_id', 'sub_category_id', 'repetitive_movement_id'].includes(params.colDef.field)) {
         params.api.startEditingCell({ rowIndex: params.rowIndex, colKey: params.column.getColId() });
       }
     },
@@ -349,7 +416,6 @@ function buildGridOptions(state, domRefs, handlers) {
       requestAnimationFrame(() => applyRowTypeAttributes(params.api));
     },
 
-    /** Apply row type attributes after initial render and any data update. */
     onFirstDataRendered: params => applyRowTypeAttributes(params.api),
     onRowDataUpdated: params => applyRowTypeAttributes(params.api),
   };
@@ -357,19 +423,10 @@ function buildGridOptions(state, domRefs, handlers) {
 
 /* ── Grid Mount ───────────────────────────────────────────────────────────── */
 
-/**
- * Mounts AG Grid and hooks page-level focus/paste interactions.
- *
- * @param {HTMLElement} gridHost  - DOM element to host the grid
- * @param {object}      state     - Page state
- * @param {object}      domRefs   - DOM references
- * @param {object}      handlers  - Callback functions from index.js
- */
 function mountGrid(gridHost, state, domRefs, handlers) {
   const gridOptions = buildGridOptions(state, domRefs, handlers);
   state.gridApi = window.agGrid.createGrid(gridHost, gridOptions);
 
-  /* ── Focus-out sentinel commit ── */
   gridHost.addEventListener('focusout', event => {
     if (state.lastFocusWasSentinel && !gridHost.contains(event.relatedTarget)) {
       commitSentinelRow(state);
@@ -379,7 +436,6 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     }
   });
 
-  /* ── Bulk paste on sentinel row ── */
   gridHost.addEventListener('paste', event => {
     const focusedCell = state.gridApi.getFocusedCell();
     if (!focusedCell) return;
@@ -396,7 +452,7 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     const editableColumns = state.gridApi
       .getAllDisplayedColumns()
       .map(col => col.getColId())
-      .filter(colId => !['__select', '__actions'].includes(colId));
+      .filter(colId => !['__select', '__actions', '__rowNum'].includes(colId));
 
     const startColIndex = editableColumns.indexOf(focusedCell.column.getColId());
     if (startColIndex < 0) return;
@@ -427,7 +483,6 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     event.preventDefault();
   });
 
-  /* ── Global escape handler ── */
   gridHost.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
     state.gridApi.deselectAll();
@@ -443,4 +498,6 @@ export {
   syncRowsFromGrid,
   mountGrid,
   applyRowTypeAttributes,
+  highlightErrorCells,
+  clearErrorHighlights,
 };
