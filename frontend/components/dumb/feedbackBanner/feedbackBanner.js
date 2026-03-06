@@ -40,8 +40,16 @@ const FeedbackBanner = (() => {
    * @param {string}      message   - Warning text
    * @param {Array<{label: string, className?: string, onClick: Function}>} actions
    */
+  /** WeakMap to track active AbortControllers per container for cleanup. */
+  const _controllers = new WeakMap();
+
   function renderWithActions(container, message, actions = []) {
     if (!container) return;
+
+    /* Abort any previous listener on this container */
+    _controllers.get(container)?.abort();
+    const ac = new AbortController();
+    _controllers.set(container, ac);
 
     const actionsHtml = actions
       .map((a, i) => {
@@ -56,13 +64,13 @@ const FeedbackBanner = (() => {
         <span class="ft-feedback-banner__actions">${actionsHtml}</span>
       </div>`;
 
-    container.addEventListener('click', function _handler(event) {
+    container.addEventListener('click', event => {
       const btn = event.target.closest('[data-action-index]');
       if (!btn) return;
       const index = Number(btn.dataset.actionIndex);
       if (actions[index]?.onClick) actions[index].onClick();
-      container.removeEventListener('click', _handler);
-    }, { once: false });
+      ac.abort();
+    }, { signal: ac.signal });
   }
 
   /**
