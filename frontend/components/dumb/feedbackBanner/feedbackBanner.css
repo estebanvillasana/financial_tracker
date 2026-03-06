@@ -1,0 +1,54 @@
+/* ── Feedback Banner — Reusable Dumb Component ───────────── */
+
+.ft-feedback-banner {
+  border-radius: var(--ft-radius-widget);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.ft-feedback-banner--error {
+  background: var(--ft-color-danger-10);
+  border: 1px solid var(--ft-color-danger);
+  color: var(--ft-color-danger);
+}
+
+.ft-feedback-banner--success {
+  background: var(--ft-color-success-10);
+  border: 1px solid var(--ft-color-success);
+  color: var(--ft-color-success);
+}
+
+.ft-feedback-banner--warning {
+  background: var(--ft-color-warning-10);
+  border: 1px solid var(--ft-color-warning);
+  color: var(--ft-color-warning);
+}
+
+.ft-feedback-banner__actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.ft-feedback-banner__btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--ft-radius-widget);
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  transition: opacity 100ms ease;
+}
+
+.ft-feedback-banner__btn:hover {
+  opacity: 0.75;
+}
+
+.ft-feedback-banner__btn--danger {
+  background: var(--ft-color-danger);
+  border-color: var(--ft-color-danger);
+  color: #fff;
+}
