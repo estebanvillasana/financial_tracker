@@ -9,14 +9,14 @@ import { isValidIsoDate, parseNumberOrNull } from './utils.js';
 
 /**
  * Validates one draft row and transforms it into the backend payload shape.
+ * Always returns positive cents — the backend handles sign for expenses.
  *
  * @param {object} row        - Draft row data from the grid
  * @param {object} state      - Page state (categories, subCategories)
  * @param {number} accountId  - Target account ID
- * @param {number} rowIndex   - 1-based row number for error messages
- * @returns {{ errors: string[], payload: object|null }}
+ * @returns {{ errors: string[], errorFields: string[], payload: object|null }}
  */
-function normalizeDraftRow(row, state, accountId, rowIndex) {
+function normalizeDraftRow(row, state, accountId) {
   const movement = String(row?.movement || '').trim();
   const amount = Number(row?.amount);
   const type = String(row?.type || '');
@@ -26,31 +26,33 @@ function normalizeDraftRow(row, state, accountId, rowIndex) {
   const subCategoryId = parseNumberOrNull(row?.sub_category_id);
 
   const errors = [];
-  if (!movement) errors.push(`Row ${rowIndex}: movement is required.`);
-  if (!TYPE_VALUES.includes(type)) errors.push(`Row ${rowIndex}: type must be Income or Expense.`);
-  if (!isValidIsoDate(date)) errors.push(`Row ${rowIndex}: date must be YYYY-MM-DD.`);
-  if (!Number.isFinite(amount) || amount <= 0) errors.push(`Row ${rowIndex}: amount must be greater than 0.`);
+  const errorFields = [];
+
+  if (!movement) { errors.push('Movement is required.'); errorFields.push('movement'); }
+  if (!TYPE_VALUES.includes(type)) { errors.push('Type must be Income or Expense.'); errorFields.push('type'); }
+  if (!isValidIsoDate(date)) { errors.push('Date must be YYYY-MM-DD.'); errorFields.push('date'); }
+  if (!Number.isFinite(amount) || amount <= 0) { errors.push('Amount must be greater than 0.'); errorFields.push('amount'); }
 
   const category = state.categories.find(item => Number(item.id) === Number(categoryId));
-  if (categoryId !== null && !category) errors.push(`Row ${rowIndex}: category is invalid.`);
-  if (category && category.type !== type) errors.push(`Row ${rowIndex}: category type must match movement type.`);
+  if (categoryId !== null && !category) { errors.push('Category is invalid.'); errorFields.push('category_id'); }
+  if (category && category.type !== type) { errors.push('Category type must match movement type.'); errorFields.push('category_id'); }
 
   const subCategory = state.subCategories.find(item => Number(item.id) === Number(subCategoryId));
-  if (subCategoryId !== null && !subCategory) errors.push(`Row ${rowIndex}: sub-category is invalid.`);
+  if (subCategoryId !== null && !subCategory) { errors.push('Sub-category is invalid.'); errorFields.push('sub_category_id'); }
   if (subCategory && categoryId !== null && Number(subCategory.category_id) !== Number(categoryId)) {
-    errors.push(`Row ${rowIndex}: sub-category does not belong to selected category.`);
+    errors.push('Sub-category does not belong to selected category.'); errorFields.push('sub_category_id');
   }
   if (subCategory && subCategory.type !== type) {
-    errors.push(`Row ${rowIndex}: sub-category type must match movement type.`);
+    errors.push('Sub-category type must match movement type.'); errorFields.push('sub_category_id');
   }
 
-  if (errors.length > 0) return { errors, payload: null };
+  if (errors.length > 0) return { errors, errorFields, payload: null };
 
-  const absCents = Math.round(Math.abs(amount) * 100);
-  const value = type === 'Income' ? absCents : -absCents;
+  const value = Math.round(Math.abs(amount) * 100);
 
   return {
     errors: [],
+    errorFields: [],
     payload: {
       movement,
       description: description || null,
@@ -60,7 +62,7 @@ function normalizeDraftRow(row, state, accountId, rowIndex) {
       date,
       category_id: categoryId,
       sub_category_id: subCategoryId,
-      repetitive_movement_id: null,
+      repetitive_movement_id: parseNumberOrNull(row?.repetitive_movement_id),
       invoice: 0,
       active: 1,
     },
@@ -68,25 +70,25 @@ function normalizeDraftRow(row, state, accountId, rowIndex) {
 }
 
 /**
- * Validates all draft rows and returns payloads + collected errors.
+ * Validates all draft rows and returns per-row results for partial commit.
  *
  * @param {object[]} rows      - Draft rows (sentinel excluded)
  * @param {object}   state     - Page state
  * @param {number}   accountId - Target account ID
- * @returns {{ errors: string[], payloads: object[] }}
+ * @returns {{ valid: { row: object, payload: object }[], invalid: { row: object, errors: string[], errorFields: string[] }[] }}
  */
 function validateAllDrafts(rows, state, accountId) {
-  const payloads = [];
-  const errors = [];
+  const valid = [];
+  const invalid = [];
 
-  rows.forEach((row, index) => {
+  rows.forEach(row => {
     if (isAddRow(row)) return;
-    const { errors: rowErrors, payload } = normalizeDraftRow(row, state, accountId, index + 1);
-    if (rowErrors.length > 0) errors.push(...rowErrors);
-    else payloads.push(payload);
+    const { errors, errorFields, payload } = normalizeDraftRow(row, state, accountId);
+    if (errors.length > 0) invalid.push({ row, errors, errorFields });
+    else valid.push({ row, payload });
   });
 
-  return { errors, payloads };
+  return { valid, invalid };
 }
 
 export { normalizeDraftRow, validateAllDrafts };
