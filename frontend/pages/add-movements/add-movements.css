@@ -1,17 +1,32 @@
-/* Add Movements page-specific styles */
+/* ============================================================
+   Add Movements — Page-Specific Styles
+   ============================================================
 
-/* Account and metadata toolbar */
+   Covers:
+   - Unified toolbar (account select, type toggle, action buttons)
+   - Balance cards row
+   - AG Grid financial styling (compact, right-aligned amounts,
+     alternating rows, type-colored row borders)
+   - Feedback banners
+   - Keyboard hints bar
+   - Discard confirmation
+   ============================================================ */
+
+/* ── Unified Toolbar ──────────────────────────────────────── */
+
 .ft-add-movements-toolbar {
-  align-items: flex-end;
-  gap: calc(var(--ft-spacing) * 2);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   justify-content: space-between;
 }
 
 .ft-add-movements-toolbar__left {
+  align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 280px;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .ft-add-movements-toolbar__label {
@@ -20,6 +35,7 @@
   font-weight: 600;
   letter-spacing: 0.4px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .ft-add-movements-toolbar__select {
@@ -28,47 +44,20 @@
   border-radius: var(--ft-radius-widget);
   color: var(--ft-color-text);
   font-size: 13px;
-  height: 36px;
-  min-width: 300px;
+  height: 34px;
+  min-width: 260px;
   padding: 0 10px;
 }
 
-.ft-add-movements-toolbar__meta {
-  color: var(--ft-color-text-muted);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.ft-add-movements-toolbar__chip {
-  background: var(--ft-color-elevated);
-  border: 1px solid var(--ft-color-border);
-  border-radius: 999px;
-  font-size: 11px;
-  padding: 4px 8px;
-}
-
-/* Metrics cards row */
-.ft-add-movements-balance-row {
-  display: grid;
-  gap: calc(var(--ft-spacing) * 2);
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
-}
-
-/* Grid top controls */
-.ft-add-movements-grid-header {
-  align-items: center;
-  gap: var(--ft-spacing);
-}
-
-.ft-add-movements-grid-controls {
+.ft-add-movements-toolbar__actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
-/* Type toggle (Expense / Income segmented control) */
+/* ── Type Toggle (Expense / Income) ───────────────────────── */
+
 .ft-add-type-toggle {
   background: var(--ft-color-surface);
   border: 1px solid var(--ft-color-border);
@@ -105,23 +94,16 @@
   color: var(--ft-color-success);
 }
 
-/* Keyboard shortcuts hint */
-.ft-add-movements-grid-hint {
-  color: var(--ft-color-text-muted-30);
-  font-size: 11px;
-  letter-spacing: 0.02em;
+/* ── Balance Cards Row ────────────────────────────────────── */
+
+.ft-add-movements-balance-row {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
 }
 
-.ft-add-movements-grid-hint kbd {
-  background: var(--ft-color-elevated);
-  border: 1px solid var(--ft-color-border);
-  border-radius: 3px;
-  font-family: inherit;
-  font-size: 10px;
-  padding: 1px 5px;
-}
+/* ── Feedback Banners ─────────────────────────────────────── */
 
-/* Feedback banners */
 .ft-add-movements-feedback {
   border-radius: var(--ft-radius-widget);
   font-size: 12px;
@@ -140,13 +122,53 @@
   color: var(--ft-color-success);
 }
 
-/* AG Grid host sizing inside page wrapper */
+.ft-add-movements-feedback--warning {
+  background: var(--ft-color-warning-10);
+  border: 1px solid var(--ft-color-warning);
+  color: var(--ft-color-warning);
+}
+
+/* Feedback with inline action buttons (discard confirm, currency warning) */
+.ft-add-movements-feedback__actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.ft-add-movements-feedback__btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--ft-radius-widget);
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  transition: opacity 100ms ease;
+}
+
+.ft-add-movements-feedback__btn:hover {
+  opacity: 0.75;
+}
+
+.ft-add-movements-feedback__btn--danger {
+  background: var(--ft-color-danger);
+  border-color: var(--ft-color-danger);
+  color: #fff;
+}
+
+/* ── AG Grid Host ─────────────────────────────────────────── */
+
 .ft-add-movements-grid {
-  height: 520px;
+  max-height: calc(100vh - 340px);
+  min-height: 280px;
   width: 100%;
 }
 
-/* AG Grid visual integration with app cards/tokens */
+/* ── AG Grid Visual Integration ───────────────────────────── */
+
+/* Strip default borders for seamless card integration */
 .ft-add-movements-grid .ag-root-wrapper,
 .ft-add-movements-grid .ag-header,
 .ft-add-movements-grid .ag-row {
@@ -158,12 +180,24 @@
   border-color: var(--ft-color-border) !important;
 }
 
-/* Improve large text editor usability */
-.ft-add-movements-grid .ag-text-area-input {
-  padding: 8px;
+/* Compact header — uppercase, tighter */
+.ft-add-movements-grid .ag-header {
+  border-bottom: 1px solid var(--ft-color-border-strong) !important;
 }
 
-/* Visible focused cell and range selection states */
+.ft-add-movements-grid .ag-header-cell-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Alternating row tint for readability */
+.ft-add-movements-grid .ag-row-odd:not(.ag-row-add-phantom) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Focused cell highlight */
 .ft-add-movements-grid .ag-cell-focus {
   background: var(--ft-color-accent-10) !important;
   outline: 2px solid var(--ft-color-accent) !important;
@@ -174,18 +208,6 @@
   background: var(--ft-color-accent-10) !important;
 }
 
-/* Grid header polish */
-.ft-add-movements-grid .ag-header {
-  border-bottom: 1px solid var(--ft-color-border-strong) !important;
-}
-
-.ft-add-movements-grid .ag-header-cell-text {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* Inline editing state */
 .ft-add-movements-grid .ag-cell-inline-editing {
   background: var(--ft-color-surface) !important;
@@ -193,11 +215,28 @@
   padding-top: 0;
 }
 
-/* Movement label with type indicator */
+/* Large text editor (description popup) */
+.ft-add-movements-grid .ag-text-area-input {
+  padding: 8px;
+}
+
+/* ── Type-Colored Row Left Border ─────────────────────────── */
+/* Replaces the per-cell colored dot with a full-row left accent. */
+
+.ft-add-movements-grid .ag-row[data-row-type="Expense"] {
+  box-shadow: inset 3px 0 0 var(--ft-color-danger);
+}
+
+.ft-add-movements-grid .ag-row[data-row-type="Income"] {
+  box-shadow: inset 3px 0 0 var(--ft-color-success);
+}
+
+/* ── Movement Cell ────────────────────────────────────────── */
+
 .ft-add-movement-cell {
   align-items: center;
   display: inline-flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ft-add-movement-cell--placeholder {
@@ -205,33 +244,14 @@
   font-style: italic;
 }
 
-.ft-add-movement-type-dot {
-  border-radius: 999px;
-  height: 8px;
-  width: 8px;
-}
+/* ── Category / Sub-category Cell ─────────────────────────── */
 
-.ft-add-movement-type-dot--expense {
-  background: var(--ft-color-danger);
-}
-
-.ft-add-movement-type-dot--income {
-  background: var(--ft-color-success);
-}
-
-.ft-add-movement-type-dot--placeholder {
-  background: var(--ft-color-text-muted);
-  opacity: 0.5;
-}
-
-/* Placeholder text inside editable cells */
 .ft-add-cell-placeholder {
   color: var(--ft-color-text-muted-30);
   font-size: 12px;
   font-style: italic;
 }
 
-/* Category / sub-category cell with colored bar indicator */
 .ft-add-cat {
   align-items: center;
   display: inline-flex;
@@ -249,32 +269,64 @@
   width: 3px;
 }
 
-.ft-add-cat--expense {
-  color: var(--ft-color-danger);
+.ft-add-cat--expense { color: var(--ft-color-danger); }
+.ft-add-cat--income  { color: var(--ft-color-success); }
+.ft-add-cat--sub     { opacity: 0.55; }
+
+/* ── Amount Cell (right-aligned, tabular nums) ────────────── */
+
+.ft-add-amount-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  width: 100%;
 }
 
-.ft-add-cat--income {
-  color: var(--ft-color-success);
+.ft-add-amount-cell--placeholder {
+  color: var(--ft-color-text-muted-30);
+  font-style: italic;
 }
 
-.ft-add-cat--sub {
-  opacity: 0.55;
-}
+/* ── Date Cell (tabular nums) ─────────────────────────────── */
 
-/* Human-readable date display */
 .ft-add-date {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }
 
-/* Sentinel "add new row" visual treatment */
+/* ── Sentinel "Add New" Row ───────────────────────────────── */
+
 .ag-row-add-phantom {
   border-top: 1px dashed var(--ft-color-border-strong) !important;
-  opacity: 0.45;
+  opacity: 0.4;
   transition: opacity 150ms ease;
 }
 
 .ag-row-add-phantom:hover,
 .ag-row-add-phantom:focus-within {
-  opacity: 0.85;
+  opacity: 0.8;
+}
+
+/* ── Keyboard Hints Bar ───────────────────────────────────── */
+
+.ft-add-movements-hints {
+  color: var(--ft-color-text-muted-30);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 6px 2px 0;
+  text-align: right;
+}
+
+.ft-add-movements-hints kbd {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
+/* ── Right-aligned header for amount column ───────────────── */
+
+.ft-add-movements-grid .ag-header-cell.ft-ag-header-right .ag-header-cell-label {
+  justify-content: flex-end;
 }

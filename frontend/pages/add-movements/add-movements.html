@@ -1,56 +1,45 @@
 <!--
   Add Movements page template.
   Smart behavior is wired by pages/add-movements/index.js after route load.
+
+  Layout (top to bottom):
+    1. Page header — title + subtitle
+    2. Unified toolbar — account select, type toggle, action buttons
+    3. Balance cards row — current + expected balances
+    4. Feedback banner — validation errors / success messages
+    5. Grid — AG Grid draft movements table
+    6. Hints bar — keyboard shortcuts reference
 -->
 <div class="ft-page">
   <header class="ft-page__header">
-    <div class="ft-page__header-row">
-      <div>
-        <h1 class="ft-h2">Add Movements</h1>
-        <p class="ft-small ft-text-muted">Bulk-add new movements to any account</p>
-      </div>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <button class="ft-btn ft-btn--ghost" id="btn-discard-movements" disabled>Discard</button>
-        <button class="ft-btn ft-btn--primary" id="btn-commit-movements" disabled>
-          <span class="material-symbols-outlined" aria-hidden="true">check</span>
-          Commit
-        </button>
-      </div>
+    <div>
+      <h1 class="ft-h2">Add Movements</h1>
+      <p class="ft-small ft-text-muted">Bulk-add new movements to any account</p>
     </div>
   </header>
 
-  <!-- Account Selector Toolbar -->
+  <!-- Unified Toolbar: account selector + type toggle + action buttons -->
   <div class="ft-toolbar ft-add-movements-toolbar" id="widget-add-movements-toolbar">
     <span class="ft-small ft-text-muted">Account selector will load here</span>
   </div>
 
+  <!-- Balance summary cards -->
   <section class="ft-section">
     <div class="ft-add-movements-balance-row" id="widget-add-movements-balances"></div>
   </section>
 
   <!-- Bulk Input Grid -->
   <section class="ft-section">
-    <div class="ft-section__header ft-add-movements-grid-header">
-      <div class="ft-add-movements-grid-controls">
-        <div class="ft-add-type-toggle" id="add-movements-type-toggle">
-          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--expense ft-add-type-toggle__btn--active" data-type="Expense">Expense</button>
-          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--income" data-type="Income">Income</button>
-        </div>
-        <button class="ft-btn ft-btn--ghost" id="btn-remove-selected-drafts" disabled>
-          <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-          Remove
-        </button>
-      </div>
-      <span class="ft-add-movements-grid-hint">
-        <kbd>Tab</kbd> navigate · <kbd>Enter</kbd> add row · <kbd>Esc</kbd> clear
-      </span>
-    </div>
     <div id="widget-add-movements-feedback"></div>
     <div class="ft-table-wrapper" id="widget-add-movements-grid">
       <div class="ft-empty">
         <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">post_add</span>
         <p class="ft-small">Select an account to start adding movements</p>
       </div>
+    </div>
+    <!-- Keyboard hints — passive reference below the grid -->
+    <div class="ft-add-movements-hints" id="widget-add-movements-hints">
+      <kbd>Tab</kbd> navigate · <kbd>Enter</kbd> add row · <kbd>Esc</kbd> clear
     </div>
   </section>
 </div>
