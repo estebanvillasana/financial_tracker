@@ -11,6 +11,7 @@ import typer
 from config import CliConfig, load_config
 from db import db_exists
 from functions import api as api_client
+from screens import add_movements as add_movements_screen
 from screens import categories as categories_screen
 from screens import overview as overview_screen
 from screens import settings as settings_screen
@@ -42,6 +43,12 @@ SCREEN_DEFINITIONS = [
 		label="Categories",
 		render_body=categories_screen.render_body,
 		run=categories_screen.run,
+	),
+	ScreenDefinition(
+		key="3",
+		label="Add Movements",
+		render_body=add_movements_screen.render_body,
+		run=add_movements_screen.run,
 	),
 	ScreenDefinition(
 		key="0",
