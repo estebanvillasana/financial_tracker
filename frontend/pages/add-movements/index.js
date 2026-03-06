@@ -2,9 +2,12 @@
  * Add Movements page bootstrap.
  *
  * This module orchestrates page-level concerns:
- * - data loading (accounts/categories/sub-categories),
- * - AG Grid initialization,
+ * - data loading (accounts / categories / sub-categories),
+ * - AG Grid initialization with lazy-loaded library,
  * - draft validation + bulk commit flow,
+ * - draft persistence via sessionStorage,
+ * - currency change warnings on account switch,
+ * - discard confirmation flow,
  * - top-level UI event wiring.
  */
 import { bankAccounts, categories, movements, subCategories } from '../../services/api.js';
@@ -14,20 +17,27 @@ import {
   SENTINEL_ID,
   createSentinelRow,
   isAddRow,
+  normalizeCurrency,
 } from './constants.js';
 import { isValidIsoDate, parseNumberOrNull, getSelectedAccount } from './utils.js';
 import {
   renderFeedback,
+  renderFeedbackWithActions,
   updateHeaderButtons,
   updateTableActionButtons,
   renderBalanceCards,
   renderAccountToolbar,
 } from './render.js';
-import { commitSentinelRow, syncRowsFromGrid, mountGrid } from './grid.js';
+import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';
+import { saveDrafts, saveDraftsImmediate, restoreDrafts, clearDrafts } from './drafts.js';
+
+/* ── AG Grid Lazy Loading ─────────────────────────────────────────────────── */
 
 /**
- * Lazy-loads AG Grid library only when entering the page.
- * This keeps initial app startup lighter.
+ * Lazy-loads the AG Grid library only when the page is entered.
+ * Shared promise prevents double-loading across re-navigations.
+ *
+ * @returns {Promise<void>}
  */
 function ensureAgGridLoaded() {
   if (window.agGrid) return Promise.resolve();
@@ -46,17 +56,25 @@ function ensureAgGridLoaded() {
 }
 
 /**
- * Defines a theme consistent with the app look and feel.
+ * Builds the AG Grid theme consistent with the app's dark look.
+ *
+ * @returns {object} AG Grid theme object
  */
 function getGridTheme() {
   return window.agGrid.themeQuartz.withPart(window.agGrid.colorSchemeDarkBlue).withParams({
-    spacing: 6,
+    spacing: 4,
     headerFontWeight: 600,
   });
 }
 
+/* ── State Refresh ────────────────────────────────────────────────────────── */
+
 /**
  * Recomputes all UI regions that depend on current draft rows.
+ * Also persists drafts to sessionStorage (debounced).
+ *
+ * @param {object} state    - Page state
+ * @param {object} domRefs  - DOM element references
  */
 function refreshSummaryState(state, domRefs) {
   syncRowsFromGrid(state);
@@ -64,10 +82,19 @@ function refreshSummaryState(state, domRefs) {
   renderBalanceCards(domRefs.balancesEl, state);
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
   updateTableActionButtons(state, domRefs.removeSelectedBtn);
+  saveDrafts(state);
 }
 
+/* ── Draft Validation ─────────────────────────────────────────────────────── */
+
 /**
- * Validates one draft row and transforms it into backend payload shape.
+ * Validates one draft row and transforms it into the backend payload shape.
+ *
+ * @param {object} row        - Draft row data from the grid
+ * @param {object} state      - Page state (categories, subCategories)
+ * @param {number} accountId  - Target account ID
+ * @param {number} rowIndex   - 1-based row number for error messages
+ * @returns {{ errors: string[], payload: object|null }}
  */
 function normalizeDraftRow(row, state, accountId, rowIndex) {
   const movement = String(row?.movement || '').trim();
@@ -120,8 +147,13 @@ function normalizeDraftRow(row, state, accountId, rowIndex) {
   };
 }
 
+/* ── Commit Flow ──────────────────────────────────────────────────────────── */
+
 /**
  * Sends all valid draft movements in one atomic bulk request.
+ *
+ * @param {object} state    - Page state
+ * @param {object} domRefs  - DOM element references
  */
 async function commitDrafts(state, domRefs) {
   if (!state.gridApi) return;
@@ -157,6 +189,7 @@ async function commitDrafts(state, domRefs) {
 
     state.gridApi.setGridOption('rowData', [createSentinelRow(state.draftType)]);
     state.rows = [];
+    clearDrafts();
     renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
     renderBalanceCards(domRefs.balancesEl, state);
     renderFeedback(domRefs.feedbackEl, `Committed ${payloadRows.length} movement${payloadRows.length === 1 ? '' : 's'} successfully.`, 'success');
@@ -168,35 +201,132 @@ async function commitDrafts(state, domRefs) {
   }
 }
 
+/* ── Discard Confirmation ─────────────────────────────────────────────────── */
+
+/**
+ * Shows an inline confirmation before discarding all drafts.
+ *
+ * @param {object} state    - Page state
+ * @param {object} domRefs  - DOM element references
+ */
+function requestDiscard(state, domRefs) {
+  if (state.rows.length === 0) return;
+
+  const count = state.rows.length;
+  renderFeedbackWithActions(
+    domRefs.feedbackEl,
+    `Discard ${count} draft movement${count === 1 ? '' : 's'}? This cannot be undone.`,
+    [
+      {
+        label: 'Yes, Discard',
+        className: 'ft-add-movements-feedback__btn--danger',
+        onClick: () => {
+          state.gridApi.stopEditing();
+          state.gridApi.setGridOption('rowData', [createSentinelRow(state.draftType)]);
+          state.rows = [];
+          clearDrafts();
+          refreshSummaryState(state, domRefs);
+          renderFeedback(domRefs.feedbackEl, '');
+        },
+      },
+      {
+        label: 'Cancel',
+        onClick: () => renderFeedback(domRefs.feedbackEl, ''),
+      },
+    ]
+  );
+}
+
+/* ── Account Switch + Currency Warning ────────────────────────────────────── */
+
+/**
+ * Handles account selection change.
+ * If the new account uses a different currency and there are drafts,
+ * shows a transient warning. Always refreshes the grid to update
+ * currency formatting.
+ *
+ * @param {number} newAccountId - Newly selected account ID
+ * @param {object} state        - Page state
+ * @param {object} domRefs      - DOM references
+ */
+function handleAccountChange(newAccountId, state, domRefs) {
+  const oldAccount = getSelectedAccount(state);
+  const oldCurrency = normalizeCurrency(oldAccount?.currency);
+
+  state.selectedAccountId = newAccountId;
+
+  const newAccount = getSelectedAccount(state);
+  const newCurrency = normalizeCurrency(newAccount?.currency);
+
+  /* Refresh toolbar, balance cards, and button states */
+  renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
+  renderBalanceCards(domRefs.balancesEl, state);
+  updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
+
+  /* Force grid to re-render all cells (so amount column shows new currency) */
+  if (state.gridApi) {
+    state.gridApi.refreshCells({ force: true });
+    requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+  }
+
+  /* Show currency change warning if there are drafts and the currency changed */
+  if (state.rows.length > 0 && oldCurrency && newCurrency && oldCurrency !== newCurrency) {
+    renderFeedback(
+      domRefs.feedbackEl,
+      `Currency changed from ${oldCurrency} to ${newCurrency}. Draft amounts now display in ${newCurrency}.`,
+      'warning'
+    );
+    /* Auto-dismiss the warning after 5 seconds */
+    setTimeout(() => {
+      const currentFeedback = domRefs.feedbackEl?.querySelector('.ft-add-movements-feedback--warning');
+      if (currentFeedback) renderFeedback(domRefs.feedbackEl, '');
+    }, 5000);
+  } else {
+    renderFeedback(domRefs.feedbackEl, '');
+  }
+
+  /* Save updated account in drafts persistence */
+  saveDraftsImmediate(state);
+}
+
+/* ── Page Initialization ──────────────────────────────────────────────────── */
+
 /**
  * Initializes the Add Movements page.
- * Called by the router after HTML is injected in the main content area.
+ * Called by the router after HTML is injected into the main content area.
+ *
+ * @param {Document|HTMLElement} [root=document] - Root element for DOM queries
  */
 async function initAddMovementsPage(root = document) {
   const toolbarEl = root.querySelector('#widget-add-movements-toolbar');
   const balancesEl = root.querySelector('#widget-add-movements-balances');
   const gridWrapperEl = root.querySelector('#widget-add-movements-grid');
   const feedbackEl = root.querySelector('#widget-add-movements-feedback');
-  const commitBtn = root.querySelector('#btn-commit-movements');
-  const discardBtn = root.querySelector('#btn-discard-movements');
-  const removeSelectedBtn = root.querySelector('#btn-remove-selected-drafts');
-  const typeToggle = root.querySelector('#add-movements-type-toggle');
 
-  if (!toolbarEl || !balancesEl || !gridWrapperEl || !commitBtn || !discardBtn || !removeSelectedBtn || !typeToggle) {
-    return;
-  }
+  if (!toolbarEl || !balancesEl || !gridWrapperEl) return;
 
-  const domRefs = { toolbarEl, balancesEl, feedbackEl, commitBtn, discardBtn, removeSelectedBtn };
-  toolbarEl.innerHTML = '<span class="ft-small ft-text-muted">Loading accounts...</span>';
+  /* domRefs will be populated by renderAccountToolbar on first render */
+  const domRefs = {
+    toolbarEl,
+    balancesEl,
+    feedbackEl,
+    commitBtn: null,
+    discardBtn: null,
+    removeSelectedBtn: null,
+  };
+
+  toolbarEl.innerHTML = '<span class="ft-small ft-text-muted">Loading accounts\u2026</span>';
   balancesEl.innerHTML = '';
   renderFeedback(feedbackEl, '');
 
+  /* ── Load AG Grid library ── */
   try {
     await ensureAgGridLoaded();
   } catch (error) {
     return renderFeedback(feedbackEl, error?.message || 'Failed to load AG Grid.');
   }
 
+  /* ── Load data in parallel ── */
   let accounts = [];
   let activeCategories = [];
   let activeSubCategories = [];
@@ -226,21 +356,35 @@ async function initAddMovementsPage(root = document) {
     return;
   }
 
+  /* ── Initialize state ── */
   const state = {
     accounts,
     categories: activeCategories,
     subCategories: activeSubCategories,
     selectedAccountId: Number(accounts[0].id),
-    draftType: typeToggle.querySelector('.ft-add-type-toggle__btn--active')?.dataset.type || 'Expense',
+    draftType: 'Expense',
     gridApi: null,
     rows: [],
     isCommitting: false,
     lastFocusWasSentinel: false,
   };
 
+  /* ── Restore drafts from sessionStorage ── */
+  const savedDrafts = restoreDrafts();
+  if (savedDrafts) {
+    /* Restore account selection if the saved account still exists */
+    const savedAccount = accounts.find(a => Number(a.id) === savedDrafts.accountId);
+    if (savedAccount) state.selectedAccountId = savedDrafts.accountId;
+
+    if (TYPE_VALUES.includes(savedDrafts.draftType)) state.draftType = savedDrafts.draftType;
+    state.rows = savedDrafts.rows;
+  }
+
+  /* ── Render initial toolbar (creates buttons in domRefs) ── */
   renderAccountToolbar(toolbarEl, state, domRefs);
   renderBalanceCards(balancesEl, state);
 
+  /* ── Mount AG Grid ── */
   gridWrapperEl.innerHTML = '<div class="ft-add-movements-grid" id="add-movements-grid-host"></div>';
   const gridHost = gridWrapperEl.querySelector('#add-movements-grid-host');
 
@@ -250,42 +394,82 @@ async function initAddMovementsPage(root = document) {
     renderFeedback,
     updateTableActionButtons,
   });
-  updateHeaderButtons(state, commitBtn, discardBtn);
-  updateTableActionButtons(state, removeSelectedBtn);
 
-  typeToggle.addEventListener('click', event => {
+  /* ── Restore draft rows into grid if we had saved data ── */
+  if (savedDrafts && savedDrafts.rows.length > 0) {
+    state.gridApi.setGridOption('rowData', [...savedDrafts.rows, createSentinelRow(state.draftType)]);
+    syncRowsFromGrid(state);
+    requestAnimationFrame(() => {
+      if (state.gridApi) applyRowTypeAttributes(state.gridApi);
+    });
+  }
+
+  updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
+  updateTableActionButtons(state, domRefs.removeSelectedBtn);
+
+  /* Show a subtle restored message */
+  if (savedDrafts && savedDrafts.rows.length > 0) {
+    renderFeedback(feedbackEl, `Restored ${savedDrafts.rows.length} unsaved draft${savedDrafts.rows.length === 1 ? '' : 's'} from your previous session.`, 'success');
+    setTimeout(() => {
+      const currentFeedback = feedbackEl?.querySelector('.ft-add-movements-feedback--success');
+      if (currentFeedback) renderFeedback(feedbackEl, '');
+    }, 4000);
+  }
+
+  /* ── Wire account selector change ── */
+  toolbarEl.addEventListener('change', event => {
+    if (event.target.id === 'add-movements-account-select') {
+      handleAccountChange(Number(event.target.value), state, domRefs);
+    }
+  });
+
+  /* ── Wire type toggle ── */
+  toolbarEl.addEventListener('click', event => {
     const btn = event.target.closest('.ft-add-type-toggle__btn');
     if (!btn || btn.classList.contains('ft-add-type-toggle__btn--active')) return;
-    typeToggle.querySelectorAll('.ft-add-type-toggle__btn').forEach(b => b.classList.remove('ft-add-type-toggle__btn--active'));
+
+    const toggle = toolbarEl.querySelector('#add-movements-type-toggle');
+    if (!toggle) return;
+
+    toggle.querySelectorAll('.ft-add-type-toggle__btn').forEach(b => b.classList.remove('ft-add-type-toggle__btn--active'));
     btn.classList.add('ft-add-type-toggle__btn--active');
+
     const nextType = String(btn.dataset.type || 'Expense');
     state.draftType = TYPE_VALUES.includes(nextType) ? nextType : 'Expense';
+
+    /* Update sentinel row type */
     const sentinel = state.gridApi.getRowNode(SENTINEL_ID);
     if (sentinel?.data) {
       sentinel.data.type = state.draftType;
       state.gridApi.refreshCells({ rowNodes: [sentinel], force: true });
     }
+
     renderAccountToolbar(toolbarEl, state, domRefs);
     renderFeedback(feedbackEl, '');
   });
 
-  removeSelectedBtn.addEventListener('click', () => {
+  /* ── Wire remove selected ── */
+  toolbarEl.addEventListener('click', event => {
+    if (!event.target.closest('#btn-remove-selected-drafts')) return;
     const selectedRows = state.gridApi.getSelectedRows().filter(row => !isAddRow(row));
     if (selectedRows.length === 0) return;
     state.gridApi.applyTransaction({ remove: selectedRows });
     refreshSummaryState(state, domRefs);
     renderFeedback(feedbackEl, '');
+    requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
   });
 
-  discardBtn.addEventListener('click', () => {
-    state.gridApi.stopEditing();
-    state.gridApi.setGridOption('rowData', [createSentinelRow(state.draftType)]);
-    state.rows = [];
-    refreshSummaryState(state, domRefs);
-    renderFeedback(feedbackEl, '');
+  /* ── Wire discard (with confirmation) ── */
+  toolbarEl.addEventListener('click', event => {
+    if (!event.target.closest('#btn-discard-movements')) return;
+    requestDiscard(state, domRefs);
   });
 
-  commitBtn.addEventListener('click', () => commitDrafts(state, domRefs));
+  /* ── Wire commit ── */
+  toolbarEl.addEventListener('click', event => {
+    if (!event.target.closest('#btn-commit-movements')) return;
+    commitDrafts(state, domRefs);
+  });
 }
 
 export { initAddMovementsPage };
