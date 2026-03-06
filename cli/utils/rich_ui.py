@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-import shutil
 from typing import Iterable
 from typing import Literal
+
+from utils.viewport import available_body_lines, available_main_lines, terminal_size
 
 
 InteractionArea = Literal["menu", "content"]
@@ -184,10 +185,10 @@ def build_rich_layout(
     from rich.layout import Layout
     from rich.panel import Panel
 
-    terminal_width, terminal_height = shutil.get_terminal_size(fallback=(120, 30))
+    terminal_width, terminal_height = terminal_size()
 
     menu_width = max(22, min(34, int(terminal_width * 0.28)))
-    available_body_lines = max(6, terminal_height - 8 - top_margin_rows)
+    body_line_budget = available_body_lines(top_margin_rows=top_margin_rows)
 
     display_body, options_text = _extract_marked_block(
         body,
@@ -213,11 +214,15 @@ def build_rich_layout(
     if hint_text:
         hint_height = max(1, min(2, len(hint_text.splitlines())))
 
-    available_main_lines = max(4, available_body_lines - input_height - hint_height)
+    main_line_budget = available_main_lines(
+        top_margin_rows=top_margin_rows,
+        input_height=input_height,
+        hint_height=hint_height,
+    )
 
     body_lines = display_body.splitlines()
-    if len(body_lines) > available_main_lines:
-        body_lines = body_lines[: available_main_lines - 1] + ["..."]
+    if len(body_lines) > main_line_budget:
+        body_lines = body_lines[: main_line_budget - 1] + ["..."]
     clipped_body = "\n".join(body_lines)
 
     clipped_options = None
