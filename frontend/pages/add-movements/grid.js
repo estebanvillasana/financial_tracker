@@ -17,8 +17,8 @@ import {
   isAddRow,
   hasUserData,
 } from './constants.js';
+import { parseNumberOrNull } from '../../utils/validators.js';
 import {
-  parseNumberOrNull,
   categoryLabelById,
   subCategoryLabelById,
   getCategoriesByType,
@@ -241,10 +241,7 @@ function buildGridOptions(state, domRefs, handlers) {
           return formatMoney(value, acct?.currency || 'USD');
         },
         cellRenderer: params => {
-          if (isAddRow(params.data)) {
-            const acct = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
-            return `<span class="ft-add-amount-cell ft-add-amount-cell--placeholder">${formatMoney(0, acct?.currency || 'USD')}</span>`;
-          }
+          if (isAddRow(params.data)) return '';
           const formatted = params.valueFormatted || '';
           return formatted ? `<span class="ft-add-amount-cell">${formatted}</span>` : '';
         },
@@ -464,14 +461,7 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     event.preventDefault();
   });
 
-  gridHost.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') return;
-    state.gridApi.deselectAll();
-    if (typeof state.gridApi.clearCellSelection === 'function') state.gridApi.clearCellSelection();
-    else if (typeof state.gridApi.clearRangeSelection === 'function') state.gridApi.clearRangeSelection();
-    state.gridApi.clearFocusedCell();
-    handlers.updateTableActionButtons(state, domRefs.removeSelectedBtn);
-  });
+
 }
 
 export {
