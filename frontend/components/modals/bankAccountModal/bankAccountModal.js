@@ -29,16 +29,11 @@
 
 import { finalAppConfig } from '../../../defaults.js';
 import { bankAccounts, fxRates } from '../../../services/api.js';
+import { normalizeCurrency as _normalizeCurrency, formatMoneyFromCents as _formatMoney } from '../../../utils/formatters.js';
 
 const BankAccountModal = (() => {
 
   // ─── Formatters ──────────────────────────────────────────────────────────────
-
-  /** Formats monetary amounts with exactly 2 decimal places (e.g. "1,234.56"). */
-  const NUMBER_FORMAT = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 
   /** Formats integer counts without decimal places (e.g. "1,234"). */
   const INTEGER_FORMAT = new Intl.NumberFormat('en-US', {
@@ -74,68 +69,6 @@ const BankAccountModal = (() => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  /**
-   * Normalises a raw currency code to a consistent uppercase trimmed string.
-   * Returns an empty string for falsy input.
-   *
-   * @param {*} currencyCode
-   * @returns {string} e.g. 'usd ' → 'USD'
-   */
-  function _normalizeCurrency(currencyCode) {
-    return String(currencyCode || '').trim().toUpperCase();
-  }
-
-  /**
-   * Returns the narrow currency symbol for a given ISO 4217 code using the
-   * browser's Intl API (e.g. 'USD' → '$', 'EUR' → '€', 'GBP' → '£').
-   * Falls back to the raw currency code string if the code is unrecognised
-   * or if Intl.NumberFormat throws.
-   *
-   * @param {string} currencyCode  ISO 4217 code (e.g. 'USD')
-   * @returns {string}
-   */
-  function _getCurrencySymbol(currencyCode) {
-    const code = _normalizeCurrency(currencyCode);
-    if (!code) return '';
-
-    try {
-      const parts = new Intl.NumberFormat('en', {
-        style: 'currency',
-        currency: code,
-        currencyDisplay: 'narrowSymbol',
-      }).formatToParts(0);
-
-      // Extract just the currency symbol part from the formatted number parts.
-      return parts.find(part => part.type === 'currency')?.value || code;
-    } catch {
-      // Unknown currency code — fall back to displaying the raw code.
-      return code;
-    }
-  }
-
-  /**
-   * Formats a monetary value stored in integer cents into a human-readable
-   * string with the appropriate currency symbol (e.g. 123456 + 'USD' → '$1,234.56').
-   *
-   * Handles negative values by placing the minus sign before the symbol.
-   * Multi-character symbols (e.g. 'Rp', 'Fr.') get a space inserted between
-   * symbol and number for readability.
-   *
-   * @param {number} cents        Integer amount in the smallest currency unit.
-   * @param {string} currencyCode ISO 4217 code.
-   * @returns {string}
-   */
-  function _formatMoney(cents, currencyCode) {
-    const numericCents = Number(cents) || 0;
-    const amount = numericCents / 100;
-    const sign = amount < 0 ? '-' : '';
-    const absAmount = Math.abs(amount);
-    const symbol = _getCurrencySymbol(currencyCode);
-    // Add a space after multi-character symbols to avoid things like "Rp1,234.56".
-    const spacer = symbol.length > 1 ? ' ' : '';
-    return `${sign}${symbol}${spacer}${NUMBER_FORMAT.format(absAmount)}`;
   }
 
   /**
@@ -263,7 +196,7 @@ const BankAccountModal = (() => {
       accountCurrency &&
       accountCurrency !== defaultCurrency;
     const convertedLabel = showConverted
-      ? `≈ ${_formatMoney(convertedTotal, defaultCurrency)} ${_escapeHtml(defaultCurrency)}`
+      ? `≈ ${_formatMoney(convertedTotal, defaultCurrency)}`
       : '—';
 
     // `active` and `updated` are stored as integers (1/0) in the database.

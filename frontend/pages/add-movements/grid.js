@@ -25,6 +25,7 @@ import {
   parsePastedCellValue,
 } from './utils.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
+import { formatMoney } from '../../utils/formatters.js';
 
 /* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
 
@@ -212,7 +213,7 @@ function buildGridOptions(state, domRefs, handlers) {
       {
         field: 'amount',
         headerName: 'Amount',
-        minWidth: 130,
+        minWidth: 170,
         editable: true,
         headerClass: 'ft-ag-header-right',
         cellStyle: { textAlign: 'right' },
@@ -224,23 +225,18 @@ function buildGridOptions(state, domRefs, handlers) {
           const value = Number(params.value);
           if (!Number.isFinite(value)) return '';
           const acct = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
-          const cur = (acct?.currency || 'USD').toUpperCase();
-          try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(value); }
-          catch { return value.toFixed(2); }
+          return formatMoney(value, acct?.currency || 'USD');
         },
         cellRenderer: params => {
           if (isAddRow(params.data)) {
             const acct = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
-            const cur = (acct?.currency || 'USD').toUpperCase();
-            let symbol = '';
-            try { symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(0).replace(/[\d.,]/g, '').trim(); }
-            catch { symbol = cur; }
-            return `<span class="ft-add-amount-cell ft-add-amount-cell--placeholder">${symbol} 0.00</span>`;
+            return `<span class="ft-add-amount-cell ft-add-amount-cell--placeholder">${formatMoney(0, acct?.currency || 'USD')}</span>`;
           }
           const formatted = params.valueFormatted || '';
           return formatted ? `<span class="ft-add-amount-cell">${formatted}</span>` : '';
         },
       },
+
 
       /* ── Category (rich select dropdown) ── */
       {
