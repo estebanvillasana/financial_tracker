@@ -159,30 +159,6 @@ function buildGridOptions(state, domRefs, handlers) {
       minWidth: 120,
     },
     columnDefs: [
-      /* ── Row number ── */
-      {
-        colId: '__rowNum',
-        headerName: '#',
-        width: 38,
-        minWidth: 38,
-        maxWidth: 38,
-        editable: false,
-        sortable: false,
-        filter: false,
-        resizable: false,
-        suppressNavigable: true,
-        cellClass: 'ft-add-row-num',
-        valueGetter: params => {
-          if (isAddRow(params.data)) return '';
-          let idx = 0;
-          params.api.forEachNode(n => {
-            if (n === params.node) return;
-            if (!isAddRow(n.data)) idx++;
-          });
-          return idx + 1;
-        },
-      },
-
       /* ── Row selection checkbox ── */
       {
         colId: '__select',
@@ -331,8 +307,13 @@ function buildGridOptions(state, domRefs, handlers) {
         valueParser: params => parseNumberOrNull(params.newValue),
         cellRenderer: buildRepetitiveRenderer(state),
         cellEditor: 'agRichSelectCellEditor',
-        cellEditorParams: () => ({
-          values: [null, ...(state.repetitiveMovements || []).map(rm => Number(rm.id))],
+        cellEditorParams: params => ({
+          values: [
+            null,
+            ...(state.repetitiveMovements || [])
+              .filter(rm => rm.type === (params.data?.type || state.draftType))
+              .map(rm => Number(rm.id)),
+          ],
           formatValue: value => {
             if (!value) return '\u2014 None';
             const match = state.repetitiveMovements?.find(rm => Number(rm.id) === Number(value));
@@ -452,7 +433,7 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     const editableColumns = state.gridApi
       .getAllDisplayedColumns()
       .map(col => col.getColId())
-      .filter(colId => !['__select', '__actions', '__rowNum'].includes(colId));
+      .filter(colId => !['__select', '__actions'].includes(colId));
 
     const startColIndex = editableColumns.indexOf(focusedCell.column.getColId());
     if (startColIndex < 0) return;

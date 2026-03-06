@@ -19,11 +19,15 @@ import {
   renderAccountToolbar,
 } from './render.js';
 
-/* ── Commit Flow ── */
+/* ── Commit Flow ──────────────────────────────────────────────────────────── */
 
 /**
  * Validates all drafts, commits valid ones, keeps invalid ones in the grid
  * with highlighted error cells.
+ *
+ * @param {object} state              - Page state
+ * @param {object} domRefs            - DOM element references
+ * @param {Function} refreshSummaryState - Summary refresh callback
  */
 async function commitDrafts(state, domRefs, refreshSummaryState) {
   if (!state.gridApi) return;
@@ -68,7 +72,7 @@ async function commitDrafts(state, domRefs, refreshSummaryState) {
       clearDrafts();
       FeedbackBanner.render(
         domRefs.feedbackEl,
-        Committed  movement successfully.,
+        `Committed ${payloads.length} movement${payloads.length === 1 ? '' : 's'} successfully.`,
         'success'
       );
     }
@@ -91,14 +95,14 @@ function _showPartialFeedback(committedCount, invalid, feedbackEl) {
     .slice(0, 4)
     .map(({ row, errors }) => {
       const name = row.movement || 'Unnamed';
-      return <b></b>: ;
+      return `<b>${name}</b>: ${errors[0]}`;
     })
     .join('<br/>');
-  const extra = invalid.length > 4 ? <br/>…and  more row(s). : '';
+  const extra = invalid.length > 4 ? `<br/>\u2026and ${invalid.length - 4} more row(s).` : '';
   FeedbackBanner.render(
     feedbackEl,
-    Committed  movement.  +
-    ${invalid.length} row still need correction:<br/>,
+    `Committed ${committedCount} movement${committedCount === 1 ? '' : 's'}. ` +
+    `${invalid.length} row${invalid.length === 1 ? '' : 's'} still need${invalid.length === 1 ? 's' : ''} correction:<br/>${errorSummary}${extra}`,
     'warning'
   );
 }
@@ -108,11 +112,11 @@ function _showInvalidFeedback(invalid, feedbackEl) {
     .slice(0, 4)
     .map(({ row, errors }) => {
       const name = row.movement || 'Unnamed';
-      return <b></b>: ;
+      return `<b>${name}</b>: ${errors[0]}`;
     })
     .join('<br/>');
-  const extra = invalid.length > 4 ? <br/>…and  more row(s). : '';
-  FeedbackBanner.render(feedbackEl, ${errorSummary});
+  const extra = invalid.length > 4 ? `<br/>\u2026and ${invalid.length - 4} more row(s).` : '';
+  FeedbackBanner.render(feedbackEl, `${errorSummary}${extra}`);
 }
 
 function _applyErrorHighlights(gridApi, invalid) {
@@ -121,7 +125,7 @@ function _applyErrorHighlights(gridApi, invalid) {
   });
 }
 
-/* ── Discard Confirmation ── */
+/* ── Discard Confirmation ─────────────────────────────────────────────────── */
 
 function requestDiscard(state, domRefs, refreshSummaryState) {
   if (state.rows.length === 0) return;
@@ -129,7 +133,7 @@ function requestDiscard(state, domRefs, refreshSummaryState) {
   const count = state.rows.length;
   FeedbackBanner.renderWithActions(
     domRefs.feedbackEl,
-    Discard  draft movement? This cannot be undone.,
+    `Discard ${count} draft movement${count === 1 ? '' : 's'}? This cannot be undone.`,
     [
       {
         label: 'Yes, Discard',
@@ -152,7 +156,7 @@ function requestDiscard(state, domRefs, refreshSummaryState) {
   );
 }
 
-/* ── Account Switch + Currency Warning ── */
+/* ── Account Switch + Currency Warning ────────────────────────────────────── */
 
 function handleAccountChange(newAccountId, state, domRefs) {
   const oldAccount = getSelectedAccount(state);
@@ -175,7 +179,7 @@ function handleAccountChange(newAccountId, state, domRefs) {
   if (state.rows.length > 0 && oldCurrency && newCurrency && oldCurrency !== newCurrency) {
     FeedbackBanner.render(
       domRefs.feedbackEl,
-      Currency changed from  to . Draft amounts now display in .,
+      `Currency changed from ${oldCurrency} to ${newCurrency}. Draft amounts now display in ${newCurrency}.`,
       'warning'
     );
     setTimeout(() => {

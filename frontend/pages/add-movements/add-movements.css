@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    Add Movements — Page-Specific Styles
    ============================================================
 
@@ -226,15 +226,233 @@
 
 /* Right-aligned header now handled by styles/ag-grid-overrides.css */
 
-/* ── Row Number Column ────────────────────────────────────── */
+/* ============================================================
+   Add Movements — Page-Specific Styles
+   ============================================================
 
-.ft-add-row-num {
-  color: var(--ft-color-text-muted-30);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  user-select: none;
+   Covers:
+   - Unified toolbar (account select, type toggle, action buttons)
+   - Balance cards row
+   - AG Grid financial styling (compact, right-aligned amounts,
+     alternating rows, type-colored row borders)
+   - Feedback banners
+   - Keyboard hints bar
+   - Discard confirmation
+   ============================================================ */
+
+/* ── Unified Toolbar ──────────────────────────────────────── */
+
+.ft-add-movements-toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
 }
+
+.ft-add-movements-toolbar__left {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ft-add-movements-toolbar__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ft-add-movements-toolbar__select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 13px;
+  height: 34px;
+  min-width: 260px;
+  padding: 0 10px;
+}
+
+.ft-add-movements-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Type Toggle (Expense / Income) ───────────────────────── */
+
+.ft-add-type-toggle {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.ft-add-type-toggle__btn {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 14px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-add-type-toggle__btn:hover:not(.ft-add-type-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-add-type-toggle__btn--active.ft-add-type-toggle__btn--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-add-type-toggle__btn--active.ft-add-type-toggle__btn--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+/* ── Balance Cards Row ────────────────────────────────────── */
+
+.ft-add-movements-balance-row {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+/* ── Feedback Banners ─────────────────────────────────────── */
+/* Shared feedback styles now live in                          */
+/* components/dumb/feedbackBanner/feedbackBanner.css            */
+
+/* ── AG Grid Host ─────────────────────────────────────────── */
+
+.ft-add-movements-grid {
+  height: calc(100vh - 340px);
+  min-height: 280px;
+  width: 100%;
+}
+
+/* ── Page-Specific AG Grid Overrides ──────────────────────── */
+/* Generic grid integration (borders, headers, focus, editing) */
+/* lives in styles/ag-grid-overrides.css via the .ft-ag-grid  */
+/* class. Only add-movements-specific rules remain here.       */
+
+/* ── Type-Colored Row Left Border ─────────────────────────── */
+/* Replaces the per-cell colored dot with a full-row left accent. */
+
+.ft-add-movements-grid .ag-row[data-row-type="Expense"] {
+  box-shadow: inset 3px 0 0 var(--ft-color-danger);
+}
+
+.ft-add-movements-grid .ag-row[data-row-type="Income"] {
+  box-shadow: inset 3px 0 0 var(--ft-color-success);
+}
+
+/* ── Movement Cell ────────────────────────────────────────── */
+
+.ft-add-movement-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.ft-add-movement-cell--placeholder {
+  color: var(--ft-color-text-muted);
+  font-style: italic;
+}
+
+/* ── Category / Sub-category Cell ─────────────────────────── */
+
+.ft-add-cell-placeholder {
+  color: var(--ft-color-text-muted-30);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.ft-add-cat {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-add-cat__bar {
+  background: currentColor;
+  border-radius: 1px;
+  flex-shrink: 0;
+  height: 14px;
+  width: 3px;
+}
+
+.ft-add-cat--expense { color: var(--ft-color-danger); }
+.ft-add-cat--income  { color: var(--ft-color-success); }
+.ft-add-cat--sub     { opacity: 0.55; }
+
+/* ── Amount Cell (right-aligned, tabular nums) ────────────── */
+
+.ft-add-amount-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  width: 100%;
+}
+
+.ft-add-amount-cell--placeholder {
+  color: var(--ft-color-text-muted-30);
+  font-style: italic;
+}
+
+/* ── Date Cell (tabular nums) ─────────────────────────────── */
+
+.ft-add-date {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* ── Sentinel "Add New" Row ───────────────────────────────── */
+
+.ag-row-add-phantom {
+  border-top: 1px dashed var(--ft-color-border-strong) !important;
+  opacity: 0.4;
+  transition: opacity 150ms ease;
+}
+
+.ag-row-add-phantom:hover,
+.ag-row-add-phantom:focus-within {
+  opacity: 0.8;
+}
+
+/* ── Keyboard Hints Bar ───────────────────────────────────── */
+
+.ft-add-movements-hints {
+  color: var(--ft-color-text-muted-30);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 6px 2px 0;
+  text-align: right;
+}
+
+.ft-add-movements-hints kbd {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
+/* Right-aligned header now handled by styles/ag-grid-overrides.css */
 
 /* ── Error Highlighting ───────────────────────────────────── */
 
