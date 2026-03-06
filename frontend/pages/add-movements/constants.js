@@ -4,7 +4,6 @@
  * Keeps all row-shape primitives and sentinel metadata in one place so
  * grid behavior remains consistent across modules.
  */
-const AG_GRID_SCRIPT_SRC = new URL('../../lib/ag-grids.js', import.meta.url).toString();
 
 const TYPE_VALUES = ['Expense', 'Income'];
 const SENTINEL_ID = '__ft_add_movement_sentinel';
@@ -63,13 +62,10 @@ function hasUserData(row) {
   });
 }
 
-/** Normalizes currency codes to uppercase ISO notation. */
-function normalizeCurrency(code) {
-  return String(code || '').trim().toUpperCase();
-}
+/** Re-export from shared formatters for backward compatibility within this module. */
+import { normalizeCurrency } from '../../utils/formatters.js';
 
 export {
-  AG_GRID_SCRIPT_SRC,
   TYPE_VALUES,
   SENTINEL_ID,
   SENTINEL_FLAG,

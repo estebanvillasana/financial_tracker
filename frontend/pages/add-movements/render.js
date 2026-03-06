@@ -4,62 +4,24 @@
  * Renders DOM fragments for:
  * - Unified toolbar (account selector + type toggle + action buttons)
  * - Balance summary cards
- * - Feedback banners (error, success, warning, confirmation)
  * - Button state management
+ *
+ * Feedback banners are now handled by the shared FeedbackBanner component.
  */
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
-import { normalizeCurrency } from './constants.js';
-import { formatMoneyFromCents, getSelectedAccount, toSignedCents } from './utils.js';
+import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
+import { getSelectedAccount, toSignedCents } from './utils.js';
 
-/* ── Feedback Rendering ───────────────────────────────────────────────────── */
+/* ── Feedback Delegates ────────────────────────────────────────────────────── */
+/* Thin wrappers around the shared FeedbackBanner component.                  */
 
-/**
- * Renders transient error/success/warning feedback above the grid.
- *
- * @param {HTMLElement}  feedbackEl  - Container element for feedback
- * @param {string}       message     - HTML message content (empty string clears)
- * @param {'error'|'success'|'warning'} [tone='error'] - Visual tone
- */
 function renderFeedback(feedbackEl, message, tone = 'error') {
-  if (!feedbackEl) return;
-  if (!message) {
-    feedbackEl.innerHTML = '';
-    return;
-  }
-  feedbackEl.innerHTML = `<div class="ft-add-movements-feedback ft-add-movements-feedback--${tone}">${message}</div>`;
+  FeedbackBanner.render(feedbackEl, message, tone);
 }
 
-/**
- * Renders a warning feedback with inline action buttons.
- *
- * @param {HTMLElement}  feedbackEl  - Container element
- * @param {string}       message     - Warning text
- * @param {Array<{label: string, className?: string, onClick: Function}>} actions
- */
 function renderFeedbackWithActions(feedbackEl, message, actions = []) {
-  if (!feedbackEl) return;
-
-  const actionsHtml = actions
-    .map((a, i) => {
-      const cls = a.className ? ` ${a.className}` : '';
-      return `<button class="ft-add-movements-feedback__btn${cls}" data-action-index="${i}">${a.label}</button>`;
-    })
-    .join('');
-
-  feedbackEl.innerHTML = `
-    <div class="ft-add-movements-feedback ft-add-movements-feedback--warning">
-      ${message}
-      <span class="ft-add-movements-feedback__actions">${actionsHtml}</span>
-    </div>`;
-
-  /* Wire button clicks via delegation */
-  feedbackEl.addEventListener('click', function _handler(event) {
-    const btn = event.target.closest('[data-action-index]');
-    if (!btn) return;
-    const index = Number(btn.dataset.actionIndex);
-    if (actions[index]?.onClick) actions[index].onClick();
-    feedbackEl.removeEventListener('click', _handler);
-  }, { once: false });
+  FeedbackBanner.renderWithActions(feedbackEl, message, actions);
 }
 
 /* ── Button State Management ──────────────────────────────────────────────── */

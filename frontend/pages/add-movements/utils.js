@@ -2,24 +2,7 @@
  * Add Movements shared pure utilities.
  * These helpers are intentionally side-effect free to simplify testing/reuse.
  */
-import { normalizeCurrency } from './constants.js';
-
-/** Formats cents using the account currency. */
-function formatMoneyFromCents(cents, currencyCode) {
-  const amount = (Number(cents) || 0) / 100;
-  const normalized = normalizeCurrency(currencyCode);
-
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: normalized || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${normalized || ''}`.trim();
-  }
-}
+import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
 
 /** Validates YYYY-MM-DD dates expected by backend API. */
 function isValidIsoDate(value) {

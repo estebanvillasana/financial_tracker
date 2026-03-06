@@ -103,60 +103,8 @@
 }
 
 /* ── Feedback Banners ─────────────────────────────────────── */
-
-.ft-add-movements-feedback {
-  border-radius: var(--ft-radius-widget);
-  font-size: 12px;
-  padding: 8px 10px;
-}
-
-.ft-add-movements-feedback--error {
-  background: var(--ft-color-danger-10);
-  border: 1px solid var(--ft-color-danger);
-  color: var(--ft-color-danger);
-}
-
-.ft-add-movements-feedback--success {
-  background: var(--ft-color-success-10);
-  border: 1px solid var(--ft-color-success);
-  color: var(--ft-color-success);
-}
-
-.ft-add-movements-feedback--warning {
-  background: var(--ft-color-warning-10);
-  border: 1px solid var(--ft-color-warning);
-  color: var(--ft-color-warning);
-}
-
-/* Feedback with inline action buttons (discard confirm, currency warning) */
-.ft-add-movements-feedback__actions {
-  display: inline-flex;
-  gap: 8px;
-  margin-left: 12px;
-}
-
-.ft-add-movements-feedback__btn {
-  background: transparent;
-  border: 1px solid currentColor;
-  border-radius: var(--ft-radius-widget);
-  color: inherit;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 10px;
-  transition: opacity 100ms ease;
-}
-
-.ft-add-movements-feedback__btn:hover {
-  opacity: 0.75;
-}
-
-.ft-add-movements-feedback__btn--danger {
-  background: var(--ft-color-danger);
-  border-color: var(--ft-color-danger);
-  color: #fff;
-}
+/* Shared feedback styles now live in                          */
+/* components/dumb/feedbackBanner/feedbackBanner.css            */
 
 /* ── AG Grid Host ─────────────────────────────────────────── */
 
@@ -166,59 +114,10 @@
   width: 100%;
 }
 
-/* ── AG Grid Visual Integration ───────────────────────────── */
-
-/* Strip default borders for seamless card integration */
-.ft-add-movements-grid .ag-root-wrapper,
-.ft-add-movements-grid .ag-header,
-.ft-add-movements-grid .ag-row {
-  border: 0 !important;
-}
-
-.ft-add-movements-grid .ag-cell,
-.ft-add-movements-grid .ag-header-cell {
-  border-color: var(--ft-color-border) !important;
-}
-
-/* Compact header — uppercase, tighter */
-.ft-add-movements-grid .ag-header {
-  border-bottom: 1px solid var(--ft-color-border-strong) !important;
-}
-
-.ft-add-movements-grid .ag-header-cell-text {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* Alternating row tint for readability */
-.ft-add-movements-grid .ag-row-odd:not(.ag-row-add-phantom) {
-  background: rgba(255, 255, 255, 0.015);
-}
-
-/* Focused cell highlight */
-.ft-add-movements-grid .ag-cell-focus {
-  background: var(--ft-color-accent-10) !important;
-  outline: 2px solid var(--ft-color-accent) !important;
-  outline-offset: -2px;
-}
-
-.ft-add-movements-grid .ag-cell-range-selected:not(.ag-cell-focus) {
-  background: var(--ft-color-accent-10) !important;
-}
-
-/* Inline editing state */
-.ft-add-movements-grid .ag-cell-inline-editing {
-  background: var(--ft-color-surface) !important;
-  padding-bottom: 0;
-  padding-top: 0;
-}
-
-/* Large text editor (description popup) */
-.ft-add-movements-grid .ag-text-area-input {
-  padding: 8px;
-}
+/* ── Page-Specific AG Grid Overrides ──────────────────────── */
+/* Generic grid integration (borders, headers, focus, editing) */
+/* lives in styles/ag-grid-overrides.css via the .ft-ag-grid  */
+/* class. Only add-movements-specific rules remain here.       */
 
 /* ── Type-Colored Row Left Border ─────────────────────────── */
 /* Replaces the per-cell colored dot with a full-row left accent. */
@@ -325,8 +224,4 @@
   padding: 1px 5px;
 }
 
-/* ── Right-aligned header for amount column ───────────────── */
-
-.ft-add-movements-grid .ag-header-cell.ft-ag-header-right .ag-header-cell-label {
-  justify-content: flex-end;
-}
+/* Right-aligned header now handled by styles/ag-grid-overrides.css */

@@ -3,29 +3,10 @@ import { bankAccounts } from '../services/api.js';
 import { InfoCard } from '../components/dumb/infoCard/infoCard.js';
 import { AccountSummaryCard } from '../components/dumb/accountSummaryCard/accountSummaryCard.js';
 import { AccountsSummary } from '../components/smart/accountsSummary/accountsSummary.js';
+import { normalizeCurrency, formatMoneyFromCents } from '../utils/formatters.js';
 
 const DASHBOARD_INFO_CARDS_SELECTOR = '#dashboard-info-cards';
 const ACCOUNTS_SUMMARY_SELECTOR = '#widget-accounts-summary';
-
-function normalizeCurrency(code) {
-  return String(code || '').trim().toUpperCase();
-}
-
-function formatMoneyFromCents(cents, currencyCode) {
-  const amount = (Number(cents) || 0) / 100;
-  const normalized = normalizeCurrency(currencyCode);
-
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: normalized || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${normalized || ''}`.trim();
-  }
-}
 
 function buildCardsData(accounts, convertedTotalsCents, mainCurrency) {
   const totalBalanceCents = convertedTotalsCents.reduce((sum, value) => sum + value, 0);
