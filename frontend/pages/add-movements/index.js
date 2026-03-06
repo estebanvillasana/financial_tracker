@@ -10,7 +10,7 @@
  * Business logic (validation, commit, discard, account switch) lives in
  * dedicated sibling modules to keep this orchestrator lean.
  */
-import { bankAccounts, categories, subCategories } from '../../services/api.js';
+import { bankAccounts, categories, subCategories, repetitiveMovements } from '../../services/api.js';
 import {
   TYPE_VALUES,
   SENTINEL_ID,
@@ -154,16 +154,19 @@ async function initAddMovementsPage(root = document) {
   let accounts = [];
   let activeCategories = [];
   let activeSubCategories = [];
+  let activeRepetitiveMovements = [];
 
   try {
-    [accounts, activeCategories, activeSubCategories] = await Promise.all([
+    [accounts, activeCategories, activeSubCategories, activeRepetitiveMovements] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
+      repetitiveMovements.getAll({ active: 1 }),
     ]);
     accounts = Array.isArray(accounts) ? accounts : [];
     activeCategories = Array.isArray(activeCategories) ? activeCategories : [];
     activeSubCategories = Array.isArray(activeSubCategories) ? activeSubCategories : [];
+    activeRepetitiveMovements = Array.isArray(activeRepetitiveMovements) ? activeRepetitiveMovements : [];
   } catch (error) {
     FeedbackBanner.render(feedbackEl, error?.message || 'Failed to load add movement data.');
     toolbarEl.innerHTML = '<span class="ft-small ft-text-muted">Could not load account selector.</span>';
@@ -185,6 +188,7 @@ async function initAddMovementsPage(root = document) {
     accounts,
     categories: activeCategories,
     subCategories: activeSubCategories,
+    repetitiveMovements: activeRepetitiveMovements,
     selectedAccountId: Number(accounts[0].id),
     draftType: 'Expense',
     gridApi: null,

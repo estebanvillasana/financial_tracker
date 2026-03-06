@@ -225,3 +225,20 @@
 }
 
 /* Right-aligned header now handled by styles/ag-grid-overrides.css */
+
+/* ── Row Number Column ────────────────────────────────────── */
+
+.ft-add-row-num {
+  color: var(--ft-color-text-muted-30);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  user-select: none;
+}
+
+/* ── Error Highlighting ───────────────────────────────────── */
+
+.ft-add-cell--error {
+  background: color-mix(in srgb, var(--ft-color-danger) 12%, transparent) !important;
+  box-shadow: inset 0 0 0 1px var(--ft-color-danger) !important;
+}
