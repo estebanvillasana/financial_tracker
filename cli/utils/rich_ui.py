@@ -195,8 +195,9 @@ def build_rich_layout(
     clipped_options = None
     if options_text:
         options_lines = options_text.splitlines()
-        if len(options_lines) > available_main_lines:
-            options_lines = options_lines[: available_main_lines - 1] + ["..."]
+        options_available_lines = max(4, available_body_lines)
+        if len(options_lines) > options_available_lines:
+            options_lines = options_lines[: options_available_lines - 1] + ["..."]
         clipped_options = "\n".join(options_lines)
 
     layout = Layout()
