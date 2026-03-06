@@ -332,10 +332,17 @@ def prompt_inline_numbered_choice(
             continue
 
         if len(pressed_key) == 1 and pressed_key.isdigit() and pressed_key != "0":
-            typed_number = pressed_key
-            target_index = int(typed_number) - 1
+            candidate = typed_number + pressed_key
+            target_index = int(candidate) - 1
             if 0 <= target_index < len(options):
+                typed_number = candidate
                 selected_index = target_index
+            else:
+                # Accumulated number out of range; use last digit as fallback
+                typed_number = pressed_key
+                target_index = int(typed_number) - 1
+                if 0 <= target_index < len(options):
+                    selected_index = target_index
 
 
 def prompt_inline_autocomplete_choice(

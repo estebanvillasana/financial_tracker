@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import json
-import urllib.error
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
-from decimal import InvalidOperation
 from typing import Literal
 
 from config import CliConfig
 from functions import api
+from utils.api_errors import api_error_message
+from utils.money import fetch_active_accounts, fetch_fx_rate, parse_major_to_cents
+from utils.references import fetch_references
+from utils.table import build_table, clip
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
 from utils.debug_shortcuts import handle_debug_restart
@@ -49,43 +49,7 @@ class MovementEditDraft:
     invoice: int
 
 
-def _api_error_message(exc: Exception) -> str:
-    if isinstance(exc, urllib.error.HTTPError):
-        try:
-            body = exc.read().decode("utf-8")
-            payload = json.loads(body) if body else {}
-            detail = payload.get("detail")
-            if detail:
-                return f"{exc.code}: {detail}"
-        except Exception:
-            pass
-        return f"{exc.code}: {exc.reason}"
-    return str(exc)
 
-
-def _parse_major_to_cents(typed_value: str) -> int | None:
-    value = typed_value.strip()
-    if not value:
-        return None
-    try:
-        major = Decimal(value)
-    except InvalidOperation:
-        return None
-    if major <= 0:
-        return None
-    cents = int((major * Decimal("100")).quantize(Decimal("1")))
-    return cents if cents > 0 else None
-
-
-def _fetch_active_accounts(config: CliConfig) -> list[dict]:
-    return api.get(config.api_base_url, "/bank-accounts?active=1")
-
-
-def _fetch_references(config: CliConfig) -> tuple[list[dict], list[dict], list[dict]]:
-    categories = api.get(config.api_base_url, "/categories?active=1")
-    sub_categories = api.get(config.api_base_url, "/sub-categories?active=1")
-    repetitive = api.get(config.api_base_url, "/repetitive-movements?active=1&limit=500")
-    return categories, sub_categories, repetitive
 
 
 def _fetch_movements(config: CliConfig, account_id: int | None) -> list[dict]:
@@ -95,29 +59,19 @@ def _fetch_movements(config: CliConfig, account_id: int | None) -> list[dict]:
     return api.get(config.api_base_url, path)
 
 
-def _fx_rate(config: CliConfig, from_currency: str, main_currency: str) -> float | None:
-    if from_currency.lower() == main_currency.lower():
-        return 1.0
-    pair = f"{from_currency.upper()}{main_currency.upper()}"
-    try:
-        data = api.get(config.api_base_url, f"/fx-rates/latest/{pair}")
-        return float(data["rate"])
-    except Exception:
-        return None
-
-
-def _build_fx_rates(config: CliConfig, rows: list[dict], main_currency: str) -> dict[str, float | None]:
-    unique = {str(r["currency"]).lower() for r in rows}
-    return {cur: _fx_rate(config, cur, main_currency) for cur in unique}
-
-
-def _clip(value: str, max_len: int) -> str:
-    return value if len(value) <= max_len else value[: max_len - 1] + "…"
-
 
 def _movement_display_value(row: dict) -> float:
-    raw = float(row["value"]) / 100.0
-    return raw
+    return float(row["value"]) / 100.0
+
+
+def _type_cell_styler(row_idx: int, col: int, padded: str) -> str:
+    """Color the Type column green for Income, red for Expense."""
+    if col == 3:
+        raw = padded.strip()
+        if raw in {"Income", "Expense"}:
+            color = "green" if raw == "Income" else "red"
+            return f"[[group:{color}]]{padded}[[/group]]"
+    return padded
 
 
 def _render_table(
@@ -146,8 +100,8 @@ def _render_table(
     ]
     cells = [
         [
-            _clip(str(r["movement"]), 22),
-            _clip(str(r.get("description") or "—"), 20),
+            clip(str(r["movement"]), 22),
+            clip(str(r.get("description") or "—"), 20),
             str(r["date"]),
             str(r["type"]),
             format_money(_movement_display_value(r), str(r["currency"])),
@@ -159,33 +113,14 @@ def _render_table(
                 ),
                 main_currency,
             ),
-            _clip(str(r.get("repetitive_movement") or "—"), 18),
+            clip(str(r.get("repetitive_movement") or "—"), 18),
             "Yes" if int(r.get("invoice") or 0) == 1 else "No",
-            _clip(str(r.get("category") or "—"), 18),
-            _clip(str(r.get("sub_category") or "—"), 18),
+            clip(str(r.get("category") or "—"), 18),
+            clip(str(r.get("sub_category") or "—"), 18),
         ]
         for r in page_rows
     ]
-    widths = [max(len(h), max((len(c[i]) for c in cells), default=0)) for i, h in enumerate(headers)]
-
-    def fmt_row(row_cells: list[str], numeric: set[int] | None = None) -> str:
-        numeric_cols = numeric or set()
-        parts = []
-        for i, (cell, width) in enumerate(zip(row_cells, widths)):
-            formatted = cell.rjust(width) if i in numeric_cols else cell.ljust(width)
-            if i == 3 and cell.strip() in {"Income", "Expense"}:
-                color = "green" if cell.strip() == "Income" else "red"
-                formatted = f"[[group:{color}]]{formatted}[[/group]]"
-            parts.append(formatted)
-        return "│ " + " │ ".join(parts) + " │"
-
-    top = "┌" + "┬".join("─" * (w + 2) for w in widths) + "┐"
-    mid = "├" + "┼".join("─" * (w + 2) for w in widths) + "┤"
-    bot = "└" + "┴".join("─" * (w + 2) for w in widths) + "┘"
-    lines = [top, fmt_row(headers), mid]
-    lines.extend(fmt_row(c, numeric={4, 5}) for c in cells)
-    lines.append(bot)
-    return "\n".join(lines), total_pages
+    return build_table(headers, cells, numeric_cols={4, 5}, cell_styler=_type_cell_styler), total_pages
 
 
 def _build_body(
@@ -235,7 +170,7 @@ def render_body(config: CliConfig) -> str:
     try:
         rows = _fetch_movements(config, account_id=None)
     except Exception as exc:
-        return f"Movements\n\nCould not load movements: {_api_error_message(exc)}"
+        return f"Movements\n\nCould not load movements: {api_error_message(exc)}"
     return (
         "Movements\n\n"
         f"Loaded movements: {len(rows)}\n"
@@ -365,7 +300,7 @@ def _prompt_edit(
             if typed == BACK_TOKEN:
                 step = 2
                 continue
-            parsed = _parse_major_to_cents(typed)
+            parsed = parse_major_to_cents(typed)
             if parsed is None:
                 value_text = typed
                 continue
@@ -512,11 +447,11 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
 
     while True:
         try:
-            accounts = _fetch_active_accounts(config)
-            categories, sub_categories, repetitive = _fetch_references(config)
+            accounts = fetch_active_accounts(config)
+            categories, sub_categories, repetitive = fetch_references(config)
             rows = _fetch_movements(config, selected_account_id)
         except Exception as exc:
-            body = f"Movements\n\nCould not load data: {_api_error_message(exc)}\n\nB/ESC  Back"
+            body = f"Movements\n\nCould not load data: {api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "5", body, interaction_area="content")
             key = read_key()
             handle_debug_restart(key)
@@ -524,7 +459,8 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 return
             continue
 
-        rates = _build_fx_rates(config, rows, config.main_currency)
+        unique_currencies = {str(r["currency"]).lower() for r in rows}
+        rates = {cur: fetch_fx_rate(config, cur, config.main_currency) for cur in unique_currencies}
         table_text, total_pages = _render_table(rows, page, rates, config.main_currency)
         if page >= total_pages:
             page = max(0, total_pages - 1)
@@ -593,7 +529,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 message = "No movements to edit."
                 continue
             movement_options = [
-                f"[[group:{'green' if str(r['type']) == 'Income' else 'red'}]]{_clip(' '.join(str(r['movement']).split()), 24)}[[/group]] | {format_money(_movement_display_value(r), str(r['currency']))} | {' '.join(str(r['date']).split())}"
+                f"[[group:{'green' if str(r['type']) == 'Income' else 'red'}]]{clip(' '.join(str(r['movement']).split()), 24)}[[/group]] | {format_money(_movement_display_value(r), str(r['currency']))} | {' '.join(str(r['date']).split())}"
                 for r in rows
             ]
             selected = prompt_inline_numbered_choice(
@@ -639,7 +575,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 api.put(config.api_base_url, f"/movements/{target_row['id']}", payload)
                 message = f"Movement {target_row['id']} updated."
             except Exception as exc:
-                message = f"Update failed: {_api_error_message(exc)}"
+                message = f"Update failed: {api_error_message(exc)}"
             continue
 
         if event.choice == "5":

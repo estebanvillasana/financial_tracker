@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import json
-import urllib.error
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
-from decimal import InvalidOperation
 from typing import Literal
 
 from config import CliConfig
 from functions import api
+from utils.api_errors import api_error_message
+from utils.money import fetch_active_accounts, parse_major_to_cents
+from utils.table import build_table, clip
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
 from utils.debug_shortcuts import handle_debug_restart
@@ -47,38 +46,6 @@ class TransferDraft:
     receive_currency: str
 
 
-def _api_error_message(exc: Exception) -> str:
-    if isinstance(exc, urllib.error.HTTPError):
-        try:
-            body = exc.read().decode("utf-8")
-            payload = json.loads(body) if body else {}
-            detail = payload.get("detail")
-            if detail:
-                return f"{exc.code}: {detail}"
-        except Exception:
-            pass
-        return f"{exc.code}: {exc.reason}"
-    return str(exc)
-
-
-def _parse_major_to_cents(typed_value: str) -> int | None:
-    value = typed_value.strip()
-    if not value:
-        return None
-    try:
-        major = Decimal(value)
-    except InvalidOperation:
-        return None
-    if major <= 0:
-        return None
-    cents = int((major * Decimal("100")).quantize(Decimal("1")))
-    if cents <= 0:
-        return None
-    return cents
-
-
-def _fetch_active_accounts(config: CliConfig) -> list[dict]:
-    return api.get(config.api_base_url, "/bank-accounts?active=1")
 
 
 def _fetch_transfers(config: CliConfig) -> list[dict]:
@@ -95,30 +62,15 @@ def _render_transfers_table(rows: list[dict], page: int, page_size: int = 8) -> 
     cells = [
         [
             str(r["date"]),
-            str(r["send_account_name"])[:20],
-            str(r["receive_account_name"])[:20],
+            clip(str(r["send_account_name"]), 20),
+            clip(str(r["receive_account_name"]), 20),
             format_money(float(r["sent_value"]) / 100.0, str(r["send_currency"])),
             format_money(float(r["received_value"]) / 100.0, str(r["receive_currency"])),
-            str(r.get("description") or "—")[:28],
+            clip(str(r.get("description") or "—"), 28),
         ]
         for r in recent
     ]
-    widths = [max(len(h), max((len(c[i]) for c in cells), default=0)) for i, h in enumerate(headers)]
-
-    def fmt_row(row_cells: list[str], numeric: set[int] | None = None) -> str:
-        numeric_cols = numeric or set()
-        parts = []
-        for i, (cell, width) in enumerate(zip(row_cells, widths)):
-            parts.append(cell.rjust(width) if i in numeric_cols else cell.ljust(width))
-        return "│ " + " │ ".join(parts) + " │"
-
-    top = "┌" + "┬".join("─" * (w + 2) for w in widths) + "┐"
-    mid = "├" + "┼".join("─" * (w + 2) for w in widths) + "┤"
-    bot = "└" + "┴".join("─" * (w + 2) for w in widths) + "┘"
-    lines = [top, fmt_row(headers), mid]
-    lines.extend(fmt_row(c, numeric={3, 4}) for c in cells)
-    lines.append(bot)
-    return "\n".join(lines), total_pages
+    return build_table(headers, cells, numeric_cols={3, 4}), total_pages
 
 
 def _build_body(
@@ -164,7 +116,7 @@ def render_body(config: CliConfig) -> str:
     try:
         transfers = _fetch_transfers(config)
     except Exception as exc:
-        return f"Internal Money Transfers\n\nCould not load transfers: {_api_error_message(exc)}"
+        return f"Internal Money Transfers\n\nCould not load transfers: {api_error_message(exc)}"
     table_text, total_pages = _render_transfers_table(transfers, page=0)
     return _build_body("9", "preview", transfers, 0, total_pages, table_text)
 
@@ -197,7 +149,7 @@ def _choose_account(
     if selected is None:
         return None
     if selected == BACK_TOKEN:
-        return {"__back__": True}
+        return BACK_TOKEN
     return sorted_accounts[options.index(selected)]
 
 
@@ -268,7 +220,7 @@ def _prompt_transfer(
             )
             if picked_send is None:
                 return None
-            if picked_send.get("__back__"):
+            if picked_send == BACK_TOKEN:
                 step = 1
                 continue
             send_account = picked_send
@@ -293,7 +245,7 @@ def _prompt_transfer(
             if sent_input == BACK_TOKEN:
                 step = 2
                 continue
-            parsed = _parse_major_to_cents(sent_input)
+            parsed = parse_major_to_cents(sent_input)
             if parsed is None:
                 sent_text = sent_input
                 continue
@@ -312,7 +264,7 @@ def _prompt_transfer(
             )
             if picked_receive is None:
                 return None
-            if picked_receive.get("__back__"):
+            if picked_receive == BACK_TOKEN:
                 step = 3
                 continue
             receive_account = picked_receive
@@ -336,7 +288,7 @@ def _prompt_transfer(
             if received_input == BACK_TOKEN:
                 step = 4
                 continue
-            parsed = _parse_major_to_cents(received_input)
+            parsed = parse_major_to_cents(received_input)
             if parsed is None:
                 received_text = received_input
                 continue
@@ -400,7 +352,7 @@ def _create_transfer(
     try:
         created = api.post(config.api_base_url, "/money-transfers", payload)
     except Exception as exc:
-        return f"Create failed: {_api_error_message(exc)}"
+        return f"Create failed: {api_error_message(exc)}"
     return (
         f"Transfer created ({created['movement_code']}): "
         f"{draft.send_account_name} {format_money(draft.sent_value / 100.0, draft.send_currency)} -> "
@@ -414,10 +366,10 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
     message: str | None = None
     while True:
         try:
-            accounts = _fetch_active_accounts(config)
+            accounts = fetch_active_accounts(config)
             transfers = _fetch_transfers(config)
         except Exception as exc:
-            body = f"Internal Money Transfers\n\nCould not load data: {_api_error_message(exc)}\n\nB/ESC  Back"
+            body = f"Internal Money Transfers\n\nCould not load data: {api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "4", body, interaction_area="content")
             key = read_key()
             handle_debug_restart(key)

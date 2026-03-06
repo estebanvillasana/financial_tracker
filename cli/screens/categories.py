@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
-import urllib.error
 from dataclasses import dataclass
 from typing import Literal
 
 from config import CliConfig
 from functions import api
+from utils.api_errors import api_error_message
 from utils.debug_shortcuts import handle_debug_restart
 from utils.inline_input import prompt_inline_numbered_choice, prompt_inline_text
 from utils.navigation import read_key
@@ -48,19 +47,6 @@ SUBCATEGORY_GROUP_BASE_COLORS = {
     "INCOME": "green",
 }
 
-
-def _api_error_message(exc: Exception) -> str:
-    if isinstance(exc, urllib.error.HTTPError):
-        try:
-            body = exc.read().decode("utf-8")
-            payload = json.loads(body) if body else {}
-            detail = payload.get("detail")
-            if detail:
-                return f"{exc.code}: {detail}"
-        except Exception:
-            pass
-        return f"{exc.code}: {exc.reason}"
-    return str(exc)
 
 
 def _fetch_editor_data(config: CliConfig) -> tuple[list[dict], list[dict]]:
@@ -148,7 +134,7 @@ def render_body(config: CliConfig) -> str:
     try:
         categories, sub_categories = _fetch_editor_data(config)
     except Exception as exc:
-        return f"Categories & Sub-categories\n\nCould not load data: {_api_error_message(exc)}"
+        return f"Categories & Sub-categories\n\nCould not load data: {api_error_message(exc)}"
     return _build_body("9", "preview", categories, sub_categories)
 
 
@@ -269,7 +255,7 @@ def _create_category(menu_items: list[tuple[str, str]], config: CliConfig, body_
         )
         return "Category created."
     except Exception as exc:
-        return f"Create failed: {_api_error_message(exc)}"
+        return f"Create failed: {api_error_message(exc)}"
 
 
 def _edit_category(
@@ -324,7 +310,7 @@ def _edit_category(
         api.post(config.api_base_url, f"/categories/{selected['id']}/update", payload)
         return "Category updated."
     except Exception as exc:
-        return f"Update failed: {_api_error_message(exc)}"
+        return f"Update failed: {api_error_message(exc)}"
 
 
 def _create_sub_category(
@@ -375,7 +361,7 @@ def _create_sub_category(
         )
         return "Sub-category created."
     except Exception as exc:
-        return f"Create failed: {_api_error_message(exc)}"
+        return f"Create failed: {api_error_message(exc)}"
 
 
 def _edit_sub_category(
@@ -438,7 +424,7 @@ def _edit_sub_category(
         api.post(config.api_base_url, f"/sub-categories/{selected['id']}/update", payload)
         return "Sub-category updated."
     except Exception as exc:
-        return f"Update failed: {_api_error_message(exc)}"
+        return f"Update failed: {api_error_message(exc)}"
 
 
 def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
@@ -449,7 +435,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         try:
             categories, sub_categories = _fetch_editor_data(config)
         except Exception as exc:
-            body = f"Categories & Sub-categories\n\nCould not load data: {_api_error_message(exc)}\n\nB/ESC  Back"
+            body = f"Categories & Sub-categories\n\nCould not load data: {api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "2", body, interaction_area="content")
             key = read_key()
             handle_debug_restart(key)

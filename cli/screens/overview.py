@@ -6,7 +6,8 @@ from typing import Any
 
 from config import CliConfig
 from db import query
-from functions import api
+from utils.money import fetch_fx_rate
+from utils.table import build_table
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
 from utils.debug_shortcuts import handle_debug_restart
@@ -26,17 +27,6 @@ _NUMERIC_COLS = frozenset({3, 4})
 def _fetch_rows(config: CliConfig) -> list[dict[str, Any]]:
     return query(config.db_path, _SQL)
 
-
-def _fx_rate(config: CliConfig, from_currency: str) -> float | None:
-    """Return the rate to convert 1 unit of from_currency into main_currency."""
-    if from_currency.lower() == config.main_currency.lower():
-        return 1.0
-    pair = f"{from_currency.upper()}{config.main_currency.upper()}"
-    try:
-        data = api.get(config.api_base_url, f"/fx-rates/latest/{pair}")
-        return data["rate"]
-    except Exception:
-        return None
 
 
 # ─────────────────────────────────────────────
@@ -64,46 +54,22 @@ def _render_table(
     rows: list[dict[str, Any]],
     rates: dict[str, float | None],
     main_currency: str,
-    widths: list[int],
-) -> str:
+    row_page: int = 0,
+    rows_per_page: int = 10,
+) -> tuple[str, int]:
+    """Render account table with row pagination. Returns ``(table_str, total_row_pages)``."""
     headers = ["Account", "Type", "Owner", "Balance", f"In {code_plus_symbol(main_currency)}"]
-
     active_rows = [r for r in rows if r["active"]]
     all_cells = [_row_cells(r, rates, main_currency) for r in active_rows]
     if not all_cells:
-        return "No active accounts."
-
-    def fmt_row(cells: list[str]) -> str:
-        parts = [
-            cell.rjust(w) if i in _NUMERIC_COLS else cell.ljust(w)
-            for i, (cell, w) in enumerate(zip(cells, widths))
-        ]
-        return "│ " + " │ ".join(parts) + " │"
-
-    top = "┌" + "┬".join("─" * (w + 2) for w in widths) + "┐"
-    header_sep = "├" + "┼".join("─" * (w + 2) for w in widths) + "┤"
-    bottom = "└" + "┴".join("─" * (w + 2) for w in widths) + "┘"
-
-    lines = [top, fmt_row(headers), header_sep]
-    for cells in all_cells:
-        lines.append(fmt_row(cells))
-    lines.append(bottom)
-
-    return "\n".join(lines)
-
-
-def _column_widths(
-    rows: list[dict[str, Any]],
-    rates: dict[str, float | None],
-    main_currency: str,
-) -> list[int]:
-    headers = ["Account", "Type", "Owner", "Balance", f"In {code_plus_symbol(main_currency)}"]
-    active_rows = [r for r in rows if r["active"]]
-    all_cells = [_row_cells(r, rates, main_currency) for r in active_rows]
-    return [
-        max(len(h), max((len(cells[i]) for cells in all_cells), default=0))
-        for i, h in enumerate(headers)
-    ]
+        return "No active accounts.", 1
+    total_row_pages = max(1, (len(all_cells) + rows_per_page - 1) // rows_per_page)
+    current_row_page = max(0, min(row_page, total_row_pages - 1))
+    page_cells = all_cells[current_row_page * rows_per_page : (current_row_page + 1) * rows_per_page]
+    table = build_table(headers, page_cells, numeric_cols=_NUMERIC_COLS)
+    if total_row_pages > 1:
+        table += f"\n  Rows {current_row_page * rows_per_page + 1}–{current_row_page * rows_per_page + len(page_cells)} of {len(all_cells)}  |  Up/Down or J/K to scroll rows"
+    return table, total_row_pages
 
 
 def _card(title: str, value: str, width: int = 34) -> str:
@@ -142,9 +108,12 @@ def _build_body(
     include_back: bool,
     page: int = 0,
     groups_per_page: int = 1,
-) -> str:
+    row_page: int = 0,
+    rows_per_page: int = 10,
+) -> tuple[str, int]:
     if not rows:
-        return "Overview\n\nNo accounts found.\n\nB/ESC  Back" if include_back else "Overview\n\nNo accounts found."
+        msg = "Overview\n\nNo accounts found.\n\nB/ESC  Back" if include_back else "Overview\n\nNo accounts found."
+        return msg, 1
 
     active_rows = [r for r in rows if r["active"]]
     n_active = len(active_rows)
@@ -178,13 +147,13 @@ def _build_body(
         body = f"{summary}\n\nNo active accounts.\n\n[[options_panel]]\n{cards}\n[[/options_panel]]"
         if include_back:
             body = f"{body}\n\nB/ESC  Back"
-        return body
+        return body, 1
 
-    widths = _column_widths(active_rows, rates, main_currency)
     start = current_page * groups_per_page
     end = start + groups_per_page
     page_currencies = sorted_currencies[start:end]
     sections = []
+    total_row_pages = 1
     for currency in page_currencies:
         currency_rows = grouped[currency]
         currency_total = sum(float(r["total_balance"]) for r in currency_rows)
@@ -196,7 +165,10 @@ def _build_body(
             f"Total: {format_money(currency_total, currency)} | In {code_plus_symbol(main_currency)}: "
             f"{format_money(currency_total_main, main_currency)}"
         )
-        sections.append(_render_table(currency_rows, rates, main_currency, widths))
+        table_text, total_row_pages = _render_table(
+            currency_rows, rates, main_currency, row_page=row_page, rows_per_page=rows_per_page,
+        )
+        sections.append(table_text)
         sections.append("─" * 80)
 
     cards = _render_summary_cards(total_non_savings_main, savings_main, debts_main, total_main, main_currency)
@@ -204,7 +176,7 @@ def _build_body(
     body = f"{summary}\n\n" + "\n\n".join(sections) + f"\n{footer}\n\n[[options_panel]]\n{cards}\n[[/options_panel]]"
     if include_back:
         body = f"{body}\n\nB/ESC  Back"
-    return body
+    return body, total_row_pages
 
 
 def _build_preview_body(
@@ -232,7 +204,7 @@ def _build_preview_body(
     )
 
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in rows:
+    for row in active_rows:
         grouped[str(row["currency"]).lower()].append(row)
 
     currency_rows_sorted = sorted(
@@ -282,7 +254,7 @@ def render_body(config: CliConfig) -> str:
         return "Overview\n\nCould not load data."
 
     unique_currencies = {str(r["currency"]).lower() for r in rows}
-    rates: dict[str, float | None] = {cur: _fx_rate(config, cur) for cur in unique_currencies}
+    rates: dict[str, float | None] = {cur: fetch_fx_rate(config, cur, config.main_currency) for cur in unique_currencies}
     return _build_preview_body(rows, rates, config.main_currency)
 
 
@@ -295,15 +267,20 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
 
     # Fetch FX rates for every unique currency in one pass
     unique_currencies = {r["currency"].lower() for r in rows}
-    rates: dict[str, float | None] = {cur: _fx_rate(config, cur) for cur in unique_currencies}
+    rates: dict[str, float | None] = {cur: fetch_fx_rate(config, cur, config.main_currency) for cur in unique_currencies}
 
     active_currency_count = len({str(r["currency"]).lower() for r in rows if r["active"]})
     groups_per_page = 1
     total_pages = max(1, (active_currency_count + groups_per_page - 1) // groups_per_page)
     page = 0
+    row_page = 0
 
     while True:
-        body = _build_body(rows, rates, config.main_currency, include_back=True, page=page, groups_per_page=groups_per_page)
+        body, total_row_pages = _build_body(
+            rows, rates, config.main_currency,
+            include_back=True, page=page, groups_per_page=groups_per_page,
+            row_page=row_page,
+        )
         render_screen(menu_items, "1", body, interaction_area="content")
         key = read_key()
         handle_debug_restart(key)
@@ -311,9 +288,17 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             return
         if key in {"RIGHT", "n", "N"}:
             page = min(total_pages - 1, page + 1)
+            row_page = 0
             continue
         if key in {"LEFT", "p", "P"}:
             page = max(0, page - 1)
+            row_page = 0
+            continue
+        if key in {"DOWN", "j", "J"}:
+            row_page = min(total_row_pages - 1, row_page + 1)
+            continue
+        if key in {"UP", "k", "K"}:
+            row_page = max(0, row_page - 1)
             continue
 
 

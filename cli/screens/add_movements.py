@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import json
-import urllib.error
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
-from decimal import InvalidOperation
 from typing import Literal
 
 from config import CliConfig
 from functions import api
+from utils.api_errors import api_error_message
+from utils.money import fetch_active_accounts, parse_major_to_cents
+from utils.references import fetch_references
+from utils.table import build_table, clip
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
 from utils.debug_shortcuts import handle_debug_restart
@@ -50,29 +50,7 @@ class DraftMovement:
     repetitive_movement: str | None
 
 
-def _api_error_message(exc: Exception) -> str:
-    if isinstance(exc, urllib.error.HTTPError):
-        try:
-            body = exc.read().decode("utf-8")
-            payload = json.loads(body) if body else {}
-            detail = payload.get("detail")
-            if detail:
-                return f"{exc.code}: {detail}"
-        except Exception:
-            pass
-        return f"{exc.code}: {exc.reason}"
-    return str(exc)
 
-
-def _fetch_active_accounts(config: CliConfig) -> list[dict]:
-    return api.get(config.api_base_url, "/bank-accounts?active=1")
-
-
-def _fetch_references(config: CliConfig) -> tuple[list[dict], list[dict], list[dict]]:
-    categories = api.get(config.api_base_url, "/categories?active=1")
-    sub_categories = api.get(config.api_base_url, "/sub-categories?active=1")
-    repetitive = api.get(config.api_base_url, "/repetitive-movements?active=1&limit=500")
-    return categories, sub_categories, repetitive
 
 
 def _fetch_last_movement_date(config: CliConfig, account_id: int) -> str:
@@ -81,21 +59,6 @@ def _fetch_last_movement_date(config: CliConfig, account_id: int) -> str:
         return "—"
     return str(rows[0].get("date") or "—")
 
-
-def _parse_major_to_cents(typed_value: str) -> int | None:
-    value = typed_value.strip()
-    if not value:
-        return None
-    try:
-        major = Decimal(value)
-    except InvalidOperation:
-        return None
-    if major <= 0:
-        return None
-    cents = int((major * Decimal("100")).quantize(Decimal("1")))
-    if cents == 0:
-        return None
-    return cents
 
 
 def _format_draft_value(cents: int, currency: str) -> str:
@@ -109,12 +72,6 @@ def _projected_balance_cents(current_total_cents: int, drafts: list[DraftMovemen
     return current_total_cents + delta
 
 
-def _clip_cell(value: str, max_len: int) -> str:
-    if len(value) <= max_len:
-        return value
-    return value[: max_len - 1] + "…"
-
-
 def _render_draft_rows(drafts: list[DraftMovement], currency: str) -> str:
     if not drafts:
         return "No draft movements yet."
@@ -124,32 +81,14 @@ def _render_draft_rows(drafts: list[DraftMovement], currency: str) -> str:
             str(index),
             row.date,
             row.type,
-            _clip_cell(row.movement, 24),
+            clip(row.movement, 24),
             _format_draft_value(row.value, currency),
-            _clip_cell(row.category or "—", 18),
-            _clip_cell(row.sub_category or "—", 18),
+            clip(row.category or "—", 18),
+            clip(row.sub_category or "—", 18),
         ]
         for index, row in enumerate(drafts, start=1)
     ]
-    widths = [
-        max(len(header), max((len(row[i]) for row in body_rows), default=0))
-        for i, header in enumerate(headers)
-    ]
-
-    def fmt_row(cells: list[str], numeric: set[int] | None = None) -> str:
-        numeric_cols = numeric or set()
-        parts = []
-        for i, (cell, width) in enumerate(zip(cells, widths)):
-            parts.append(cell.rjust(width) if i in numeric_cols else cell.ljust(width))
-        return "│ " + " │ ".join(parts) + " │"
-
-    top = "┌" + "┬".join("─" * (width + 2) for width in widths) + "┐"
-    middle = "├" + "┼".join("─" * (width + 2) for width in widths) + "┤"
-    bottom = "└" + "┴".join("─" * (width + 2) for width in widths) + "┘"
-    lines = [top, fmt_row(headers), middle]
-    lines.extend(fmt_row(row, numeric={0, 4}) for row in body_rows)
-    lines.append(bottom)
-    return "\n".join(lines)
+    return build_table(headers, body_rows, numeric_cols={0, 4})
 
 
 def _build_body(
@@ -201,9 +140,9 @@ def _build_body(
 
 def render_body(config: CliConfig) -> str:
     try:
-        accounts = _fetch_active_accounts(config)
+        accounts = fetch_active_accounts(config)
     except Exception as exc:
-        return f"Add New Movements\n\nCould not load active accounts: {_api_error_message(exc)}"
+        return f"Add New Movements\n\nCould not load active accounts: {api_error_message(exc)}"
     return (
         "Add New Movements\n\n"
         f"Active accounts available: {len(accounts)}\n"
@@ -213,7 +152,7 @@ def render_body(config: CliConfig) -> str:
 
 def _select_account(menu_items: list[tuple[str, str]], config: CliConfig) -> dict | None:
     try:
-        accounts = _fetch_active_accounts(config)
+        accounts = fetch_active_accounts(config)
     except Exception:
         return None
     if not accounts:
@@ -345,7 +284,7 @@ def _prompt_movement_payload(
             if amount_input == BACK_TOKEN:
                 step = 2
                 continue
-            parsed = _parse_major_to_cents(amount_input)
+            parsed = parse_major_to_cents(amount_input)
             if parsed is None:
                 amount_text = amount_input
                 continue
@@ -512,7 +451,7 @@ def _mark_account_updated(config: CliConfig, account_id: int) -> str:
         api.put(config.api_base_url, f"/bank-accounts/{account_id}", payload)  # type: ignore[attr-defined]
         return "Account marked as updated."
     except Exception as exc:
-        return f"Could not mark account updated: {_api_error_message(exc)}"
+        return f"Could not mark account updated: {api_error_message(exc)}"
 
 
 def _commit_drafts(
@@ -561,7 +500,7 @@ def _commit_drafts(
     try:
         created = api.post(config.api_base_url, "/movements/bulk", payload)
     except Exception as exc:
-        return f"Commit failed: {_api_error_message(exc)}"
+        return f"Commit failed: {api_error_message(exc)}"
 
     mark_updated = prompt_inline_numbered_choice(
         menu_items=menu_items,
@@ -589,9 +528,9 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
                 return
 
     try:
-        categories, sub_categories, repetitive = _fetch_references(config)
+        categories, sub_categories, repetitive = fetch_references(config)
     except Exception as exc:
-        body = f"Add New Movements\n\nCould not load references: {_api_error_message(exc)}\n\nB/ESC  Back"
+        body = f"Add New Movements\n\nCould not load references: {api_error_message(exc)}\n\nB/ESC  Back"
         while True:
             render_screen(menu_items, "3", body, interaction_area="content")
             key = read_key()
@@ -608,7 +547,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
             account = api.get(config.api_base_url, f"/bank-accounts/{account['id']}")
             last_date = _fetch_last_movement_date(config, int(account["id"]))
         except Exception as exc:
-            body = f"Add New Movements\n\nCould not refresh account data: {_api_error_message(exc)}\n\nB/ESC  Back"
+            body = f"Add New Movements\n\nCould not refresh account data: {api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "3", body, interaction_area="content")
             key = read_key()
             handle_debug_restart(key)

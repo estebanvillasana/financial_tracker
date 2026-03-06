@@ -19,3 +19,4 @@ frontend/components/dumb/accountSummaryCard/test_js.html
 cli/.env
 cli/screens/test_inputs.py
 demos/
+.claude/
