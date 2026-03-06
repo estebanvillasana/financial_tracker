@@ -1,0 +1,113 @@
+/* ============================================================
+   Transfer Form — Reusable Dumb Component
+   ============================================================
+   Used by the Internal Transfers page and any future page
+   that needs a from-account → to-account transfer form.
+   ============================================================ */
+
+.ft-transfer-form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-transfer-form__title {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ft-transfer-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-transfer-form__row {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+}
+
+.ft-transfer-form__row--transfer {
+  align-items: center;
+}
+
+.ft-transfer-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ft-transfer-form__field--account {
+  flex: 1;
+  min-width: 180px;
+}
+
+.ft-transfer-form__field--amount {
+  width: 130px;
+}
+
+.ft-transfer-form__field--date {
+  width: 150px;
+}
+
+.ft-transfer-form__field--desc {
+  flex: 1;
+  min-width: 180px;
+}
+
+.ft-transfer-form__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.ft-transfer-form__control {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-family: inherit;
+  font-size: 13px;
+  height: 34px;
+  outline: none;
+  padding: 0 10px;
+  transition: border-color 120ms ease;
+}
+
+.ft-transfer-form__control::placeholder {
+  color: var(--ft-color-text-muted);
+}
+
+.ft-transfer-form__control:hover {
+  border-color: var(--ft-color-border-strong);
+}
+
+.ft-transfer-form__control:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-transfer-form__control--amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ft-transfer-form__arrow {
+  color: var(--ft-color-text-muted-30);
+  font-size: 20px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  padding-bottom: 6px;
+}
+
+.ft-transfer-form__actions {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
