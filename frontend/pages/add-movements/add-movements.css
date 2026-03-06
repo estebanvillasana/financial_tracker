@@ -186,11 +186,7 @@
 }
 
 /* ── Date Cell (tabular nums) ─────────────────────────────── */
-
-.ft-add-date {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-}
+/* Now uses shared .ft-grid-date from ag-grid-overrides.css    */
 
 /* ── Sentinel "Add New" Row ───────────────────────────────── */
 

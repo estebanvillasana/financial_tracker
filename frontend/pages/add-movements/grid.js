@@ -27,6 +27,7 @@ import {
 } from './utils.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { formatMoney } from '../../utils/formatters.js';
+import { dateCellRenderer } from '../../utils/gridRenderers.js';
 
 const ERROR_CELL_CLASS = 'ft-add-cell--error';
 
@@ -209,15 +210,7 @@ function buildGridOptions(state, domRefs, handlers) {
         editable: true,
         cellEditor: DateCellEditor,
         cellEditorPopup: true,
-        cellRenderer: params => {
-          const raw = String(params.value || '');
-          if (!raw) return '';
-          const d = new Date(`${raw}T00:00:00`);
-          if (isNaN(d.getTime())) return raw;
-          const day = String(d.getDate()).padStart(2, '0');
-          const mon = d.toLocaleString('en-US', { month: 'short' });
-          return `<span class="ft-add-date">${day} ${mon}. ${d.getFullYear()}</span>`;
-        },
+        cellRenderer: dateCellRenderer,
       },
 
       /* ── Amount ── */
