@@ -204,15 +204,81 @@
   gap: var(--ft-spacing);
 }
 
-.ft-bank-account-modal__delete-btn {
+/* ── Checkbox field ────────────────────────────────────────────── */
+
+.ft-bank-account-modal__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Reset the generic input styles that don't apply to checkboxes. */
+.ft-bank-account-modal__field--checkbox input[type="checkbox"] {
+  appearance: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  height: 16px;
+  min-height: unset;
+  padding: 0;
+  width: 16px;
+}
+
+/* ── Danger zone (trash icon + inline confirmation) ────────────── */
+
+.ft-bank-account-modal__danger-zone {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+.ft-bank-account-modal__trash-btn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  width: 32px;
+}
+
+.ft-bank-account-modal__trash-btn:hover {
+  background: var(--ft-color-danger-10);
   border-color: var(--ft-color-danger-30);
   color: var(--ft-color-danger);
 }
 
-.ft-bank-account-modal__delete-btn:hover {
+.ft-bank-account-modal__confirm {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+.ft-bank-account-modal__confirm[hidden] {
+  display: none;
+}
+
+.ft-bank-account-modal__confirm-label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ft-bank-account-modal__confirm-btn {
   background: var(--ft-color-danger-10);
-  border-color: var(--ft-color-danger-60);
+  border: 1px solid var(--ft-color-danger-30);
   color: var(--ft-color-danger);
+}
+
+.ft-bank-account-modal__confirm-btn:hover {
+  background: var(--ft-color-danger-15);
+  border-color: var(--ft-color-danger-60);
 }
 
 @media (max-width: 720px) {

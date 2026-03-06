@@ -139,6 +139,17 @@ const AccountsSummary = (() => {
   }
 
   /**
+   * Sorts accounts so not-yet-updated ones (updated=0) appear first.
+   * Preserves the original array; returns a new sorted copy.
+   *
+   * @param {object[]} accounts
+   * @returns {object[]}
+   */
+  function _sortByUpdated(accounts) {
+    return [...accounts].sort((a, b) => (a.updated ?? 0) - (b.updated ?? 0));
+  }
+
+  /**
    * Applies filter values against the full account list.
    * An empty/falsy filter value = no constraint on that field.
    * Multiple active filters are ANDed: an account must pass all of them.
@@ -356,7 +367,7 @@ const AccountsSummary = (() => {
     // ── 2. Fetch active accounts ──────────────────────────────────────────────────
     try {
       const result = await bankAccounts.getAll({ active: 1 });
-      allAccounts = Array.isArray(result) ? result : [];
+      allAccounts = _sortByUpdated(Array.isArray(result) ? result : []);
     } catch (err) {
       container.innerHTML = _buildErrorHTML(err?.message);
       return null;
@@ -453,6 +464,7 @@ const AccountsSummary = (() => {
           const idx = allAccounts.findIndex(a => String(a.id) === String(id));
           if (idx !== -1) {
             allAccounts[idx] = updated;
+            allAccounts      = _sortByUpdated(allAccounts);
             filteredAccounts = _filterAccounts(allAccounts, currentFilters);
             await updateView();
           }

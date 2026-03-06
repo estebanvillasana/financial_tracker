@@ -266,8 +266,9 @@ const BankAccountModal = (() => {
       ? `≈ ${_formatMoney(convertedTotal, defaultCurrency)} ${_escapeHtml(defaultCurrency)}`
       : '—';
 
-    // `active` is stored as an integer (1/0) in the database.
-    const isActive = Number(account?.active ?? 0) === 1;
+    // `active` and `updated` are stored as integers (1/0) in the database.
+    const isActive  = Number(account?.active  ?? 0) === 1;
+    const isUpdated = Number(account?.updated ?? 0) === 1;
     const accountId = _escapeHtml(account?.id ?? '');
     const totalBalanceLabel = _formatMoney(account?.total_balance, accountCurrency);
     const netMovementsLabel = _formatCount(account?.net_movements);
@@ -331,15 +332,34 @@ const BankAccountModal = (() => {
                   <span>Initial Balance (cents)</span>
                   <input type="number" name="initial_balance" value="${_escapeHtml(account?.initial_balance ?? 0)}" />
                 </label>
+                <label class="ft-bank-account-modal__field ft-bank-account-modal__field--checkbox">
+                  <input type="checkbox" name="updated" value="1"${isUpdated ? ' checked' : ''}>
+                  <span>Marked as updated</span>
+                </label>
               </div>
             </form>
           </div>
 
           <footer class="ft-bank-account-modal__footer">
+            <div class="ft-bank-account-modal__danger-zone">
+              <button
+                type="button"
+                class="ft-bank-account-modal__trash-btn"
+                data-soft-delete-request
+                aria-label="Mark as Inactive"
+                title="Mark as Inactive"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              </button>
+              <div class="ft-bank-account-modal__confirm" data-soft-delete-confirm hidden>
+                <span class="ft-bank-account-modal__confirm-label">Mark as inactive?</span>
+                <button type="button" class="ft-btn ft-btn--ghost" data-soft-delete-cancel>Cancel</button>
+                <button type="button" class="ft-btn ft-bank-account-modal__confirm-btn" data-soft-delete>Confirm</button>
+              </div>
+            </div>
             <div class="ft-bank-account-modal__message" data-bank-account-message aria-live="polite"></div>
             <div class="ft-bank-account-modal__actions">
               <button type="button" class="ft-btn ft-btn--ghost" data-modal-close>Close</button>
-              <button type="button" class="ft-btn ft-btn--ghost ft-bank-account-modal__delete-btn" data-soft-delete>Delete (Mark as Inactive)</button>
               <button type="submit" class="ft-btn ft-btn--primary" form="ft-bank-account-form" data-save-account>Save</button>
             </div>
           </footer>
@@ -367,6 +387,8 @@ const BankAccountModal = (() => {
       currency: _normalizeCurrency(data.get('currency')),
       owner: String(data.get('owner') || '').trim(),
       initial_balance: Number(data.get('initial_balance') || 0),
+      // Checkbox: FormData only includes it when checked; null = unchecked = 0.
+      updated: data.get('updated') !== null ? 1 : 0,
     };
   }
 
@@ -443,6 +465,23 @@ const BankAccountModal = (() => {
         return;
       }
 
+      // Trash icon: show the inline confirmation panel.
+      const softDeleteRequestBtn = event.target.closest('[data-soft-delete-request]');
+      if (softDeleteRequestBtn) {
+        const confirmEl = modalRoot.querySelector('[data-soft-delete-confirm]');
+        if (confirmEl) confirmEl.hidden = false;
+        return;
+      }
+
+      // Cancel button inside the confirmation panel: hide it again.
+      const softDeleteCancelBtn = event.target.closest('[data-soft-delete-cancel]');
+      if (softDeleteCancelBtn) {
+        const confirmEl = modalRoot.querySelector('[data-soft-delete-confirm]');
+        if (confirmEl) confirmEl.hidden = true;
+        return;
+      }
+
+      // Confirm button: perform the actual soft delete.
       const softDeleteBtn = event.target.closest('[data-soft-delete]');
       if (!softDeleteBtn) return;
 
@@ -453,11 +492,11 @@ const BankAccountModal = (() => {
       if (!onSoftDelete) return;
 
       try {
-        _setMessage(modalRoot, 'Soft deleting account...');
+        _setMessage(modalRoot, 'Marking account as inactive...');
         await onSoftDelete(account.id, account);
-        _setMessage(modalRoot, 'Account soft deleted.');
+        _setMessage(modalRoot, 'Account marked as inactive.');
       } catch (error) {
-        _setMessage(modalRoot, error?.message || 'Failed to soft delete account.', 'error');
+        _setMessage(modalRoot, error?.message || 'Failed to mark account as inactive.', 'error');
       }
     });
 
