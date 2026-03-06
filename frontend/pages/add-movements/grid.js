@@ -84,6 +84,7 @@ function buildGridOptions(state, domRefs, handlers) {
     rowData: [createSentinelRow(state.draftType)],
     cellSelection: true,
     rowSelection: 'multiple',
+    suppressClickEdit: false,
     suppressRowClickSelection: true,
     getRowId: params => params.data._id,
     isRowSelectable: params => !isAddRow(params.data),
@@ -290,6 +291,16 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     handlers.refreshSummaryState(state, domRefs);
     handlers.renderFeedback(domRefs.feedbackEl, '');
     event.preventDefault();
+  });
+
+  // Global escape handler to clear selection even when focus is not on a cell.
+  gridHost.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    state.gridApi.deselectAll();
+    if (typeof state.gridApi.clearCellSelection === 'function') state.gridApi.clearCellSelection();
+    else if (typeof state.gridApi.clearRangeSelection === 'function') state.gridApi.clearRangeSelection();
+    state.gridApi.clearFocusedCell();
+    handlers.updateTableActionButtons(state, domRefs.removeSelectedBtn);
   });
 }
 
