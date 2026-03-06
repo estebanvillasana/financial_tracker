@@ -2,9 +2,11 @@
  * Add Movements AG Grid behavior module.
  *
  * Handles:
- * - column definitions and interactive editors,
- * - sentinel row commit behavior,
- * - bulk paste insertion logic.
+ * - column definitions with financial-style formatting,
+ * - sentinel row commit logic (auto-promote on focus leave),
+ * - custom DatePicker cell editor integration,
+ * - row type visual indicator via data attribute,
+ * - bulk paste insertion from clipboard.
  */
 import {
   TYPE_VALUES,
@@ -22,8 +24,16 @@ import {
   getSubCategoriesForRow,
   parsePastedCellValue,
 } from './utils.js';
+import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 
-/** Commits the sentinel row into a normal row when it has user data. */
+/* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
+
+/**
+ * Commits the sentinel row into a normal draft row when it has user data.
+ * The sentinel is removed and replaced by the committed row + a fresh sentinel.
+ *
+ * @param {object} state - Page state (must include gridApi, draftType)
+ */
 function commitSentinelRow(state) {
   if (!state.gridApi) return;
   const sentinelNode = state.gridApi.getRowNode(SENTINEL_ID);
@@ -44,7 +54,11 @@ function commitSentinelRow(state) {
   });
 }
 
-/** Syncs state.rows from AG Grid excluding sentinel row. */
+/**
+ * Syncs state.rows from AG Grid, excluding the sentinel row.
+ *
+ * @param {object} state - Page state (gridApi will be iterated)
+ */
 function syncRowsFromGrid(state) {
   if (!state.gridApi) return;
   const rows = [];
@@ -54,7 +68,15 @@ function syncRowsFromGrid(state) {
   state.rows = rows;
 }
 
-/** Builds category/sub-category cell renderer with colored bar indicator. */
+/* ── Cell Renderers ───────────────────────────────────────────────────────── */
+
+/**
+ * Builds a category/sub-category cell renderer with colored bar indicator.
+ *
+ * @param {object}              state  - Page state (categories, subCategories)
+ * @param {'category'|'sub-category'} kind
+ * @returns {function}          AG Grid cellRenderer function
+ */
 function buildCategoryRenderer(state, kind) {
   return params => {
     const label = kind === 'category'
@@ -72,8 +94,42 @@ function buildCategoryRenderer(state, kind) {
   };
 }
 
-/** Creates full AG Grid options for the Add Movements screen. */
+/* ── Row Type Attribute ───────────────────────────────────────────────────── */
+
+/**
+ * Post-processes rows to add a data-row-type attribute for CSS styling.
+ * This enables the colored left border via CSS box-shadow.
+ *
+ * @param {object} params - AG Grid onRowDataUpdated/onModelUpdated params
+ */
+function applyRowTypeAttributes(api) {
+  api.forEachNode(node => {
+    if (!node.data) return;
+    const rowEl = document.querySelector(`[row-id="${node.id}"]`);
+    if (rowEl) {
+      if (isAddRow(node.data)) {
+        rowEl.removeAttribute('data-row-type');
+      } else {
+        rowEl.setAttribute('data-row-type', node.data.type || 'Expense');
+      }
+    }
+  });
+}
+
+/* ── Grid Options Builder ─────────────────────────────────────────────────── */
+
+/**
+ * Creates full AG Grid options for the Add Movements screen.
+ *
+ * @param {object} state    - Page state
+ * @param {object} domRefs  - DOM element references
+ * @param {object} handlers - Callback functions from index.js
+ * @returns {object}        AG Grid configuration object
+ */
 function buildGridOptions(state, domRefs, handlers) {
+  /** Reusable AG Grid cell editor class for the date column. */
+  const DateCellEditor = DatePicker.createCellEditor();
+
   return {
     theme: handlers.getGridTheme(),
     rowData: [createSentinelRow(state.draftType)],
@@ -93,6 +149,7 @@ function buildGridOptions(state, domRefs, handlers) {
       minWidth: 120,
     },
     columnDefs: [
+      /* ── Row selection checkbox ── */
       {
         colId: '__select',
         headerName: '',
@@ -106,6 +163,8 @@ function buildGridOptions(state, domRefs, handlers) {
         checkboxSelection: params => !isAddRow(params.data),
         headerCheckboxSelection: true,
       },
+
+      /* ── Movement name ── */
       {
         field: 'movement',
         headerName: 'Movement',
@@ -113,15 +172,14 @@ function buildGridOptions(state, domRefs, handlers) {
         editable: true,
         cellRenderer: params => {
           if (isAddRow(params.data)) {
-            return '<span class="ft-add-movement-cell ft-add-movement-cell--placeholder"><span class="ft-add-movement-type-dot ft-add-movement-type-dot--placeholder"></span><span>New movement\u2026</span></span>';
+            return '<span class="ft-add-movement-cell ft-add-movement-cell--placeholder"><span>New movement\u2026</span></span>';
           }
-          const typeClass = params.data?.type === 'Income'
-            ? 'ft-add-movement-type-dot--income'
-            : 'ft-add-movement-type-dot--expense';
           const text = String(params.value || '');
-          return `<span class="ft-add-movement-cell"><span class="ft-add-movement-type-dot ${typeClass}"></span><span>${text}</span></span>`;
+          return `<span class="ft-add-movement-cell"><span>${text}</span></span>`;
         },
       },
+
+      /* ── Description (popup text area) ── */
       {
         field: 'description',
         headerName: 'Description',
@@ -130,11 +188,15 @@ function buildGridOptions(state, domRefs, handlers) {
         cellEditor: 'agLargeTextCellEditor',
         cellEditorPopup: true,
       },
+
+      /* ── Date (custom DatePicker cell editor) ── */
       {
         field: 'date',
         headerName: 'Date',
         minWidth: 130,
         editable: true,
+        cellEditor: DateCellEditor,
+        cellEditorPopup: true,
         cellRenderer: params => {
           const raw = String(params.value || '');
           if (!raw) return '';
@@ -145,11 +207,15 @@ function buildGridOptions(state, domRefs, handlers) {
           return `<span class="ft-add-date">${day} ${mon}. ${d.getFullYear()}</span>`;
         },
       },
+
+      /* ── Amount (right-aligned, financial formatting) ── */
       {
         field: 'amount',
         headerName: 'Amount',
         minWidth: 130,
         editable: true,
+        headerClass: 'ft-ag-header-right',
+        cellStyle: { textAlign: 'right' },
         valueParser: params => {
           const raw = String(params.newValue ?? '').replace(/[^0-9.\-]/g, '');
           return parseNumberOrNull(raw);
@@ -162,7 +228,21 @@ function buildGridOptions(state, domRefs, handlers) {
           try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(value); }
           catch { return value.toFixed(2); }
         },
+        cellRenderer: params => {
+          if (isAddRow(params.data)) {
+            const acct = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+            const cur = (acct?.currency || 'USD').toUpperCase();
+            let symbol = '';
+            try { symbol = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(0).replace(/[\d.,]/g, '').trim(); }
+            catch { symbol = cur; }
+            return `<span class="ft-add-amount-cell ft-add-amount-cell--placeholder">${symbol} 0.00</span>`;
+          }
+          const formatted = params.valueFormatted || '';
+          return formatted ? `<span class="ft-add-amount-cell">${formatted}</span>` : '';
+        },
       },
+
+      /* ── Category (rich select dropdown) ── */
       {
         field: 'category_id',
         headerName: 'Category',
@@ -182,6 +262,8 @@ function buildGridOptions(state, domRefs, handlers) {
           highlightMatch: true,
         }),
       },
+
+      /* ── Sub-category (rich select, filtered by parent category) ── */
       {
         field: 'sub_category_id',
         headerName: 'Sub-category',
@@ -202,8 +284,11 @@ function buildGridOptions(state, domRefs, handlers) {
         }),
       },
     ],
+
+    /* ── Grid Event Handlers ── */
+
     onCellValueChanged: params => {
-      /* ── Auto-promote sentinel after overlay edits (popup text, rich-select) ── */
+      /* Auto-promote sentinel after overlay edits (popup text, rich-select, date picker) */
       if (isAddRow(params.data) && hasUserData(params.data)) {
         const isOverlay = params.colDef.cellEditorPopup ||
           params.colDef.cellEditor === 'agRichSelectCellEditor';
@@ -212,6 +297,7 @@ function buildGridOptions(state, domRefs, handlers) {
           requestAnimationFrame(() => {
             commitSentinelRow(state);
             handlers.refreshSummaryState(state, domRefs);
+            applyRowTypeAttributes(params.api);
             const count = params.api.getDisplayedRowCount();
             if (count >= 2) params.api.setFocusedCell(count - 2, colId);
           });
@@ -219,6 +305,7 @@ function buildGridOptions(state, domRefs, handlers) {
         }
       }
 
+      /* Clear sub-category when category changes and they're incompatible */
       if (params.colDef.field === 'category_id') {
         const subCategory = state.subCategories.find(item => Number(item.id) === Number(params.data?.sub_category_id));
         if (subCategory && Number(subCategory.category_id) !== Number(params.data?.category_id)) {
@@ -226,15 +313,20 @@ function buildGridOptions(state, domRefs, handlers) {
           params.api.refreshCells({ force: true, rowNodes: [params.node] });
         }
       }
+
       handlers.refreshSummaryState(state, domRefs);
       handlers.renderFeedback(domRefs.feedbackEl, '');
+      requestAnimationFrame(() => applyRowTypeAttributes(params.api));
     },
+
     onCellClicked: params => {
       if (['category_id', 'sub_category_id'].includes(params.colDef.field)) {
         params.api.startEditingCell({ rowIndex: params.rowIndex, colKey: params.column.getColId() });
       }
     },
+
     onSelectionChanged: () => handlers.updateTableActionButtons(state, domRefs.removeSelectedBtn),
+
     onCellFocused: params => {
       const node = params.rowIndex != null ? params.api.getDisplayedRowAtIndex(params.rowIndex) : null;
       const isNowSentinel = isAddRow(node?.data);
@@ -244,6 +336,7 @@ function buildGridOptions(state, domRefs, handlers) {
       }
       state.lastFocusWasSentinel = isNowSentinel;
     },
+
     onCellKeyDown: params => {
       if (params.event.key === 'Escape') {
         params.api.deselectAll();
@@ -257,23 +350,40 @@ function buildGridOptions(state, domRefs, handlers) {
       params.api.stopEditing();
       commitSentinelRow(state);
       handlers.refreshSummaryState(state, domRefs);
+      requestAnimationFrame(() => applyRowTypeAttributes(params.api));
     },
+
+    /** Apply row type attributes after initial render and any data update. */
+    onFirstDataRendered: params => applyRowTypeAttributes(params.api),
+    onRowDataUpdated: params => applyRowTypeAttributes(params.api),
   };
 }
 
-/** Mounts AG Grid and hooks page-level focus/paste interactions. */
+/* ── Grid Mount ───────────────────────────────────────────────────────────── */
+
+/**
+ * Mounts AG Grid and hooks page-level focus/paste interactions.
+ *
+ * @param {HTMLElement} gridHost  - DOM element to host the grid
+ * @param {object}      state     - Page state
+ * @param {object}      domRefs   - DOM references
+ * @param {object}      handlers  - Callback functions from index.js
+ */
 function mountGrid(gridHost, state, domRefs, handlers) {
   const gridOptions = buildGridOptions(state, domRefs, handlers);
   state.gridApi = window.agGrid.createGrid(gridHost, gridOptions);
 
+  /* ── Focus-out sentinel commit ── */
   gridHost.addEventListener('focusout', event => {
     if (state.lastFocusWasSentinel && !gridHost.contains(event.relatedTarget)) {
       commitSentinelRow(state);
       state.lastFocusWasSentinel = false;
       handlers.refreshSummaryState(state, domRefs);
+      requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
     }
   });
 
+  /* ── Bulk paste on sentinel row ── */
   gridHost.addEventListener('paste', event => {
     const focusedCell = state.gridApi.getFocusedCell();
     if (!focusedCell) return;
@@ -317,10 +427,11 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     state.lastFocusWasSentinel = false;
     handlers.refreshSummaryState(state, domRefs);
     handlers.renderFeedback(domRefs.feedbackEl, '');
+    requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
     event.preventDefault();
   });
 
-  // Global escape handler to clear selection even when focus is not on a cell.
+  /* ── Global escape handler ── */
   gridHost.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
     state.gridApi.deselectAll();
@@ -335,4 +446,5 @@ export {
   commitSentinelRow,
   syncRowsFromGrid,
   mountGrid,
+  applyRowTypeAttributes,
 };
