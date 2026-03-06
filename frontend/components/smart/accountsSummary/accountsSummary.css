@@ -42,6 +42,11 @@
   gap: calc(var(--ft-spacing) * 2);
 }
 
+/* Respect AccountsSummary columns option instead of auto-fill behavior. */
+.ft-accounts-summary .ft-accounts-grid {
+  grid-template-columns: repeat(var(--ft-accounts-summary-columns, 2), minmax(0, 1fr));
+}
+
 /* ── Header ───────────────────────────────────────────────── */
 
 .ft-accounts-summary__header {

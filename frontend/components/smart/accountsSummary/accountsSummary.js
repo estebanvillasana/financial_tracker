@@ -180,13 +180,11 @@ const AccountsSummary = (() => {
 
   /**
    * Returns the CSS class string for the accounts grid based on the columns option.
-   * @param {number} columns  1 or 2.
+   * @param {number} columns
    * @returns {string}
    */
-  function _gridClass(columns) {
-    return columns === 1
-      ? 'ft-accounts-grid ft-accounts-grid--cols-1'
-      : 'ft-accounts-grid';
+  function _gridClass() {
+    return 'ft-accounts-grid';
   }
 
   function _escapeHtml(value) {
@@ -202,7 +200,7 @@ const AccountsSummary = (() => {
    * so the page layout is stable and there is no blank flash.
    *
    * @param {number} pageSize  Number of skeleton card placeholders to render.
-   * @param {number} columns   Grid column count (1 or 2).
+   * @param {number} columns   Fixed grid column count.
    * @returns {string}
    */
   function _buildLoadingHTML(pageSize, columns) {
@@ -217,7 +215,7 @@ const AccountsSummary = (() => {
           <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--count"></div>
         </header>
         <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--toolbar"></div>
-        <div class="${_gridClass(columns)}">${cardSkeletons}</div>
+        <div class="${_gridClass()}" style="--ft-accounts-summary-columns: ${columns};">${cardSkeletons}</div>
         <div class="ft-accounts-summary__skeleton ft-accounts-summary__skeleton--pagination"></div>
       </div>`;
   }
@@ -228,7 +226,7 @@ const AccountsSummary = (() => {
    * their contents are managed entirely by the render lifecycle.
    *
    * @param {string} title    Widget header label.
-   * @param {number} columns  Grid column count (1 or 2).
+   * @param {number} columns  Fixed grid column count.
    * @returns {string}
    */
   function _buildWidgetHTML(title, columns) {
@@ -239,7 +237,7 @@ const AccountsSummary = (() => {
           <span class="ft-accounts-summary__count" data-accounts-summary-count aria-live="polite"></span>
         </header>
         <div data-accounts-summary-toolbar></div>
-        <div class="${_gridClass(columns)}" data-accounts-summary-grid></div>
+        <div class="${_gridClass()}" data-accounts-summary-grid style="--ft-accounts-summary-columns: ${columns};"></div>
         <div data-accounts-summary-pagination></div>
       </div>`;
   }
@@ -338,7 +336,7 @@ const AccountsSummary = (() => {
    * @param {string|HTMLElement} target
    * @param {object}             [options={}]
    * @param {number}             [options.pageSize=5]
-   * @param {1|2}                [options.columns=2]      Grid column count.
+   * @param {number}             [options.columns=2]      Fixed grid column count.
    * @param {string}             [options.defaultCurrency]
    * @param {string}             [options.title='Active Accounts']
    * @returns {Promise<HTMLElement|null>}
@@ -348,7 +346,7 @@ const AccountsSummary = (() => {
     if (!container) return null;
 
     const pageSize        = Math.max(1, Number(options.pageSize) || DEFAULT_PAGE_SIZE);
-    const columns         = Math.max(1, Math.min(2, Number(options.columns) || 2));
+    const columns         = Math.max(1, Math.floor(Number(options.columns) || 2));
     const defaultCurrency = String(options.defaultCurrency || finalAppConfig.currency || '');
 
     // ── Per-instance closure state ────────────────────────────────────────────────
