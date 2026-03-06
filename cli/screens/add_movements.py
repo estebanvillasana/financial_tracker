@@ -12,6 +12,8 @@ from config import CliConfig
 from functions import api
 from utils.currencies import code_plus_symbol
 from utils.currencies import format_money
+from utils.debug_shortcuts import handle_debug_restart
+from utils.inline_input import BACK_TOKEN
 from utils.inline_input import prompt_inline_numbered_choice
 from utils.inline_input import prompt_inline_text
 from utils.navigation import read_key
@@ -107,16 +109,46 @@ def _projected_balance_cents(current_total_cents: int, drafts: list[DraftMovemen
     return current_total_cents + delta
 
 
+def _clip_cell(value: str, max_len: int) -> str:
+    if len(value) <= max_len:
+        return value
+    return value[: max_len - 1] + "…"
+
+
 def _render_draft_rows(drafts: list[DraftMovement], currency: str) -> str:
     if not drafts:
         return "No draft movements yet."
-    lines = []
-    for index, row in enumerate(drafts, start=1):
-        lines.append(
-            f"{index:>2}. {row.date} | {row.type:<7} | {row.movement} | "
-            f"{_format_draft_value(row.value, currency)} | "
-            f"{row.category or '—'} / {row.sub_category or '—'}"
-        )
+    headers = ["#", "Date", "Type", "Movement", "Amount", "Category", "Sub-category"]
+    body_rows = [
+        [
+            str(index),
+            row.date,
+            row.type,
+            _clip_cell(row.movement, 24),
+            _format_draft_value(row.value, currency),
+            _clip_cell(row.category or "—", 18),
+            _clip_cell(row.sub_category or "—", 18),
+        ]
+        for index, row in enumerate(drafts, start=1)
+    ]
+    widths = [
+        max(len(header), max((len(row[i]) for row in body_rows), default=0))
+        for i, header in enumerate(headers)
+    ]
+
+    def fmt_row(cells: list[str], numeric: set[int] | None = None) -> str:
+        numeric_cols = numeric or set()
+        parts = []
+        for i, (cell, width) in enumerate(zip(cells, widths)):
+            parts.append(cell.rjust(width) if i in numeric_cols else cell.ljust(width))
+        return "│ " + " │ ".join(parts) + " │"
+
+    top = "┌" + "┬".join("─" * (width + 2) for width in widths) + "┐"
+    middle = "├" + "┼".join("─" * (width + 2) for width in widths) + "┤"
+    bottom = "└" + "┴".join("─" * (width + 2) for width in widths) + "┘"
+    lines = [top, fmt_row(headers), middle]
+    lines.extend(fmt_row(row, numeric={0, 4}) for row in body_rows)
+    lines.append(bottom)
     return "\n".join(lines)
 
 
@@ -216,181 +248,253 @@ def _prompt_movement_payload(
     body_builder,
     initial: DraftMovement | None = None,
 ) -> DraftMovement | None:
-    initial_name = initial.movement if initial else ""
-    name = prompt_inline_text(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Movement",
-        initial_value=initial_name,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-        min_length=1,
-    )
-    if name is None:
-        return None
+    movement_name = initial.movement if initial else ""
+    description_text = initial.description or "" if initial else ""
+    movement_type: Literal["Income", "Expense"] = initial.type if initial else "Expense"
+    amount_text = f"{(initial.value / 100.0):.2f}" if initial else ""
+    amount_cents = initial.value if initial else 0
+    category_id = initial.category_id if initial else None
+    category_name = initial.category if initial else None
+    sub_id = initial.sub_category_id if initial else None
+    sub_name = initial.sub_category if initial else None
+    movement_date = initial.date if initial else date.today().isoformat()
+    rep_id = initial.repetitive_movement_id if initial else None
+    rep_name = initial.repetitive_movement if initial else None
 
-    initial_description = initial.description or "" if initial else ""
-    description = prompt_inline_text(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Description (optional)",
-        initial_value=initial_description,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-        min_length=0,
-    )
-    if description is None:
-        return None
-    normalized_description = description.strip() or None
-
-    type_options: list[str] = ["Income", "Expense"]
-    if initial is not None and initial.type == "Expense":
-        type_options = ["Expense", "Income"]
-    picked_type = prompt_inline_numbered_choice(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Type",
-        options=type_options,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-    )
-    if picked_type is None:
-        return None
-    movement_type = picked_type
-
-    initial_major = f"{(initial.value / 100.0):.2f}" if initial else ""
-    amount_cents: int | None = None
-    while amount_cents is None:
-        amount_text = prompt_inline_text(
-            menu_items=menu_items,
-            menu_active_key="3",
-            label="Value (major units, e.g. 21.34)",
-            initial_value=initial_major,
-            body_builder=body_builder,
-            render_screen=render_screen,
-            interaction_area="content",
-            min_length=1,
-        )
-        if amount_text is None:
-            return None
-        amount_cents = _parse_major_to_cents(amount_text)
-        if amount_cents is None:
-            initial_major = amount_text
+    step = 0
+    while True:
+        if step == 0:
+            name = prompt_inline_text(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Movement",
+                initial_value=movement_name,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                min_length=1,
+            )
+            if name is None:
+                return None
+            movement_name = name.strip()
+            step = 1
             continue
-        initial_major = amount_text
 
-    type_categories = [row for row in categories if str(row["type"]) == movement_type]
-    if not type_categories:
-        return None
-    sorted_categories = sorted(type_categories, key=lambda row: str(row["category"]).lower())
-    category_options = [str(row["category"]) for row in sorted_categories]
-    category_pick = prompt_inline_numbered_choice(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Category",
-        options=category_options,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-    )
-    if category_pick is None:
-        return None
-    category_row = sorted_categories[category_options.index(category_pick)]
-    category_id = int(category_row["id"])
-    category_name = str(category_row["category"])
+        if step == 1:
+            description = prompt_inline_text(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Description (optional)",
+                initial_value=description_text,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                min_length=0,
+                back_key="B",
+            )
+            if description is None:
+                return None
+            if description == BACK_TOKEN:
+                step = 0
+                continue
+            description_text = description
+            step = 2
+            continue
 
-    valid_sub_categories = [row for row in sub_categories if int(row["category_id"]) == category_id]
-    sorted_subs = sorted(valid_sub_categories, key=lambda row: str(row["sub_category"]).lower())
-    sub_options = ["(None)"] + [str(row["sub_category"]) for row in sorted_subs]
-    sub_pick = prompt_inline_numbered_choice(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Sub-category (optional)",
-        options=sub_options,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-    )
-    if sub_pick is None:
-        return None
-    sub_id: int | None = None
-    sub_name: str | None = None
-    if sub_pick != "(None)":
-        sub_row = sorted_subs[sub_options.index(sub_pick) - 1]
-        sub_id = int(sub_row["id"])
-        sub_name = str(sub_row["sub_category"])
+        if step == 2:
+            type_options: list[str] = ["Expense", "Income"] if movement_type == "Expense" else ["Income", "Expense"]
+            picked_type = prompt_inline_numbered_choice(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Type",
+                options=type_options,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                back_key="B",
+            )
+            if picked_type is None:
+                return None
+            if picked_type == BACK_TOKEN:
+                step = 1
+                continue
+            movement_type = picked_type  # type: ignore[assignment]
+            category_id = None
+            category_name = None
+            sub_id = None
+            sub_name = None
+            rep_id = None
+            rep_name = None
+            step = 3
+            continue
 
-    default_date = initial.date if initial else date.today().isoformat()
-    movement_date = None
-    while movement_date is None:
-        date_input = prompt_inline_text(
+        if step == 3:
+            amount_input = prompt_inline_text(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Value (major units, e.g. 21.34)",
+                initial_value=amount_text,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                min_length=1,
+                back_key="B",
+            )
+            if amount_input is None:
+                return None
+            if amount_input == BACK_TOKEN:
+                step = 2
+                continue
+            parsed = _parse_major_to_cents(amount_input)
+            if parsed is None:
+                amount_text = amount_input
+                continue
+            amount_text = amount_input
+            amount_cents = parsed
+            step = 4
+            continue
+
+        if step == 4:
+            type_categories = [row for row in categories if str(row["type"]) == movement_type]
+            if not type_categories:
+                return None
+            sorted_categories = sorted(type_categories, key=lambda row: str(row["category"]).lower())
+            category_options = [str(row["category"]) for row in sorted_categories]
+            category_pick = prompt_inline_numbered_choice(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Category",
+                options=category_options,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                back_key="B",
+            )
+            if category_pick is None:
+                return None
+            if category_pick == BACK_TOKEN:
+                step = 3
+                continue
+            category_row = sorted_categories[category_options.index(category_pick)]
+            category_id = int(category_row["id"])
+            category_name = str(category_row["category"])
+            sub_id = None
+            sub_name = None
+            step = 5
+            continue
+
+        if step == 5:
+            valid_sub_categories = [row for row in sub_categories if int(row["category_id"]) == int(category_id or 0)]
+            sorted_subs = sorted(valid_sub_categories, key=lambda row: str(row["sub_category"]).lower())
+            sub_options = ["(None)"] + [str(row["sub_category"]) for row in sorted_subs]
+            sub_pick = prompt_inline_numbered_choice(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Sub-category (optional)",
+                options=sub_options,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                back_key="B",
+            )
+            if sub_pick is None:
+                return None
+            if sub_pick == BACK_TOKEN:
+                step = 4
+                continue
+            sub_id = None
+            sub_name = None
+            if sub_pick != "(None)":
+                sub_row = sorted_subs[sub_options.index(sub_pick) - 1]
+                sub_id = int(sub_row["id"])
+                sub_name = str(sub_row["sub_category"])
+            step = 6
+            continue
+
+        if step == 6:
+            date_input = prompt_inline_text(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Date (YYYY-MM-DD)",
+                initial_value=movement_date,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                min_length=10,
+                back_key="B",
+            )
+            if date_input is None:
+                return None
+            if date_input == BACK_TOKEN:
+                step = 5
+                continue
+            try:
+                date.fromisoformat(date_input.strip())
+                movement_date = date_input.strip()
+                step = 7
+            except ValueError:
+                movement_date = date_input.strip()
+            continue
+
+        if step == 7:
+            rep_candidates = [row for row in repetitive if str(row["type"]) == movement_type]
+            sorted_rep = sorted(rep_candidates, key=lambda row: str(row["movement"]).lower())
+            rep_options = ["(None)"] + [str(row["movement"]) for row in sorted_rep]
+            rep_pick = prompt_inline_numbered_choice(
+                menu_items=menu_items,
+                menu_active_key="3",
+                label="Repetitive movement (optional)",
+                options=rep_options,
+                body_builder=body_builder,
+                render_screen=render_screen,
+                interaction_area="content",
+                back_key="B",
+            )
+            if rep_pick is None:
+                return None
+            if rep_pick == BACK_TOKEN:
+                step = 6
+                continue
+            rep_id = None
+            rep_name = None
+            if rep_pick != "(None)":
+                rep_row = sorted_rep[rep_options.index(rep_pick) - 1]
+                rep_id = int(rep_row["id"])
+                rep_name = str(rep_row["movement"])
+            step = 8
+            continue
+
+        confirm = prompt_inline_numbered_choice(
             menu_items=menu_items,
             menu_active_key="3",
-            label="Date (YYYY-MM-DD)",
-            initial_value=default_date,
+            label="Confirm movement draft",
+            options=["Yes, add/update draft", "No, cancel"],
             body_builder=body_builder,
             render_screen=render_screen,
             interaction_area="content",
-            min_length=10,
+            back_key="B",
         )
-        if date_input is None:
+        if confirm is None:
             return None
-        try:
-            date.fromisoformat(date_input.strip())
-            movement_date = date_input.strip()
-        except ValueError:
-            default_date = date_input.strip()
-
-    rep_candidates = [row for row in repetitive if str(row["type"]) == movement_type]
-    sorted_rep = sorted(rep_candidates, key=lambda row: str(row["movement"]).lower())
-    rep_options = ["(None)"] + [str(row["movement"]) for row in sorted_rep]
-    rep_pick = prompt_inline_numbered_choice(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Repetitive movement (optional)",
-        options=rep_options,
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-    )
-    if rep_pick is None:
-        return None
-    rep_id: int | None = None
-    rep_name: str | None = None
-    if rep_pick != "(None)":
-        rep_row = sorted_rep[rep_options.index(rep_pick) - 1]
-        rep_id = int(rep_row["id"])
-        rep_name = str(rep_row["movement"])
-
-    confirm = prompt_inline_numbered_choice(
-        menu_items=menu_items,
-        menu_active_key="3",
-        label="Confirm movement draft",
-        options=["Yes, add/update draft", "No, cancel"],
-        body_builder=body_builder,
-        render_screen=render_screen,
-        interaction_area="content",
-    )
-    if confirm != "Yes, add/update draft":
-        return None
-
-    return DraftMovement(
-        movement=name.strip(),
-        description=normalized_description,
-        account_id=int(account["id"]),
-        value=amount_cents,
-        type=movement_type,
-        date=movement_date,
-        category_id=category_id,
-        category=category_name,
-        sub_category_id=sub_id,
-        sub_category=sub_name,
-        repetitive_movement_id=rep_id,
-        repetitive_movement=rep_name,
-    )
+        if confirm == BACK_TOKEN:
+            step = 7
+            continue
+        if confirm != "Yes, add/update draft":
+            return None
+        return DraftMovement(
+            movement=movement_name,
+            description=description_text.strip() or None,
+            account_id=int(account["id"]),
+            value=amount_cents,
+            type=movement_type,
+            date=movement_date,
+            category_id=category_id,
+            category=category_name,
+            sub_category_id=sub_id,
+            sub_category=sub_name,
+            repetitive_movement_id=rep_id,
+            repetitive_movement=rep_name,
+        )
 
 
 def _mark_account_updated(config: CliConfig, account_id: int) -> str:
@@ -479,7 +583,9 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         body = "Add New Movements\n\nNo active bank account selected.\n\nB/ESC  Back"
         while True:
             render_screen(menu_items, "3", body, interaction_area="content")
-            if read_key() in {"b", "B", "ESC"}:
+            key = read_key()
+            handle_debug_restart(key)
+            if key in {"b", "B", "ESC"}:
                 return
 
     try:
@@ -488,7 +594,9 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         body = f"Add New Movements\n\nCould not load references: {_api_error_message(exc)}\n\nB/ESC  Back"
         while True:
             render_screen(menu_items, "3", body, interaction_area="content")
-            if read_key() in {"b", "B", "ESC"}:
+            key = read_key()
+            handle_debug_restart(key)
+            if key in {"b", "B", "ESC"}:
                 return
 
     drafts: list[DraftMovement] = []
@@ -502,7 +610,9 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         except Exception as exc:
             body = f"Add New Movements\n\nCould not refresh account data: {_api_error_message(exc)}\n\nB/ESC  Back"
             render_screen(menu_items, "3", body, interaction_area="content")
-            if read_key() in {"b", "B", "ESC"}:
+            key = read_key()
+            handle_debug_restart(key)
+            if key in {"b", "B", "ESC"}:
                 return
             continue
 
@@ -510,6 +620,7 @@ def run(menu_items: list[tuple[str, str]], config: CliConfig) -> None:
         body = _build_body(account, last_date, drafts, active_action, "content", message=message)
         render_screen(menu_items, "3", body, interaction_area="content")
         pressed_key = read_key()
+        handle_debug_restart(pressed_key)
 
         if pressed_key in {"b", "B", "ESC"}:
             if drafts:

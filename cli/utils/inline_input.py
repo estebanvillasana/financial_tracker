@@ -160,7 +160,7 @@ def prompt_inline_text(
             body_builder,
             label,
             typed_value,
-            f"Enter to confirm, Esc to cancel, Backspace to edit{back_hint}.",
+            f">       Enter to confirm, Esc to cancel, Backspace to edit{back_hint}.",
         )
         render_screen(
             menu_items,
