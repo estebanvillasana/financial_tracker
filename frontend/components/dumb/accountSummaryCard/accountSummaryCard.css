@@ -3,24 +3,25 @@
    ============================================================
 
    Structure:
-   .ft-account-card[data-type="Bank Account | Credit Card | Savings | Crypto Wallet | Money Bag"]
-     .ft-account-card__checkbox-wrap    (aria-hidden, visual status indicator)
-       input.ft-account-card__checkbox  (checked = account.updated, pointer-events: none)
+   .ft-account-card[data-type][data-updated="0|1"]
      .ft-account-card__icon-wrap
        .ft-account-card__icon           (material-symbols-outlined)
      .ft-account-card__info
-       .ft-account-card__header
-         .ft-account-card__name
+       .ft-account-card__name           (truncates with ellipsis)
+       .ft-account-card__meta
          .ft-account-card__type-tag
            .ft-account-card__type-dot
+         .ft-account-card__owner
+           .ft-account-card__owner-icon (material-symbols-outlined)
+           .ft-account-card__owner-name
        .ft-account-card__description
-       .ft-account-card__owner
-         .ft-account-card__owner-icon   (material-symbols-outlined)
-         .ft-account-card__owner-name
      .ft-account-card__balance
        .ft-account-card__currency-tag
        .ft-account-card__balance-main   [.ft-account-card__balance-main--negative]
        .ft-account-card__balance-converted
+
+   data-updated="0" → amber left stripe (needs attention)
+   data-updated="1" → no stripe (done)
    ============================================================ */
 
 /* ── Root ─────────────────────────────────────────────── */
@@ -32,7 +33,9 @@
   border-radius: var(--ft-radius-card);
   display: flex;
   gap: calc(var(--ft-spacing) * 1.5);
-  padding: calc(var(--ft-spacing) * 2);
+  overflow: hidden; /* clip the ::before stripe to the card's rounded corners */
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+  position: relative;
   transition: border-color 150ms ease;
 }
 
@@ -40,46 +43,23 @@
   border-color: var(--ft-color-border-strong);
 }
 
-/* ── Checkbox (updated status indicator) ─────────────── */
+/* ── Left-border stripe (not-updated indicator) ───────── */
 
-/* Wraps the checkbox and aligns it to the top of the flex row. */
-.ft-account-card__checkbox-wrap {
-  align-self: flex-start;
-  flex-shrink: 0;
-  padding-top: 3px; /* optical alignment with the top of the icon */
-}
-
-.ft-account-card__checkbox {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  border: 1.5px solid var(--ft-color-border-strong);
-  border-radius: 3px;
-  cursor: default;
-  display: block;
-  height: 14px;
-  pointer-events: none; /* read-only visual indicator, not interactive */
-  position: relative;
-  width: 14px;
-}
-
-.ft-account-card__checkbox:checked {
-  background: var(--ft-color-accent);
-  border-color: var(--ft-color-accent);
-}
-
-/* Checkmark drawn as a rotated L-shape using a pseudo-element. */
-.ft-account-card__checkbox:checked::after {
-  border: 1.5px solid #fff;
-  border-right: none;
-  border-top: none;
+/* A pseudo-element stripe is used instead of border-left so the card's
+   padding and sibling layout are never affected by the indicator. */
+.ft-account-card::before {
+  bottom: 0;
   content: '';
-  height: 5px;
-  left: 2px;
+  left: 0;
   position: absolute;
-  top: 2px;
-  transform: rotate(-45deg);
-  width: 8px;
+  top: 0;
+  width: 3px;
+}
+
+/* Amber stripe = "needs updating". No stripe = already updated. */
+.ft-account-card[data-updated="1"]::before {
+  background: var(--ft-color-accent);
+  opacity: 0.7;
 }
 
 /* ── Icon Wrap ────────────────────────────────────────── */
@@ -89,9 +69,9 @@
   border-radius: var(--ft-radius-wrapper);
   display: flex;
   flex-shrink: 0;
-  height: 40px;
+  height: 38px;
   justify-content: center;
-  width: 40px;
+  width: 38px;
 }
 
 .ft-account-card__icon {
@@ -123,20 +103,26 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0; /* enable ellipsis on children */
-}
-
-.ft-account-card__header {
-  align-items: center;
-  display: flex;
-  gap: 6px;
+  gap: 3px;
+  min-width: 0; /* required: allows children to truncate with ellipsis */
 }
 
 .ft-account-card__name {
   font-size: 14px;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Row 2: type tag + owner — both compact, wrap gracefully if needed */
+
+.ft-account-card__meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
 }
 
 .ft-account-card__type-tag {
@@ -145,6 +131,7 @@
   border-radius: 4px;
   color: var(--ft-color-text-muted);
   display: inline-flex;
+  flex-shrink: 0;
   font-size: 10px;
   font-weight: 600;
   gap: 5px;
@@ -156,6 +143,7 @@
 
 .ft-account-card__type-dot {
   border-radius: 50%;
+  flex-shrink: 0;
   height: 6px;
   width: 6px;
 }
@@ -167,6 +155,33 @@
 .ft-account-card[data-type="Crypto Wallet"] .ft-account-card__type-dot { background: var(--ft-color-warning); }
 .ft-account-card[data-type="Money Bag"]     .ft-account-card__type-dot { background: var(--ft-color-success); }
 
+.ft-account-card__owner {
+  align-items: center;
+  display: flex;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ft-account-card__owner-icon {
+  color: var(--ft-color-text-muted);
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  height: 12px;
+  line-height: 1;
+  width: 12px;
+}
+
+.ft-account-card__owner-name {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Row 3: description */
+
 .ft-account-card__description {
   color: var(--ft-color-text-muted);
   font-size: 12px;
@@ -174,27 +189,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.ft-account-card__owner {
-  align-items: center;
-  display: flex;
-  gap: 4px;
-}
-
-.ft-account-card__owner-icon {
-  color: var(--ft-color-text-muted);
-  flex-shrink: 0;
-  font-size: 13px;
-  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-  height: 13px;
-  line-height: 1;
-  width: 13px;
-}
-
-.ft-account-card__owner-name {
-  color: var(--ft-color-text-muted);
-  font-size: 12px;
 }
 
 /* ── Balance Section ──────────────────────────────────── */
@@ -213,7 +207,6 @@
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  padding-bottom: 2px;
   white-space: nowrap;
 }
 

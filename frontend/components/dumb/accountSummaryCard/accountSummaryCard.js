@@ -106,26 +106,23 @@ const AccountSummaryCard = (() => {
 			: '';
 
 		return `
-			<article class="ft-account-card" data-type="${_escapeHtml(type)}" data-account-id="${_escapeHtml(account.id ?? '')}">
-				<div class="ft-account-card__checkbox-wrap" aria-hidden="true">
-					<input type="checkbox" class="ft-account-card__checkbox" tabindex="-1"${isUpdated ? ' checked' : ''}>
-				</div>
+			<article class="ft-account-card" data-type="${_escapeHtml(type)}" data-account-id="${_escapeHtml(account.id ?? '')}" data-updated="${isUpdated ? '1' : '0'}">
 				<div class="ft-account-card__icon-wrap">
 					<span class="ft-account-card__icon material-symbols-outlined" aria-hidden="true">${icon}</span>
 				</div>
 				<div class="ft-account-card__info">
-					<div class="ft-account-card__header">
-						<span class="ft-account-card__name">${name}</span>
+					<span class="ft-account-card__name">${name}</span>
+					<div class="ft-account-card__meta">
 						<span class="ft-account-card__type-tag">
 							<span class="ft-account-card__type-dot"></span>
 							${_escapeHtml(type)}
 						</span>
+						<div class="ft-account-card__owner">
+							<span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
+							<span class="ft-account-card__owner-name">${owner}</span>
+						</div>
 					</div>
 					<p class="ft-account-card__description">${description}</p>
-					<div class="ft-account-card__owner">
-						<span class="ft-account-card__owner-icon material-symbols-outlined" aria-hidden="true">person</span>
-						<span class="ft-account-card__owner-name">${owner}</span>
-					</div>
 				</div>
 				<div class="ft-account-card__balance">
 					<span class="ft-account-card__currency-tag">${_escapeHtml(currencyTag)}</span>
