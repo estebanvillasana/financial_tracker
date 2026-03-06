@@ -188,7 +188,7 @@ def _select_account(menu_items: list[tuple[str, str]], config: CliConfig) -> dic
         return None
     sorted_accounts = sorted(accounts, key=lambda row: (str(row["owner"]).lower(), str(row["account"]).lower()))
     options = [
-        f"{row['account']} ({row['owner']}) | {code_plus_symbol(str(row['currency']))} | "
+        f"{row['account']} ({row['owner']}) | "
         f"{format_money(float(row['total_balance']) / 100.0, str(row['currency']))}"
         for row in sorted_accounts
     ]

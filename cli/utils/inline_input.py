@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import textwrap
 from typing import Callable
 from typing import Literal
 from typing import Mapping
@@ -83,6 +84,7 @@ def _format_option_lines(
     group_labels: list[str] | None = None,
     group_colors: Mapping[str, str] | None = None,
     number_offset: int = 0,
+    option_text_width: int = 36,
 ) -> list[str]:
     lines = [title]
     if not options:
@@ -106,7 +108,19 @@ def _format_option_lines(
             last_group = current_group
         marker = "->" if selected_index == index else "  "
         if numbered:
-            lines.append(f"    {marker} {number_offset + index + 1}. {option}")
+            number_label = f"{number_offset + index + 1}."
+            visible_prefix = f"    {marker} {number_label} "
+            wrapped_option = textwrap.wrap(
+                option,
+                width=max(12, option_text_width),
+                break_long_words=False,
+                break_on_hyphens=False,
+            ) or [""]
+            lines.append(f"    {marker} [[num]]{number_label}[[/num]] {wrapped_option[0]}")
+            continuation_prefix = " " * len(visible_prefix)
+            for part in wrapped_option[1:]:
+                lines.append(f"{continuation_prefix}{part}")
+            lines.append("")
         else:
             lines.append(f"    {marker} {option}")
     return lines
@@ -181,6 +195,7 @@ def prompt_inline_numbered_choice(
     group_labels: list[str] | None = None,
     group_colors: Mapping[str, str] | None = None,
     max_visible_options: int = 10,
+    option_text_width: int = 36,
 ) -> str | None:
     """Select one option from a numbered list via arrows or numeric jump."""
     if not options:
@@ -217,6 +232,7 @@ def prompt_inline_numbered_choice(
             group_labels=visible_groups,
             group_colors=group_colors,
             number_offset=visible_start,
+            option_text_width=option_text_width,
         )
         if visible_start > 0 or visible_end < len(options):
             hints: list[str] = []

@@ -18,6 +18,8 @@ HINT_PANEL_START = "[[hint_panel]]"
 HINT_PANEL_END = "[[/hint_panel]]"
 GROUP_STYLE_START = "[[group:"
 GROUP_STYLE_END = "[[/group]]"
+NUM_STYLE_START = "[[num]]"
+NUM_STYLE_END = "[[/num]]"
 
 
 def render_selectable_list(
@@ -89,7 +91,19 @@ def _build_rich_body_text(body: str):
         display_line = line.replace(ACTIVE_LINE_MARKER, "")
         line_style = "bold yellow" if is_marked_active or display_line.lstrip().startswith(">") else None
 
-        if GROUP_STYLE_START in display_line and GROUP_STYLE_END in display_line:
+        if NUM_STYLE_START in display_line and NUM_STYLE_END in display_line:
+            start = display_line.find(NUM_STYLE_START)
+            end = display_line.find(NUM_STYLE_END)
+            if end != -1:
+                before = display_line[:start]
+                num_text = display_line[start + len(NUM_STYLE_START) : end]
+                after = display_line[end + len(NUM_STYLE_END) :]
+                rich_text.append(before, style=line_style)
+                rich_text.append(num_text, style="bold cyan")
+                rich_text.append(after, style=line_style)
+            else:
+                rich_text.append(display_line, style=line_style)
+        elif GROUP_STYLE_START in display_line and GROUP_STYLE_END in display_line:
             start = display_line.find(GROUP_STYLE_START)
             marker_end = display_line.find("]]", start)
             end = display_line.find(GROUP_STYLE_END)
@@ -284,7 +298,10 @@ def render_plain_screen(
 ) -> None:
     def _strip_group_markers(value: str) -> str:
         value = re.sub(r"\[\[group:[^\]]+\]\]", "", value)
-        return value.replace(GROUP_STYLE_END, "")
+        value = value.replace(GROUP_STYLE_END, "")
+        value = value.replace(NUM_STYLE_START, "")
+        value = value.replace(NUM_STYLE_END, "")
+        return value
 
     body, options_text = _extract_marked_block(
         body,
