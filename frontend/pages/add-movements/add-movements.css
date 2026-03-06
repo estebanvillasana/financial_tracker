@@ -161,7 +161,7 @@
 /* ── AG Grid Host ─────────────────────────────────────────── */
 
 .ft-add-movements-grid {
-  max-height: calc(100vh - 340px);
+  height: calc(100vh - 340px);
   min-height: 280px;
   width: 100%;
 }
