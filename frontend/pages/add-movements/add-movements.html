@@ -1,0 +1,59 @@
+<!--
+  Add Movements page template.
+  Smart behavior is wired by pages/add-movements/index.js after route load.
+-->
+<div class="ft-page">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Add Movements</h1>
+        <p class="ft-small ft-text-muted">Bulk-add new movements to any account</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="ft-btn ft-btn--ghost" id="btn-discard-movements" disabled>Discard</button>
+        <button class="ft-btn ft-btn--primary" id="btn-commit-movements" disabled>
+          <span class="material-symbols-outlined" aria-hidden="true">check</span>
+          Commit
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Account Selector Toolbar -->
+  <div class="ft-toolbar ft-add-movements-toolbar" id="widget-add-movements-toolbar">
+    <span class="ft-small ft-text-muted">Account selector will load here</span>
+  </div>
+
+  <section class="ft-section">
+    <div class="ft-add-movements-balance-row" id="widget-add-movements-balances"></div>
+  </section>
+
+  <!-- Bulk Input Grid -->
+  <section class="ft-section">
+    <div class="ft-section__header ft-add-movements-grid-header">
+      <h2 class="ft-h3">Draft Movements</h2>
+      <div class="ft-add-movements-grid-controls">
+        <label class="ft-add-movements-grid-controls__label" for="add-movements-type-filter">Type</label>
+        <select id="add-movements-type-filter" class="ft-add-movements-grid-controls__select">
+          <option value="Expense" selected>Expense</option>
+          <option value="Income">Income</option>
+        </select>
+        <button class="ft-btn ft-btn--ghost" id="btn-add-draft-row">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Draft Row
+        </button>
+        <button class="ft-btn ft-btn--ghost" id="btn-remove-selected-drafts" disabled>
+          <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+          Remove
+        </button>
+      </div>
+    </div>
+    <div id="widget-add-movements-feedback"></div>
+    <div class="ft-table-wrapper" id="widget-add-movements-grid">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">post_add</span>
+        <p class="ft-small">Select an account to start adding movements</p>
+      </div>
+    </div>
+  </section>
+</div>

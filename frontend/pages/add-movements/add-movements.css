@@ -1,0 +1,226 @@
+/* Add Movements page-specific styles */
+
+/* Account and metadata toolbar */
+.ft-add-movements-toolbar {
+  align-items: flex-end;
+  gap: calc(var(--ft-spacing) * 2);
+  justify-content: space-between;
+}
+
+.ft-add-movements-toolbar__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 280px;
+}
+
+.ft-add-movements-toolbar__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ft-add-movements-toolbar__select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 13px;
+  height: 36px;
+  min-width: 300px;
+  padding: 0 10px;
+}
+
+.ft-add-movements-toolbar__meta {
+  color: var(--ft-color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ft-add-movements-toolbar__chip {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* Metrics cards row */
+.ft-add-movements-balance-row {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+/* Grid top controls */
+.ft-add-movements-grid-header {
+  align-items: center;
+  gap: var(--ft-spacing);
+}
+
+.ft-add-movements-grid-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ft-add-movements-grid-controls__label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ft-add-movements-grid-controls__select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 12px;
+  height: 34px;
+  min-width: 110px;
+  padding: 0 8px;
+}
+
+/* Feedback banners */
+.ft-add-movements-feedback {
+  border-radius: var(--ft-radius-widget);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.ft-add-movements-feedback--error {
+  background: var(--ft-color-danger-10);
+  border: 1px solid var(--ft-color-danger);
+  color: var(--ft-color-danger);
+}
+
+.ft-add-movements-feedback--success {
+  background: var(--ft-color-success-10);
+  border: 1px solid var(--ft-color-success);
+  color: var(--ft-color-success);
+}
+
+/* AG Grid host sizing inside page wrapper */
+.ft-add-movements-grid {
+  height: 520px;
+  width: 100%;
+}
+
+/* AG Grid visual integration with app cards/tokens */
+.ft-add-movements-grid .ag-root-wrapper,
+.ft-add-movements-grid .ag-header,
+.ft-add-movements-grid .ag-row {
+  border: 0 !important;
+}
+
+.ft-add-movements-grid .ag-cell,
+.ft-add-movements-grid .ag-header-cell {
+  border-color: var(--ft-color-border) !important;
+}
+
+/* Improve large text editor usability */
+.ft-add-movements-grid .ag-text-area-input {
+  padding: 8px;
+}
+
+/* Visible focused cell and range selection states */
+.ft-add-movements-grid .ag-cell-focus {
+  background: var(--ft-color-accent-10) !important;
+  outline: 2px solid var(--ft-color-accent) !important;
+  outline-offset: -2px;
+}
+
+.ft-add-movements-grid .ag-cell-range-selected:not(.ag-cell-focus) {
+  background: var(--ft-color-accent-10) !important;
+}
+
+/* Movement label with type indicator */
+.ft-add-movement-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.ft-add-movement-cell--placeholder {
+  color: var(--ft-color-text-muted);
+  font-style: italic;
+}
+
+.ft-add-movement-type-dot {
+  border-radius: 999px;
+  height: 8px;
+  width: 8px;
+}
+
+.ft-add-movement-type-dot--expense {
+  background: var(--ft-color-danger);
+}
+
+.ft-add-movement-type-dot--income {
+  background: var(--ft-color-success);
+}
+
+.ft-add-movement-type-dot--placeholder {
+  background: var(--ft-color-text-muted);
+  opacity: 0.5;
+}
+
+/* Dropdown-in-cell visuals for category/sub-category */
+.ft-add-dropdown-display {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.ft-add-dropdown-icon {
+  color: var(--ft-color-text-muted);
+  margin-left: auto;
+  opacity: 1 !important;
+}
+
+.ft-add-pill {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  padding: 3px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-add-pill--expense {
+  background: var(--ft-color-danger-10);
+  color: var(--ft-color-danger);
+}
+
+.ft-add-pill--income {
+  background: var(--ft-color-success-10);
+  color: var(--ft-color-success);
+}
+
+.ft-add-pill--sub {
+  filter: saturate(0.7);
+  opacity: 0.9;
+}
+
+.ft-add-pill--placeholder {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text-muted);
+}
+
+/* Sentinel "add new row" visual treatment */
+.ag-row-add-phantom {
+  border-top: 1px dashed var(--ft-color-border) !important;
+  opacity: 0.65;
+}
+
+.ag-row-add-phantom:hover {
+  opacity: 0.9;
+}

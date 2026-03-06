@@ -5,7 +5,7 @@ import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
 const ROUTES = {
   dashboard:        'pages/dashboard.html',
   movements:        'pages/movements.html',
-  'add-movements':  'pages/add-movements.html',
+  'add-movements':  'pages/add-movements/add-movements.html',
   transfers:        'pages/transfers.html',
   categories:       'pages/categories.html',
   repetitive:       'pages/repetitive-movements.html',
@@ -13,6 +13,10 @@ const ROUTES = {
 
 const DEFAULT_ROUTE = 'dashboard';
 let pageLoadToken = 0;
+const PAGE_INITIALIZERS = {
+  dashboard: async () => (await import('./pages/dashboard.js')).initDashboardPage,
+  'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
+};
 
 function getPage() {
   return window.location.hash.replace('#', '').trim() || DEFAULT_ROUTE;
@@ -41,14 +45,15 @@ async function loadPage(page) {
       </div>`;
   }
 
-  if (pageLoaded && currentToken === pageLoadToken && page === 'dashboard') {
+  const getInitializer = PAGE_INITIALIZERS[page];
+  if (pageLoaded && currentToken === pageLoadToken && typeof getInitializer === 'function') {
     try {
-      const { initDashboardPage } = await import('./pages/dashboard.js');
+      const initPage = await getInitializer();
       if (currentToken === pageLoadToken) {
-        await initDashboardPage(content);
+        await initPage(content);
       }
     } catch (error) {
-      console.error('Failed to initialize dashboard page:', error);
+      console.error(`Failed to initialize page "${page}":`, error);
     }
   }
 
