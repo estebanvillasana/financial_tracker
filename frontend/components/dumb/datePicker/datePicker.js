@@ -13,6 +13,8 @@
  *   DatePicker.buildLoadingHTML()               → string
  *   DatePicker.createLoadingElement()           → HTMLElement
  *   DatePicker.createCellEditor()               → AG Grid cell editor class
+ *   DatePicker.createPickerField(placeholder, initialValue, onChange)
+ *                                               → HTMLElement  (button-trigger + popup field)
  *
  * ── data shape ──────────────────────────────────────────────────────────────
  * {
@@ -32,6 +34,8 @@
  * required AG Grid editor interface (init, getGui, getValue, isPopup,
  * afterGuiAttached).
  */
+
+import { formatDateDisplay } from '../../../utils/formatters.js';
 
 const DatePicker = (() => {
 
@@ -347,9 +351,109 @@ const DatePicker = (() => {
     };
   }
 
+  /**
+   * Creates a self-contained date-picker trigger field:
+   * a styled button showing the selected date (or a placeholder),
+   * with a floating calendar popup and a clear button.
+   *
+   * The returned element has a `_cleanup()` method that removes the
+   * document-level click listener — call it when the field is torn down
+   * (e.g. on page navigation) to prevent memory leaks.
+   *
+   * CSS classes used: ft-date-popup, ft-date-popup__trigger,
+   *   ft-date-popup__trigger--placeholder, ft-date-popup__clear,
+   *   ft-date-popup__calendar.
+   *
+   * @param {string}   placeholder  — label shown when no date is selected
+   * @param {string}   initialValue — initial ISO date ('YYYY-MM-DD') or ''
+   * @param {Function} onChange     — called with ISO date string (or '') on change
+   * @returns {HTMLElement & { _cleanup: Function }}
+   */
+  function createPickerField(placeholder, initialValue, onChange) {
+    let currentValue = initialValue || '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ft-date-popup';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'ft-date-popup__trigger';
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'ft-date-popup__clear';
+    clearBtn.setAttribute('aria-label', `Clear ${placeholder} date`);
+    clearBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
+    clearBtn.hidden = true;
+
+    const popup = document.createElement('div');
+    popup.className = 'ft-date-popup__calendar';
+    popup.hidden = true;
+
+    function _refresh() {
+      const label = currentValue ? formatDateDisplay(currentValue) : null;
+      if (label) {
+        trigger.textContent = label;
+        trigger.classList.remove('ft-date-popup__trigger--placeholder');
+        clearBtn.hidden = false;
+      } else {
+        trigger.textContent = placeholder;
+        trigger.classList.add('ft-date-popup__trigger--placeholder');
+        clearBtn.hidden = true;
+      }
+    }
+
+    _refresh();
+
+    const picker = createElement(
+      { value: currentValue },
+      {
+        onChange: isoDate => {
+          currentValue = isoDate;
+          _refresh();
+          popup.hidden = true;
+          onChange?.(currentValue);
+        },
+      }
+    );
+    popup.appendChild(picker);
+
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      /* Close any other open date popups first */
+      document.querySelectorAll('.ft-date-popup__calendar:not([hidden])').forEach(p => {
+        if (p !== popup) p.hidden = true;
+      });
+      popup.hidden = !popup.hidden;
+    });
+
+    clearBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      currentValue = '';
+      _refresh();
+      popup.hidden = true;
+      onChange?.('');
+    });
+
+    /* Close when clicking outside — use AbortController so the caller can clean up. */
+    const ac = new AbortController();
+    document.addEventListener('click', e => {
+      if (!wrapper.contains(e.target)) popup.hidden = true;
+    }, { signal: ac.signal });
+
+    wrapper.appendChild(trigger);
+    wrapper.appendChild(clearBtn);
+    wrapper.appendChild(popup);
+
+    /** Removes the document-level outside-click listener. Call on teardown. */
+    wrapper._cleanup = () => ac.abort();
+
+    return wrapper;
+  }
+
   // ─── Reveal ────────────────────────────────────────────────────────────────
 
-  return { buildHTML, createElement, buildLoadingHTML, createLoadingElement, createCellEditor };
+  return { buildHTML, createElement, buildLoadingHTML, createLoadingElement, createCellEditor, createPickerField };
 })();
 
 export { DatePicker };

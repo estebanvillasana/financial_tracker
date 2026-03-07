@@ -18,105 +18,20 @@ import { fetchMovements, updateMovement, softDeleteMovement } from './actions.js
 
 const DEFAULT_LIMIT = 500;
 
-/* ── DatePicker popup trigger helper ──────────────────────── */
-
 /**
- * Builds a self-contained date-picker trigger element:
- * a styled button that shows the selected date (or a placeholder),
- * with a floating calendar popup from the shared DatePicker component.
- *
- * @param {string}   placeholder  — label shown when no date is selected
- * @param {string}   initialValue — initial ISO date (or '')
- * @param {Function} onChange     — called with the new ISO date (or '') on change/clear
- * @returns {HTMLElement}
+ * Tracks cleanup functions for document-level listeners from date-picker
+ * fields created in the last initMovementsPage call. Aborted on the next
+ * init to prevent accumulation across SPA navigations.
  */
-function _makeDatePickerField(placeholder, initialValue, onChange) {
-  let currentValue = initialValue || '';
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'ft-date-popup';
-
-  const trigger = document.createElement('button');
-  trigger.type = 'button';
-  trigger.className = 'ft-date-popup__trigger';
-
-  const clearBtn = document.createElement('button');
-  clearBtn.type = 'button';
-  clearBtn.className = 'ft-date-popup__clear';
-  clearBtn.setAttribute('aria-label', `Clear ${placeholder} date`);
-  clearBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
-  clearBtn.hidden = true;
-
-  const popup = document.createElement('div');
-  popup.className = 'ft-date-popup__calendar';
-  popup.hidden = true;
-
-  function _fmt(iso) {
-    if (!iso) return null;
-    const [y, m, d] = iso.split('-');
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${d} ${months[parseInt(m, 10) - 1]} ${y}`;
-  }
-
-  function _refresh() {
-    const label = _fmt(currentValue);
-    if (label) {
-      trigger.textContent = label;
-      trigger.classList.remove('ft-date-popup__trigger--placeholder');
-      clearBtn.hidden = false;
-    } else {
-      trigger.textContent = placeholder;
-      trigger.classList.add('ft-date-popup__trigger--placeholder');
-      clearBtn.hidden = true;
-    }
-  }
-
-  _refresh();
-
-  const picker = DatePicker.createElement(
-    { value: currentValue },
-    {
-      onChange: isoDate => {
-        currentValue = isoDate;
-        _refresh();
-        popup.hidden = true;
-        onChange?.(currentValue);
-      },
-    }
-  );
-  popup.appendChild(picker);
-
-  trigger.addEventListener('click', e => {
-    e.stopPropagation();
-    /* Close any other open date popups first */
-    document.querySelectorAll('.ft-date-popup__calendar:not([hidden])').forEach(p => {
-      if (p !== popup) p.hidden = true;
-    });
-    popup.hidden = !popup.hidden;
-  });
-
-  clearBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    currentValue = '';
-    _refresh();
-    popup.hidden = true;
-    onChange?.('');
-  });
-
-  /* Close when clicking outside */
-  document.addEventListener('click', e => {
-    if (!wrapper.contains(e.target)) popup.hidden = true;
-  });
-
-  wrapper.appendChild(trigger);
-  wrapper.appendChild(clearBtn);
-  wrapper.appendChild(popup);
-  return wrapper;
-}
+let _pickerCleanup = null;
 
 /* ── Page Init ────────────────────────────────────────────── */
 
 async function initMovementsPage(root = document) {
+  /* Abort document listeners from any previous page load. */
+  _pickerCleanup?.();
+  _pickerCleanup = null;
+
   const toolbarEl     = root.querySelector('#widget-movements-toolbar');
   const feedbackEl    = root.querySelector('#widget-movements-feedback');
   const codeBannerEl  = root.querySelector('#widget-movements-code-banner');
@@ -182,12 +97,21 @@ async function initMovementsPage(root = document) {
   /* ── Mount date pickers ───────────────────────────────────── */
 
   if (datePickers) {
-    datePickers.appendChild(_makeDatePickerField('From', '', v => { state.dateFrom = v; reloadGrid(); }));
+    const fromField = DatePicker.createPickerField('From', '', v => { state.dateFrom = v; reloadGrid(); });
     const sep = document.createElement('span');
     sep.className = 'ft-movements-toolbar__date-sep';
     sep.textContent = '–';
+    const toField = DatePicker.createPickerField('To', '', v => { state.dateTo = v; reloadGrid(); });
+
+    datePickers.appendChild(fromField);
     datePickers.appendChild(sep);
-    datePickers.appendChild(_makeDatePickerField('To', '', v => { state.dateTo = v; reloadGrid(); }));
+    datePickers.appendChild(toField);
+
+    /* Store cleanup so the next navigation can remove document listeners. */
+    _pickerCleanup = () => {
+      fromField._cleanup?.();
+      toField._cleanup?.();
+    };
   }
 
   /* ── Mount Grid ───────────────────────────────────────────── */
