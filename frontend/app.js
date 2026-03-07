@@ -3,7 +3,7 @@
 import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
 
 const ROUTES = {
-  dashboard:        'pages/dashboard.html',
+  dashboard:        'pages/dashboard/dashboard.html',
   movements:        'pages/movements/movements.html',
   'add-movements':  'pages/add-movements/add-movements.html',
   transfers:        'pages/transfers/transfers.html',
@@ -14,7 +14,7 @@ const ROUTES = {
 const DEFAULT_ROUTE = 'dashboard';
 let pageLoadToken = 0;
 const PAGE_INITIALIZERS = {
-  dashboard: async () => (await import('./pages/dashboard.js')).initDashboardPage,
+  dashboard: async () => (await import('./pages/dashboard/index.js')).initDashboardPage,
   'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
   movements: async () => (await import('./pages/movements/index.js')).initMovementsPage,
   transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
