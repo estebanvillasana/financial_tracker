@@ -1,0 +1,136 @@
+/* ============================================================
+   Movement Form — Component Styles
+   ============================================================
+   BEM: ft-movement-form / ft-movement-form__element--modifier
+   Used by: components/dumb/movementForm/movementForm.js
+   ============================================================ */
+
+.ft-movement-form {
+  display: none;          /* hidden until JS populates it */
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 20px;
+}
+
+.ft-movement-form.ft-movement-form--visible {
+  display: flex;
+}
+
+/* ── Title ──────────────────────────────────────────────────── */
+
+.ft-movement-form__title {
+  color: var(--ft-color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Body ───────────────────────────────────────────────────── */
+
+.ft-movement-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Row ────────────────────────────────────────────────────── */
+
+.ft-movement-form__row {
+  align-items: flex-end;
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Field ──────────────────────────────────────────────────── */
+
+.ft-movement-form__field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ft-movement-form__field--name   { flex: 3; }
+.ft-movement-form__field--date   { flex: 1; min-width: 130px; }
+.ft-movement-form__field--account   { flex: 2; }
+.ft-movement-form__field--type      { flex: 1; min-width: 100px; }
+.ft-movement-form__field--amount    { flex: 1.5; min-width: 130px; }
+.ft-movement-form__field--category     { flex: 2; }
+.ft-movement-form__field--subcategory  { flex: 2; }
+.ft-movement-form__field--invoice      { flex: 0 0 auto; min-width: 80px; }
+.ft-movement-form__field--desc { flex: 1; }
+
+/* ── Label ──────────────────────────────────────────────────── */
+
+.ft-movement-form__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Control (inputs, selects, textareas) ───────────────────── */
+
+.ft-movement-form__control {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-family: inherit;
+  font-size: 13px;
+  height: 34px;
+  padding: 0 10px;
+  transition: border-color 150ms ease;
+  width: 100%;
+}
+
+.ft-movement-form__control:focus {
+  border-color: var(--ft-color-accent);
+  outline: none;
+}
+
+.ft-movement-form__control--amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ft-movement-form__control--textarea {
+  height: auto;
+  min-height: 42px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+/* ── Invoice Toggle ────────────────────────────────────────── */
+
+.ft-movement-form__toggle {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  height: 34px;
+}
+
+.ft-movement-form__checkbox {
+  accent-color: var(--ft-color-accent);
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+}
+
+.ft-movement-form__toggle-label {
+  color: var(--ft-color-text-muted);
+  font-size: 13px;
+}
+
+/* ── Actions ────────────────────────────────────────────────── */
+
+.ft-movement-form__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
