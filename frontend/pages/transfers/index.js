@@ -4,7 +4,7 @@
  * Orchestrates: data loading, form + grid mount, event wiring.
  */
 import { bankAccounts } from '../../services/api.js';
-import { ensureAgGridLoaded, getGridTheme } from '../../lib/agGridLoader.js';
+import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { TransferForm } from '../../components/dumb/transferForm/transferForm.js';
 import { mountGrid, refreshGridData } from './grid.js';
@@ -73,7 +73,6 @@ async function initTransfersPage(root = document) {
   const gridHost = gridWrapper.querySelector('#transfers-grid-host');
 
   mountGrid(gridHost, state, {
-    getGridTheme,
     onEdit: handleEdit,
     onDelete: handleDelete,
   });

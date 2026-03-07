@@ -13,13 +13,15 @@
  * No checkbox selection, no toolbar, no pagination — dashboard is summary-only.
  */
 
-import { ensureAgGridLoaded, getGridTheme } from '../../lib/agGridLoader.js';
+import { createStandardGrid, ensureAgGridLoaded } from '../../utils/gridHelper.js';
 import {
   dateCellRenderer,
   moneyCentsCellRenderer,
   accountCellRenderer,
   typeBadgeRenderer,
   convertedAmountRenderer,
+  styledCategoryCellRenderer,
+  styledSubCategoryCellRenderer,
 } from '../../utils/gridRenderers.js';
 
 /**
@@ -77,12 +79,14 @@ function buildColumnDefs(rates, targetCurrency) {
     {
       headerName: 'Category',
       field: 'category',
+      cellRenderer: styledCategoryCellRenderer,
       flex: 1,
       minWidth: 100,
     },
     {
       headerName: 'Sub-category',
       field: 'sub_category',
+      cellRenderer: styledSubCategoryCellRenderer,
       flex: 1,
       minWidth: 100,
     },
@@ -124,19 +128,10 @@ export async function mountRecentMovements(wrapper, data, rates, targetCurrency)
   wrapper.innerHTML = '<div class="ft-dashboard__movements-grid ft-ag-grid" id="dashboard-movements-host"></div>';
   const hostEl = wrapper.querySelector('#dashboard-movements-host');
 
-  /* global agGrid */
-  return agGrid.createGrid(hostEl, {
-    theme: getGridTheme(),
+  return createStandardGrid(hostEl, {
     columnDefs: buildColumnDefs(rates, targetCurrency),
     rowData: data,
-    domLayout: 'normal',
-    suppressCellFocus: true,
-    animateRows: true,
-    headerHeight: 32,
-    rowHeight: 38,
     defaultColDef: {
-      sortable: true,
-      resizable: true,
       suppressMovable: true,
     },
     overlayNoRowsTemplate: '<span class="ft-small ft-text-muted">No movements yet</span>',

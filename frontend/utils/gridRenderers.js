@@ -64,6 +64,31 @@ export function categoryCellRenderer(params) {
 }
 
 /**
+ * Renders a category name with a type-coloured vertical bar indicator.
+ * Works with resolved text data (field: 'category') + the row's 'type' field.
+ * CSS: .ft-grid-cat in ag-grid-overrides.css.
+ */
+export function styledCategoryCellRenderer(params) {
+  const cat = params.data?.category ?? '';
+  if (!cat) return '';
+  const type = params.data?.type || 'Expense';
+  const mod = type === 'Income' ? 'ft-grid-cat--income' : 'ft-grid-cat--expense';
+  return `<span class="ft-grid-cat ${mod}"><span class="ft-grid-cat__bar"></span>${cat}</span>`;
+}
+
+/**
+ * Renders a sub-category name with a dimmed type-coloured bar indicator.
+ * Works with resolved text data (field: 'sub_category') + the row's 'type' field.
+ */
+export function styledSubCategoryCellRenderer(params) {
+  const sub = params.data?.sub_category ?? '';
+  if (!sub) return '';
+  const type = params.data?.type || 'Expense';
+  const mod = type === 'Income' ? 'ft-grid-cat--income' : 'ft-grid-cat--expense';
+  return `<span class="ft-grid-cat ${mod} ft-grid-cat--sub"><span class="ft-grid-cat__bar"></span>${sub}</span>`;
+}
+
+/**
  * Renders a movement_code as a clickable badge.
  * Emits data-action="filter-code" for event delegation.
  */

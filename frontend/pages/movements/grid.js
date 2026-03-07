@@ -8,7 +8,10 @@ import {
   accountCellRenderer,
   typeBadgeRenderer,
   convertedAmountRenderer,
+  styledCategoryCellRenderer,
+  styledSubCategoryCellRenderer,
 } from '../../utils/gridRenderers.js';
+import { buildGridOptions } from '../../utils/gridHelper.js';
 
 /* ── Column Definitions ───────────────────────────────────── */
 
@@ -76,12 +79,14 @@ function buildColumnDefs(rates, targetCurrency) {
     {
       headerName: 'Category',
       field: 'category',
+      cellRenderer: styledCategoryCellRenderer,
       flex: 1,
       minWidth: 100,
     },
     {
       headerName: 'Sub-category',
       field: 'sub_category',
+      cellRenderer: styledSubCategoryCellRenderer,
       flex: 1,
       minWidth: 100,
     },
@@ -101,23 +106,16 @@ function buildColumnDefs(rates, targetCurrency) {
  * @param {string}      opts.targetCurrency  — main currency
  * @param {Function}    opts.onSelectionChanged — called with selected rows array
  */
-export function mountGrid(hostEl, state, { getGridTheme, rates, targetCurrency, onSelectionChanged }) {
-  const gridOptions = {
-    theme: getGridTheme(),
+export function mountGrid(hostEl, state, { rates, targetCurrency, onSelectionChanged }) {
+  const gridOptions = buildGridOptions({
     columnDefs: buildColumnDefs(rates, targetCurrency),
     rowData: state.movements,
     getRowId: p => String(p.data.id),
-    domLayout: 'normal',
     suppressCellFocus: true,
-    animateRows: true,
     rowSelection: 'multiple',
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
-    defaultColDef: {
-      sortable: true,
-      resizable: true,
-    },
     isExternalFilterPresent: () => !!state.codeFilter,
     doesExternalFilterPass: node => node.data.movement_code === state.codeFilter,
     getRowClass: params => params.data?.active === 0 ? 'ft-row-inactive' : '',
@@ -127,7 +125,7 @@ export function mountGrid(hostEl, state, { getGridTheme, rates, targetCurrency, 
       const selected = state.gridApi.getSelectedRows();
       onSelectionChanged?.(selected);
     },
-  };
+  });
 
   state.gridApi = agGrid.createGrid(hostEl, gridOptions);
 }

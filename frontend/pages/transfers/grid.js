@@ -8,6 +8,7 @@ import {
   accountCellRenderer,
   actionsCellRenderer,
 } from '../../utils/gridRenderers.js';
+import { buildGridOptions } from '../../utils/gridHelper.js';
 
 const TRANSFER_ACTIONS = [
   { id: 'edit', icon: 'edit', title: 'Edit' },
@@ -86,19 +87,11 @@ function buildColumnDefs() {
 
 /* ── Mount ────────────────────────────────────────────────── */
 
-export function mountGrid(hostEl, state, { getGridTheme, onEdit, onDelete }) {
-  const gridOptions = {
-    theme: getGridTheme(),
+export function mountGrid(hostEl, state, { onEdit, onDelete }) {
+  const gridOptions = buildGridOptions({
     columnDefs: buildColumnDefs(),
     rowData: state.transfers,
     getRowId: p => p.data.movement_code,
-    domLayout: 'normal',
-    suppressCellFocus: true,
-    animateRows: true,
-    defaultColDef: {
-      sortable: true,
-      resizable: true,
-    },
     overlayNoRowsTemplate:
       '<span class="ft-small ft-text-muted">No transfers found</span>',
     onCellClicked: params => {
@@ -108,7 +101,7 @@ export function mountGrid(hostEl, state, { getGridTheme, onEdit, onDelete }) {
       if (action === 'edit') onEdit(params.data);
       if (action === 'delete') onDelete(params.data);
     },
-  };
+  });
 
   state.gridApi = agGrid.createGrid(hostEl, gridOptions);
 }

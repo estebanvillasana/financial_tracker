@@ -104,9 +104,9 @@ function buildCategoryRenderer(state, kind) {
     }
 
     const type = params.data?.type || 'Expense';
-    const colorClass = type === 'Income' ? 'ft-add-cat--income' : 'ft-add-cat--expense';
-    const kindClass = kind === 'sub-category' ? ' ft-add-cat--sub' : '';
-    return `<span class="ft-add-cat ${colorClass}${kindClass}"><span class="ft-add-cat__bar"></span>${label}</span>`;
+    const colorClass = type === 'Income' ? 'ft-grid-cat--income' : 'ft-grid-cat--expense';
+    const kindClass = kind === 'sub-category' ? ' ft-grid-cat--sub' : '';
+    return `<span class="ft-grid-cat ${colorClass}${kindClass}"><span class="ft-grid-cat__bar"></span>${label}</span>`;
   };
 }
 

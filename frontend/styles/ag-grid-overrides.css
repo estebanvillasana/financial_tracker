@@ -168,7 +168,7 @@
   color: var(--ft-color-danger);
 }
 
-/* ── Category Cell ────────────────────────────────────────── */
+/* ── Category Cell (combined "Cat › Sub" variant) ────────── */
 
 .ft-grid-category {
   overflow: hidden;
@@ -185,6 +185,31 @@
   color: var(--ft-color-text-muted);
   font-size: 12px;
 }
+
+/* ── Styled Category Bar (type-coloured indicator) ───────── */
+/* Used for separate Category / Sub-category columns across   */
+/* read-only and editable grids alike.                         */
+
+.ft-grid-cat {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-grid-cat__bar {
+  background: currentColor;
+  border-radius: 1px;
+  flex-shrink: 0;
+  height: 14px;
+  width: 3px;
+}
+
+.ft-grid-cat--expense { color: var(--ft-color-danger); }
+.ft-grid-cat--income  { color: var(--ft-color-success); }
+.ft-grid-cat--sub     { opacity: 0.55; }
 
 /* ── Movement Code Badge (clickable) ──────────────────────── */
 

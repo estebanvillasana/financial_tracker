@@ -5,7 +5,7 @@
  * code-group banner, FX rates for currency conversion, and bulk actions.
  */
 import { bankAccounts, categories, subCategories, fxRates } from '../../services/api.js';
-import { ensureAgGridLoaded, getGridTheme } from '../../lib/agGridLoader.js';
+import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { MovementModal } from '../../components/modals/movementModal/movementModal.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
@@ -91,7 +91,6 @@ async function initMovementsPage(root = document) {
   const gridHost = gridWrapper.querySelector('#movements-grid-host');
 
   mountGrid(gridHost, state, {
-    getGridTheme,
     rates: state.rates,
     targetCurrency: normalizeCurrency(finalAppConfig.currency),
     onSelectionChanged: handleSelectionChange,

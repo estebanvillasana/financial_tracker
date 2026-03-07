@@ -108,21 +108,8 @@
 
 /* ── AG Grid Host ─────────────────────────────────────────── */
 
-.ft-add-movements-grid-section {
-  flex: 1;
-  min-height: 0;
-}
-
-#widget-add-movements-grid {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .ft-add-movements-grid {
-  flex: 1;
-  height: 100%;
+  height: calc(100vh - 420px);
   min-height: 280px;
   width: 100%;
 }
@@ -157,33 +144,14 @@
 }
 
 /* ── Category / Sub-category Cell ─────────────────────────── */
+/* Styled bar renderers now live in styles/ag-grid-overrides.css */
+/* as shared .ft-grid-cat classes.                                */
 
 .ft-add-cell-placeholder {
   color: var(--ft-color-text-muted-30);
   font-size: 12px;
   font-style: italic;
 }
-
-.ft-add-cat {
-  align-items: center;
-  display: inline-flex;
-  gap: 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ft-add-cat__bar {
-  background: currentColor;
-  border-radius: 1px;
-  flex-shrink: 0;
-  height: 14px;
-  width: 3px;
-}
-
-.ft-add-cat--expense { color: var(--ft-color-danger); }
-.ft-add-cat--income  { color: var(--ft-color-success); }
-.ft-add-cat--sub     { opacity: 0.55; }
 
 /* ── Amount Cell (right-aligned, tabular nums) ────────────── */
 
