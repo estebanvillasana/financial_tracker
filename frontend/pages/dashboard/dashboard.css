@@ -7,9 +7,15 @@
   gap: var(--ft-spacing);
 }
 
-/* 5-column stats row override (narrower min to fit 5 cards) */
-.ft-stats-row--5 {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+/* ── Secondary Stats Row ─────────────────────────────── */
+
+/* Secondary stat cards are slightly more compact than primary */
+.ft-stats-row--secondary .ft-info-card {
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+.ft-stats-row--secondary .ft-info-card__value {
+  font-size: 18px;
 }
 
 /* ── Breakdowns Row ──────────────────────────────────── */
@@ -63,9 +69,5 @@
 @media (max-width: 640px) {
   .ft-dashboard__actions {
     display: none;
-  }
-
-  .ft-stats-row--5 {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }

@@ -18,9 +18,9 @@
     </div>
   </header>
 
-  <!-- Row 1: Stats -->
-  <section class="ft-section">
-    <div class="ft-stats-row ft-stats-row--5" id="dashboard-stats" aria-live="polite"></div>
+  <!-- Row 1: Primary Stats (Balance, Available, Savings, Debts) -->
+  <section class="ft-section" aria-live="polite">
+    <div class="ft-stats-row" id="dashboard-stats-primary"></div>
   </section>
 
   <!-- Row 2: Accounts Summary -->
@@ -31,38 +31,49 @@
     </div>
   </section>
 
-  <!-- Row 3: Breakdowns -->
+  <!-- Row 3: Last Month's Report — 3 breakdown cards -->
   <section class="ft-section">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Last Month's Report</h2>
+      <span class="ft-small ft-text-muted" id="dashboard-breakdown-period"></span>
+    </div>
     <div class="ft-dashboard__breakdowns">
 
       <div class="ft-card ft-dashboard__breakdown-card">
         <div class="ft-dashboard__breakdown-header">
           <span class="ft-label">Spending by Category</span>
-          <span class="ft-small ft-text-muted" id="dashboard-breakdown-period"></span>
         </div>
         <div id="dashboard-breakdown-categories" aria-live="polite"></div>
       </div>
 
       <div class="ft-card ft-dashboard__breakdown-card">
         <div class="ft-dashboard__breakdown-header">
-          <span class="ft-label">Balance by Account</span>
-          <span class="ft-small ft-text-muted">Savings accounts</span>
+          <span class="ft-label">Biggest Expenses</span>
         </div>
-        <div id="dashboard-breakdown-accounts" aria-live="polite"></div>
+        <div id="dashboard-breakdown-expenses" aria-live="polite"></div>
       </div>
 
       <div class="ft-card ft-dashboard__breakdown-card">
         <div class="ft-dashboard__breakdown-header">
-          <span class="ft-label">Monthly Flow</span>
-          <span class="ft-small ft-text-muted" id="dashboard-breakdown-flow-period"></span>
+          <span class="ft-label">Account Balances</span>
+          <span class="ft-small ft-text-muted">Excl. savings</span>
         </div>
-        <div id="dashboard-breakdown-flow" aria-live="polite"></div>
+        <div id="dashboard-breakdown-accounts" aria-live="polite"></div>
       </div>
 
     </div>
   </section>
 
-  <!-- Row 4: Recent Movements (full width) -->
+  <!-- Row 4: Last Month Overview (Income, Expenses, Net Flow) -->
+  <section class="ft-section" aria-live="polite">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Last Month's Overview</h2>
+      <span class="ft-small ft-text-muted" id="dashboard-stats-secondary-period"></span>
+    </div>
+    <div class="ft-stats-row ft-stats-row--secondary" id="dashboard-stats-secondary"></div>
+  </section>
+
+  <!-- Row 5: Recent Movements (full width) -->
   <section class="ft-section">
     <div class="ft-section__header">
       <h2 class="ft-h3">Recent Movements</h2>
