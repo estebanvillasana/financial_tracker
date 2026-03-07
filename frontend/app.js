@@ -1,6 +1,7 @@
 // app.js — Hash-based SPA router
 
 import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
+import { finalAppConfig } from './defaults.js';
 
 const ROUTES = {
   dashboard:        'pages/dashboard/dashboard.html',
@@ -72,7 +73,17 @@ async function loadPage(page) {
 window.addEventListener('hashchange', () => loadPage(getPage()));
 
 window.addEventListener('DOMContentLoaded', () => {
-  SideBarMenu.init();
+  SideBarMenu.init({
+    currentCurrency: finalAppConfig.currency,
+    onCurrencyChange: async (code) => {
+      await fetch(`${finalAppConfig.apiBaseUrl}/app-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currency: code }),
+      });
+      window.location.reload();
+    },
+  });
 
   if (!window.location.hash) {
     // Setting hash triggers hashchange which calls loadPage

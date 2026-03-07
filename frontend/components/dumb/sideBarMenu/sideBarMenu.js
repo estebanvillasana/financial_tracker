@@ -12,23 +12,20 @@ const SideBarMenu = (() => {
     { page: 'monthly-report', icon: 'summarize',     label: 'Monthly Report' },
   ];
 
-  /* Active currencies — keep in sync with utils/currencies.json (active: true). */
-  const CURRENCIES = [
-    { code: 'usd', label: '$ USD' },
-    { code: 'eur', label: '€ EUR' },
-    { code: 'mxn', label: '$ MXN' },
-    { code: 'rub', label: '₽ RUB' },
-    { code: 'gel', label: '₾ GEL' },
-  ];
+  /* Start fetching active currencies immediately so data is ready by init(). */
+  const _currenciesPromise = fetch(new URL('../../../utils/currencies.json', import.meta.url))
+    .then(r => r.json())
+    .then(data => data.filter(c => c.active))
+    .catch(() => [
+      { code: 'usd', codePlusSymbol: '$ USD' },
+      { code: 'eur', codePlusSymbol: '€ EUR' },
+      { code: 'mxn', codePlusSymbol: '$ MXN' },
+      { code: 'rub', codePlusSymbol: '₽ RUB' },
+      { code: 'gel', codePlusSymbol: '₾ GEL' },
+    ]);
 
-  const LS_CURRENCY_KEY = 'ft-app-currency';
-
-  function _getCurrentCurrency() {
-    return localStorage.getItem(LS_CURRENCY_KEY) || 'usd';
-  }
-
-  function _buildHTML() {
-    const current = _getCurrentCurrency();
+  function _buildHTML(currencies, currentCurrency) {
+    const current = (currentCurrency || 'usd').toLowerCase();
 
     const items = NAV_ITEMS.map(({ page, icon, label }) => `
       <li class="ft-nav__item" data-tooltip="${label}">
@@ -38,8 +35,8 @@ const SideBarMenu = (() => {
         </a>
       </li>`).join('');
 
-    const options = CURRENCIES.map(c =>
-      `<option value="${c.code}"${c.code === current ? ' selected' : ''}>${c.label}</option>`
+    const options = currencies.map(c =>
+      `<option value="${c.code}"${c.code === current ? ' selected' : ''}>${c.codePlusSymbol}</option>`
     ).join('');
 
     return `
@@ -83,22 +80,25 @@ const SideBarMenu = (() => {
     }
   }
 
-  function _initCurrencySelect() {
-    const select = document.getElementById('ft-nav-currency-select');
-    if (!select) return;
-    select.addEventListener('change', () => {
-      localStorage.setItem(LS_CURRENCY_KEY, select.value);
-      window.location.reload();
-    });
-  }
-
-  function init() {
+  /**
+   * @param {object} opts
+   * @param {string}   opts.currentCurrency  — active currency code from finalAppConfig
+   * @param {Function} opts.onCurrencyChange — async (code: string) => void
+   */
+  async function init({ currentCurrency = 'usd', onCurrencyChange } = {}) {
     const container = document.getElementById('app-nav');
     if (!container) return;
-    container.innerHTML = _buildHTML();
+
+    const currencies = await _currenciesPromise;
+    container.innerHTML = _buildHTML(currencies, currentCurrency);
+
     document.getElementById('ft-nav-collapse-btn')?.addEventListener('click', _toggleCollapse);
-    _initCurrencySelect();
     _restoreState();
+
+    const select = document.getElementById('ft-nav-currency-select');
+    if (select && typeof onCurrencyChange === 'function') {
+      select.addEventListener('change', () => onCurrencyChange(select.value));
+    }
   }
 
   function setActivePage(page) {
