@@ -60,12 +60,18 @@ async function initDashboardPage(root = document) {
   if (els.breakdownPeriod)      els.breakdownPeriod.textContent      = prevMonthLabel;
   if (els.statsSecondaryPeriod) els.statsSecondaryPeriod.textContent = prevMonthLabel;
 
-  // Row 1: stats cards (async FX conversion)
-  const statsPromise = renderStatsCards(els.statsPrimary, els.statsSecondary, {
-    accounts,
-    prevMonthMovements,
-    mainCurrency,
-  }).catch(() => _renderFatalError(els.statsPrimary));
+  // Row 1: stats cards (synchronous, uses pre-fetched rates)
+  try {
+    renderStatsCards(els.statsPrimary, els.statsSecondary, {
+      accounts,
+      prevMonthMovements,
+      mainCurrency,
+      rates,
+      prevMonthLabel,
+    });
+  } catch {
+    _renderFatalError(els.statsPrimary);
+  }
 
   // Row 2: accounts summary (self-contained, kicks off its own fetch)
   const summaryPromise = AccountsSummary.render(els.accountsSummary, {
@@ -93,7 +99,7 @@ async function initDashboardPage(root = document) {
     mainCurrency
   );
 
-  await Promise.all([statsPromise, summaryPromise, gridPromise]);
+  await Promise.all([summaryPromise, gridPromise]);
 }
 
 function _renderFatalError(container) {
