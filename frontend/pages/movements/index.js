@@ -7,6 +7,7 @@
 import { bankAccounts, categories, subCategories, fxRates } from '../../services/api.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
 import { MovementModal } from '../../components/modals/movementModal/movementModal.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
@@ -34,6 +35,7 @@ async function initMovementsPage(root = document) {
 
   const toolbarEl     = root.querySelector('#widget-movements-toolbar');
   const feedbackEl    = root.querySelector('#widget-movements-feedback');
+  const filterBarEl   = root.querySelector('#movements-filter-bar');
   const codeBannerEl  = root.querySelector('#widget-movements-code-banner');
   const gridWrapper   = root.querySelector('#widget-movements-grid');
 
@@ -56,6 +58,11 @@ async function initMovementsPage(root = document) {
     typeFilter: '',
     dateFrom: '',
     dateTo: '',
+    nameFilter: '',
+    categoryFilter: '',
+    subCategoryFilter: '',
+    noRepetitiveFilter: false,
+    hasRepetitiveFilter: false,
   };
 
   /* ── Load AG Grid ─────────────────────────────────────────── */
@@ -130,6 +137,163 @@ async function initMovementsPage(root = document) {
     onShowGroup: handleFilterCode,
   });
 
+  /* ── Filter Bar (search, category, sub-category, export) ──── */
+
+  let _filterBarRoot = null;
+
+  function _buildFilterBarConfig() {
+    const catOptions = [
+      { value: '', label: 'All categories' },
+      ...state.cats.map(c => ({ value: String(c.id), label: c.category })),
+    ];
+    const filteredSubs = state.categoryFilter
+      ? state.subs.filter(s => String(s.category_id) === String(state.categoryFilter))
+      : [];
+    const subCatOptions = [
+      { value: '', label: state.categoryFilter ? 'All sub-categories' : '—' },
+      ...filteredSubs.map(s => ({ value: String(s.id), label: s.sub_category })),
+    ];
+    return {
+      fields: [
+        {
+          id: 'name',
+          label: 'Search',
+          type: 'search',
+          placeholder: 'Search by name…',
+          value: state.nameFilter,
+          className: 'ft-filter-bar__field--search',
+        },
+        {
+          id: 'category',
+          label: 'Category',
+          type: 'select',
+          options: catOptions,
+          value: state.categoryFilter,
+        },
+        {
+          id: 'subCategory',
+          label: 'Sub-category',
+          type: 'select',
+          options: subCatOptions,
+          value: state.subCategoryFilter,
+        },
+        {
+          id: 'repetitive',
+          label: 'Repetitive',
+          type: 'select',
+          options: [
+            { value: '',     label: 'All movements' },
+            { value: 'none', label: 'No repetitive movement' },
+            { value: 'has',  label: 'Has repetitive movement' },
+          ],
+          value: state.noRepetitiveFilter ? 'none' : state.hasRepetitiveFilter ? 'has' : '',
+        },
+      ],
+      actions: [
+        { id: 'download', label: 'Export CSV', icon: 'download', variant: 'ghost' },
+      ],
+    };
+  }
+
+  function _updateSubCategorySelect(selectedCategoryId) {
+    if (!_filterBarRoot) return;
+    const subCatSelect = _filterBarRoot.querySelector('[data-filter-id="subCategory"]');
+    if (!subCatSelect) return;
+    const filteredSubs = selectedCategoryId
+      ? state.subs.filter(s => String(s.category_id) === String(selectedCategoryId))
+      : [];
+    subCatSelect.innerHTML = filteredSubs.length > 0
+      ? '<option value="">All sub-categories</option>' +
+        filteredSubs.map(s => `<option value="${s.id}">${s.sub_category}</option>`).join('')
+      : '<option value="">—</option>';
+    subCatSelect.disabled = filteredSubs.length === 0;
+  }
+
+  async function _handleFilterBarChange(values, changedId) {
+    if (changedId === 'name') {
+      state.nameFilter = values.name;
+      state.gridApi?.setGridOption('quickFilterText', values.name);
+      return;
+    }
+    if (changedId === 'category') {
+      state.categoryFilter = values.category;
+      state.subCategoryFilter = '';
+      _updateSubCategorySelect(values.category);
+      await reloadGrid();
+      return;
+    }
+    if (changedId === 'subCategory') {
+      state.subCategoryFilter = values.subCategory;
+      await reloadGrid();
+    }
+    if (changedId === 'repetitive') {
+      state.noRepetitiveFilter  = values.repetitive === 'none';
+      state.hasRepetitiveFilter = values.repetitive === 'has';
+      applyExternalFilter(state);
+    }
+  }
+
+  function _exportCsv() {
+    if (!state.gridApi) return;
+
+    const columns = [
+      { header: 'Date',         get: r => r.date ?? '' },
+      { header: 'Movement',     get: r => r.movement ?? '' },
+      { header: 'Description',  get: r => r.description ?? '' },
+      { header: 'Account',      get: r => r.account ?? '' },
+      { header: 'Type',         get: r => r.type ?? '' },
+      { header: 'Amount',       get: r => r.value != null ? (Number(r.value) / 100).toFixed(2) : '' },
+      { header: 'Currency',     get: r => r.currency ?? '' },
+      { header: 'Balance',      get: r => r.balance_at_date != null ? (Number(r.balance_at_date) / 100).toFixed(2) : '' },
+      { header: 'Category',             get: r => r.category ?? '' },
+      { header: 'Sub-category',         get: r => r.sub_category ?? '' },
+      { header: 'Repetitive Movement',  get: r => r.repetitive_movement ?? '' },
+    ];
+
+    const escape = v => {
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const rows = [];
+    state.gridApi.forEachNodeAfterFilterAndSort(node => {
+      if (node.data) rows.push(node.data);
+    });
+
+    const header = columns.map(c => escape(c.header)).join(',');
+    const body = rows.map(r => columns.map(c => escape(c.get(r))).join(',')).join('\n');
+    const csv = `${header}\n${body}`;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `movements-${dateStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (filterBarEl) {
+    _filterBarRoot = FilterBar.render(filterBarEl, _buildFilterBarConfig(), {
+      onFilterChange: (values, { id }) => _handleFilterBarChange(values, id),
+      onAction: actionId => { if (actionId === 'download') _exportCsv(); },
+    });
+
+    /* Real-time search as the user types (FilterBar only fires on `change`). */
+    _filterBarRoot?.querySelector('[data-filter-id="name"]')
+      ?.addEventListener('input', e => {
+        state.nameFilter = e.target.value;
+        state.gridApi?.setGridOption('quickFilterText', e.target.value);
+      });
+
+    /* Disable sub-category select until a category is chosen. */
+    _updateSubCategorySelect('');
+  }
+
   /* ── Toolbar Events ───────────────────────────────────────── */
 
   accountSelect?.addEventListener('change', reloadGrid);
@@ -161,6 +325,8 @@ async function initMovementsPage(root = document) {
       if (state.typeFilter) params.type = state.typeFilter;
       if (state.dateFrom) params.date_from = state.dateFrom;
       if (state.dateTo) params.date_to = state.dateTo;
+      if (state.categoryFilter) params.category_id = Number(state.categoryFilter);
+      if (state.subCategoryFilter) params.sub_category_id = Number(state.subCategoryFilter);
 
       let fresh = [];
       if (state.showDeleted) {
@@ -187,6 +353,7 @@ async function initMovementsPage(root = document) {
       }
 
       refreshGridData(state, fresh);
+      if (state.nameFilter) state.gridApi?.setGridOption('quickFilterText', state.nameFilter);
       if (state.codeFilter) applyExternalFilter(state);
     } catch (e) {
       FeedbackBanner.render(feedbackEl, e?.message || 'Failed to reload movements.');
