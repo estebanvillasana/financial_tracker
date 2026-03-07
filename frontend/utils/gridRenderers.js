@@ -74,6 +74,36 @@ export function movementCodeRenderer(params) {
 }
 
 /**
+ * Factory: renders a value converted to a target currency using FX rates.
+ * The rates object keys are uppercase ISO currency codes, values are per-USD.
+ *
+ * @param {string} valueField    — row field for cents value
+ * @param {string} currencyField — row field for the row's currency code
+ * @param {object} rates         — { MXN: 17.5, GEL: 2.72, … } (base = USD → rate 1)
+ * @param {string} targetCurrency — target currency code (e.g. 'USD')
+ */
+export function convertedAmountRenderer(valueField, currencyField, rates, targetCurrency) {
+  const tgt = normalizeCurrency(targetCurrency);
+  const tgtRate = rates[tgt] ?? 1;
+
+  return params => {
+    const cents = params.data?.[valueField];
+    const src = normalizeCurrency(params.data?.[currencyField] ?? '');
+    if (cents == null || !src) return '';
+
+    if (src === tgt) {
+      return `<span class="ft-grid-amount ft-grid-amount--converted">${formatMoneyFromCents(cents, tgt)}</span>`;
+    }
+
+    const srcRate = rates[src];
+    if (!srcRate) return '<span class="ft-grid-amount ft-grid-amount--converted">—</span>';
+
+    const converted = Math.round(cents * tgtRate / srcRate);
+    return `<span class="ft-grid-amount ft-grid-amount--converted">${formatMoneyFromCents(converted, tgt)}</span>`;
+  };
+}
+
+/**
  * Factory: renders a row of icon action buttons (edit, delete, etc.).
  * Each button emits a `data-action` attribute for event delegation.
  *
