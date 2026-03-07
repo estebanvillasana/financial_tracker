@@ -18,16 +18,19 @@ SELECT
     sc.sub_category,
     m.repetitive_movement_id,
     rm.movement AS repetitive_movement,
-    ba.initial_balance + SUM(
-        CASE 
-            WHEN m.type = 'Income' THEN m.value 
-            ELSE -m.value 
-        END
-    ) OVER (
-        PARTITION BY m.account_id 
-        ORDER BY m.date, m.id 
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-    ) AS balance_at_date
+    CASE WHEN m.active = 1 THEN
+        ba.initial_balance + SUM(
+            CASE
+                WHEN m.active = 0 THEN 0
+                WHEN m.type = 'Income' THEN m.value
+                ELSE -m.value
+            END
+        ) OVER (
+            PARTITION BY m.account_id
+            ORDER BY m.date, m.id
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        )
+    ELSE NULL END AS balance_at_date
 FROM movements m
 JOIN bank_accounts ba
     ON ba.id = m.account_id

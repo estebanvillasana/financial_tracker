@@ -57,63 +57,85 @@ def get_all_movements(
 ) -> list[dict]:
     """
     Returns movements with optional SQL filters and pagination.
+
+    Uses a CTE so balance_at_date is always computed over the full
+    movement history (per account), regardless of date/type filters.
     """
 
     query = load_query("movements/select.sql")
     base_query, order_clause = _split_query_and_order(query)
 
-    filters: list[str] = []
-    params: list[int | str] = []
-
-    if active is not None:
-        filters.append("m.active = ?")
-        params.append(active)
+    # Inner filters — applied inside the CTE (affect which rows the
+    # window function sees).  Only account_id belongs here because
+    # the window is PARTITION BY account_id, so filtering by account
+    # is an optimisation that doesn't change correctness.
+    inner_filters: list[str] = []
+    inner_params: list[int | str] = []
 
     if account_id is not None:
-        filters.append("m.account_id = ?")
-        params.append(account_id)
+        inner_filters.append("m.account_id = ?")
+        inner_params.append(account_id)
+
+    # Outer filters — applied after balance_at_date is computed.
+    outer_filters: list[str] = []
+    outer_params: list[int | str] = []
+
+    if active is not None:
+        outer_filters.append("active = ?")
+        outer_params.append(active)
 
     if category_id is not None:
-        filters.append("m.category_id = ?")
-        params.append(category_id)
+        outer_filters.append("category_id = ?")
+        outer_params.append(category_id)
 
     if sub_category_id is not None:
-        filters.append("m.sub_category_id = ?")
-        params.append(sub_category_id)
+        outer_filters.append("sub_category_id = ?")
+        outer_params.append(sub_category_id)
 
     if repetitive_movement_id is not None:
-        filters.append("m.repetitive_movement_id = ?")
-        params.append(repetitive_movement_id)
+        outer_filters.append("repetitive_movement_id = ?")
+        outer_params.append(repetitive_movement_id)
 
     if type is not None:
-        filters.append("m.type = ?")
-        params.append(type)
+        outer_filters.append("type = ?")
+        outer_params.append(type)
 
     if invoice is not None:
-        filters.append("m.invoice = ?")
-        params.append(invoice)
+        outer_filters.append("invoice = ?")
+        outer_params.append(invoice)
 
     if movement_code is not None:
-        filters.append("m.movement_code = ?")
-        params.append(movement_code)
+        outer_filters.append("movement_code = ?")
+        outer_params.append(movement_code)
 
     if date_from is not None:
-        filters.append("m.date >= ?")
-        params.append(date_from.isoformat())
+        outer_filters.append("date >= ?")
+        outer_params.append(date_from.isoformat())
 
     if date_to is not None:
-        filters.append("m.date <= ?")
-        params.append(date_to.isoformat())
+        outer_filters.append("date <= ?")
+        outer_params.append(date_to.isoformat())
 
-    where_clause = ""
-    if filters:
-        where_clause = "\nWHERE " + "\n  AND ".join(filters)
+    # Build CTE inner WHERE
+    inner_where = ""
+    if inner_filters:
+        inner_where = "\nWHERE " + "\n  AND ".join(inner_filters)
+
+    # Build outer WHERE
+    outer_where = ""
+    if outer_filters:
+        outer_where = "\nWHERE " + "\n  AND ".join(outer_filters)
+
+    # Strip table alias prefixes for the outer ORDER BY
+    outer_order = order_clause.replace("m.", "")
 
     paginated_query = (
-        f"{base_query}{where_clause}\n{order_clause}\nLIMIT ?\nOFFSET ?;"
+        f"WITH balance_data AS (\n{base_query}{inner_where}\n)\n"
+        f"SELECT * FROM balance_data{outer_where}\n"
+        f"{outer_order}\nLIMIT ?\nOFFSET ?;"
     )
 
-    params.extend([limit, offset])
+    params = inner_params + outer_params + [limit, offset]
 
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -409,3 +431,24 @@ def soft_delete_movement(*, id: int) -> dict | None:
         raise RuntimeError("Movement was soft-deleted but could not be retrieved")
 
     return deleted
+
+
+def restore_movement(*, id: int) -> dict | None:
+    """
+    Restores a soft-deleted movement by setting active = 1.
+
+    Returns None if the movement id does not exist.
+    """
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE movements SET active = 1 WHERE id = ?;", (id,))
+
+        if cursor.rowcount == 0:
+            return None
+
+    restored = get_movement_by_id(id=id)
+    if restored is None:
+        raise RuntimeError("Movement was restored but could not be retrieved")
+
+    return restored

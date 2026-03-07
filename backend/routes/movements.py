@@ -13,6 +13,7 @@ from models.movements import (
     update_movement,
     delete_movement,
     soft_delete_movement,
+    restore_movement,
 )
 
 
@@ -36,12 +37,14 @@ class MovementResponse(BaseModel):
     account_id:             int
     account:                str
     currency:               str
+    initial_balance:        int | None = None
     category_id:            int | None
     category:               str | None
     sub_category_id:        int | None
     sub_category:           str | None
     repetitive_movement_id: int | None
     repetitive_movement:    str | None
+    balance_at_date:        int | None = None
 
 
 class MovementCreateRequest(BaseModel):
@@ -259,6 +262,21 @@ def route_soft_delete(id: int):
     """Soft-deletes a movement by setting active=0."""
 
     movement = soft_delete_movement(id=id)
+
+    if movement is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Movement with id {id} not found"
+        )
+
+    return movement
+
+
+@router.patch("/{id}/restore", response_model=MovementResponse)
+def route_restore(id: int):
+    """Restores a soft-deleted movement by setting active=1."""
+
+    movement = restore_movement(id=id)
 
     if movement is None:
         raise HTTPException(
