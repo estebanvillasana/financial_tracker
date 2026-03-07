@@ -23,14 +23,20 @@
 import { DatePicker } from '../../dumb/datePicker/datePicker.js';
 import {
   normalizeCurrency,
-  formatMoney,
   formatDateDisplay,
 } from '../../../utils/formatters.js';
 import { isValidIsoDate } from '../../../utils/validators.js';
 import {
-  getCategoriesByType,
-  getSubCategoriesByTypeAndCategory,
-} from '../../../utils/lookups.js';
+  escapeHtml as _esc,
+  stripNumeric as _strip,
+  toCents as _toCents,
+  rawAmount as _rawAmount,
+  formatAmountDisplay as _formatDisplay,
+  findAccount as _findAccount,
+  buildAccountOptions,
+  buildCategoryOptions as _categoryOpts,
+  buildSubCategoryOptions as _subCategoryOpts,
+} from '../../../utils/formHelpers.js';
 
 const MovementModal = (() => {
 
@@ -38,62 +44,12 @@ const MovementModal = (() => {
 
   /* ── Private helpers ────────────────────────────────────── */
 
-  function _esc(v) {
-    return String(v ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function _strip(v) { return String(v).replace(/[^0-9.\-]/g, ''); }
-
-  function _toCents(v) {
-    const n = parseFloat(_strip(v));
-    return (!isNaN(n) && n > 0) ? Math.round(n * 100) : null;
-  }
-
-  function _findAccount(accounts, id) {
-    return accounts.find(a => a.id === Number(id));
-  }
-
-  const _PLAIN_FMT = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  function _formatDisplay(value, currency) {
-    const num = parseFloat(_strip(value));
-    if (isNaN(num) || num <= 0) return value;
-    return currency ? formatMoney(num, currency) : _PLAIN_FMT.format(num);
-  }
-
-  function _rawAmount(value) {
-    const num = parseFloat(_strip(value));
-    if (isNaN(num)) return '';
-    return num.toFixed(2);
-  }
-
+  /**
+   * Builds account options without the blank placeholder option.
+   * The modal always pre-selects the current account.
+   */
   function _accountOpts(accounts, selectedId) {
-    return accounts.map(a =>
-      `<option value="${a.id}"${a.id === Number(selectedId) ? ' selected' : ''}>${_esc(a.account)} (${normalizeCurrency(a.currency)})</option>`
-    ).join('');
-  }
-
-  function _categoryOpts(categories, type, selectedId) {
-    const filtered = type ? getCategoriesByType(categories, type) : categories;
-    return '<option value="">—</option>' +
-      filtered.map(c =>
-        `<option value="${c.id}"${c.id === Number(selectedId) ? ' selected' : ''}>${_esc(c.category)}</option>`
-      ).join('');
-  }
-
-  function _subCategoryOpts(subCategories, type, categoryId, selectedId) {
-    const filtered = categoryId
-      ? getSubCategoriesByTypeAndCategory(subCategories, type, categoryId)
-      : [];
-    return '<option value="">—</option>' +
-      filtered.map(s =>
-        `<option value="${s.id}"${s.id === Number(selectedId) ? ' selected' : ''}>${_esc(s.sub_category)}</option>`
-      ).join('');
+    return buildAccountOptions(accounts, selectedId, /* blank= */ false);
   }
 
   /* ── Build HTML ─────────────────────────────────────────── */

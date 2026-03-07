@@ -20,53 +20,21 @@
  */
 import { normalizeCurrency, formatMoney } from '../../../utils/formatters.js';
 import { isValidIsoDate, parseNumberOrNull } from '../../../utils/validators.js';
+import {
+  stripNumeric as _strip,
+  toCents as _toCents,
+  rawAmount as _rawAmount,
+  formatAmountDisplay as _formatDisplay,
+  findAccount as _findAccount,
+  buildAccountOptions,
+} from '../../../utils/formHelpers.js';
 
 const TransferForm = (() => {
 
   /* ── Private ────────────────────────────────────────────── */
 
-  function _esc(v) {
-    return String(v ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
   function _accountOpts(accounts) {
-    return '<option value="">Select account</option>' +
-      accounts.map(a =>
-        `<option value="${a.id}">${_esc(a.account)} (${normalizeCurrency(a.currency)})</option>`
-      ).join('');
-  }
-
-  function _strip(v) { return String(v).replace(/[^0-9.\-]/g, ''); }
-
-  function _toCents(v) {
-    const n = parseFloat(_strip(v));
-    return (!isNaN(n) && n > 0) ? Math.round(n * 100) : null;
-  }
-
-  function _findAccount(accounts, id) {
-    return accounts.find(a => a.id === Number(id));
-  }
-
-  /** Formats a raw number string with currency symbol + thousand-separators on blur.
-   *  When no currency is provided, formats as a plain number (no symbol). */
-  function _formatDisplay(value, currency) {
-    const num = parseFloat(_strip(value));
-    if (isNaN(num) || num <= 0) return value;
-    return currency ? formatMoney(num, currency) : _PLAIN_FMT.format(num);
-  }
-
-  const _PLAIN_FMT = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  /** Strips formatting back to a clean decimal for editing on focus. */
-  function _rawAmount(value) {
-    const num = parseFloat(_strip(value));
-    if (isNaN(num)) return '';
-    return num.toFixed(2);
+    return buildAccountOptions(accounts);
   }
 
   /* ── Build ──────────────────────────────────────────────── */
