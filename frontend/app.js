@@ -72,7 +72,9 @@ async function loadPage(page) {
 
 window.addEventListener('hashchange', () => loadPage(getPage()));
 
-window.addEventListener('DOMContentLoaded', () => {
+// Module with top-level-await dependency (defaults.js) may evaluate after
+// DOMContentLoaded has already fired, so check readyState instead.
+function bootstrap() {
   SideBarMenu.init({
     currentCurrency: finalAppConfig.currency,
     onCurrencyChange: async (code) => {
@@ -86,9 +88,14 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   if (!window.location.hash) {
-    // Setting hash triggers hashchange which calls loadPage
     window.location.hash = DEFAULT_ROUTE;
   } else {
     loadPage(getPage());
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
+}
