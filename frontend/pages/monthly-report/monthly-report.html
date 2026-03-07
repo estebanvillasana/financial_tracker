@@ -68,32 +68,37 @@
     </div>
   </section>
 
-  <!-- Owner filter — shared between Accountant Summary and Invoice Tracker -->
-  <section class="ft-section" id="section-owner-filter">
-    <div id="widget-owner-filter"></div>
-  </section>
-
-  <!-- Accountant Summary Table (taxable repetitive movements with totals) -->
-  <section class="ft-section" id="section-accountant">
+  <!-- Tax Reports — Invoice Tracker + Accountant Summary (shared owner filter) -->
+  <section class="ft-section" id="section-tax-reports">
     <div class="ft-section__header">
-      <div>
-        <h2 class="ft-h3">Accountant Summary</h2>
-        <span class="ft-small ft-text-muted" id="accountant-subtitle">Taxable movements — share with your accountant</span>
+      <h2 class="ft-h3">Tax Reports</h2>
+      <div id="widget-owner-filter"></div>
+    </div>
+
+    <!-- Invoice Tracker -->
+    <div class="ft-monthly-report__sub-section">
+      <div class="ft-monthly-report__sub-header">
+        <div>
+          <h3 class="ft-monthly-report__card-title">Invoice Tracker</h3>
+          <span class="ft-small ft-text-muted">Movements linked to taxable items — checkmark invoices received</span>
+        </div>
       </div>
-      <button type="button" class="ft-btn ft-btn--ghost" id="btn-export-accountant-csv">
-        <span class="material-symbols-outlined">download</span>
-        Export CSV
-      </button>
+      <div class="ft-monthly-report__invoice-grid ft-ag-grid" id="widget-invoice-grid"></div>
     </div>
-    <div class="ft-monthly-report__accountant-grid ft-ag-grid" id="widget-accountant-grid"></div>
-  </section>
 
-  <!-- Tax Invoice Tracker Grid -->
-  <section class="ft-section" id="section-invoice-tracker">
-    <div class="ft-section__header">
-      <h2 class="ft-h3">Invoice Tracker</h2>
-      <span class="ft-small ft-text-muted" id="invoice-tracker-subtitle">Movements linked to taxable items — checkmark invoices received</span>
+    <!-- Accountant Summary -->
+    <div class="ft-monthly-report__sub-section">
+      <div class="ft-monthly-report__sub-header">
+        <div>
+          <h3 class="ft-monthly-report__card-title">Accountant Summary</h3>
+          <span class="ft-small ft-text-muted">Taxable movements grouped by item — share with your accountant</span>
+        </div>
+        <button type="button" class="ft-btn ft-btn--ghost" id="btn-export-accountant-csv">
+          <span class="material-symbols-outlined">download</span>
+          Export CSV
+        </button>
+      </div>
+      <div class="ft-monthly-report__accountant-grid ft-ag-grid" id="widget-accountant-grid"></div>
     </div>
-    <div class="ft-monthly-report__invoice-grid ft-ag-grid" id="widget-invoice-grid"></div>
   </section>
 </div>

@@ -80,6 +80,23 @@
   }
 }
 
+/* ── Tax Reports sub-sections ─────────────────────────────── */
+
+.ft-monthly-report__sub-section {
+  margin-top: calc(var(--ft-spacing) * 3);
+}
+
+.ft-monthly-report__sub-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-monthly-report__sub-header .ft-monthly-report__card-title {
+  margin-bottom: 2px;
+}
+
 /* ── Accountant Grid ──────────────────────────────────────── */
 
 .ft-monthly-report__accountant-grid {

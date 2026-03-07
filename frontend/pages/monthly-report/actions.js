@@ -5,7 +5,7 @@
  * Provides date range computation and parallel data fetching.
  */
 
-import { movements, repetitiveMovements, fxRates, categories, subCategories } from '../../services/api.js';
+import { movements, repetitiveMovements, fxRates, categories, subCategories, bankAccounts } from '../../services/api.js';
 
 /**
  * Returns the ISO date boundaries (YYYY-MM-DD) for a given year/month.
@@ -61,6 +61,7 @@ export async function fetchReportData(year, month) {
     fxData,
     cats,
     subs,
+    accounts,
   ] = await Promise.all([
     movements.getAll({ active: 1, date_from: dateFrom, date_to: dateTo, limit: 500 }).catch(() => []),
     repetitiveMovements.getAll({ active: 1, tax_report: 1, limit: 500 }).catch(() => []),
@@ -68,10 +69,23 @@ export async function fetchReportData(year, month) {
     fxRates.getAllRatesLatest().catch(() => null),
     categories.getAll({ active: 1 }).catch(() => []),
     subCategories.getAll({ active: 1 }).catch(() => []),
+    bankAccounts.getAll({ active: 1 }).catch(() => []),
   ]);
 
+  // Build account_id → owner map from bank accounts
+  const accountOwnerMap = {};
+  for (const acct of (Array.isArray(accounts) ? accounts : [])) {
+    if (acct.id != null && acct.owner) accountOwnerMap[acct.id] = acct.owner;
+  }
+
+  // Enrich each movement with its owner (from bank accounts map or the SQL field)
+  const enrichedMovements = (Array.isArray(monthMovements) ? monthMovements : []).map(m => ({
+    ...m,
+    owner: m.owner || accountOwnerMap[m.account_id] || null,
+  }));
+
   return {
-    monthMovements:     Array.isArray(monthMovements) ? monthMovements : [],
+    monthMovements:     enrichedMovements,
     taxableRepMovements: Array.isArray(taxableRepMovements) ? taxableRepMovements : [],
     allRepMovements:    Array.isArray(allRepMovements) ? allRepMovements : [],
     rates:              fxData?.rates ?? {},
