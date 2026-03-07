@@ -18,17 +18,12 @@
  *   handlers.onSubmit()   — called on Create / Update button click
  *   handlers.onCancel()   — called on Cancel button click
  */
-import { normalizeCurrency } from '../../../utils/formatters.js';
+import { normalizeCurrency, formatMoney } from '../../../utils/formatters.js';
 import { isValidIsoDate, parseNumberOrNull } from '../../../utils/validators.js';
 
 const TransferForm = (() => {
 
   /* ── Private ────────────────────────────────────────────── */
-
-  const AMOUNT_FMT = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 
   function _esc(v) {
     return String(v ?? '')
@@ -54,12 +49,18 @@ const TransferForm = (() => {
     return accounts.find(a => a.id === Number(id));
   }
 
-  /** Formats a raw number string with thousand-separators + 2 decimals on blur. */
-  function _formatDisplay(value) {
+  /** Formats a raw number string with currency symbol + thousand-separators on blur.
+   *  When no currency is provided, formats as a plain number (no symbol). */
+  function _formatDisplay(value, currency) {
     const num = parseFloat(_strip(value));
     if (isNaN(num) || num <= 0) return value;
-    return AMOUNT_FMT.format(num);
+    return currency ? formatMoney(num, currency) : _PLAIN_FMT.format(num);
   }
+
+  const _PLAIN_FMT = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   /** Strips formatting back to a clean decimal for editing on focus. */
   function _rawAmount(value) {
@@ -122,10 +123,17 @@ const TransferForm = (() => {
   function hydrate(root, accounts, handlers = {}) {
     if (!root) return;
 
-    /* Account change → update labels + auto-sync same-currency */
+    /* Account change → update labels, re-format amounts, auto-sync same-currency */
     root.addEventListener('change', e => {
       if (e.target.id === 'tf-send-account' || e.target.id === 'tf-receive-account') {
         updateCurrencyLabels(root, accounts);
+
+        const isSend = e.target.id === 'tf-send-account';
+        const amtId   = isSend ? '#tf-sent-amount' : '#tf-received-amount';
+        const amtEl   = root.querySelector(amtId);
+        const newAcc  = _findAccount(accounts, Number(e.target.value));
+        if (amtEl?.value) amtEl.value = _formatDisplay(_rawAmount(amtEl.value), newAcc?.currency);
+
         if (areSameCurrency(root, accounts)) {
           const sentVal = root.querySelector('#tf-sent-amount')?.value;
           if (sentVal) root.querySelector('#tf-received-amount').value = sentVal;
@@ -140,12 +148,15 @@ const TransferForm = (() => {
       }
     });
 
-    /* Amount blur → format with thousand-separators */
+    /* Amount blur → format with currency symbol + thousand-separators */
     root.addEventListener('focusout', e => {
       if (e.target.id === 'tf-sent-amount' || e.target.id === 'tf-received-amount') {
-        e.target.value = _formatDisplay(e.target.value);
+        const isSent = e.target.id === 'tf-sent-amount';
+        const selectId = isSent ? '#tf-send-account' : '#tf-receive-account';
+        const acc = _findAccount(accounts, Number(root.querySelector(selectId)?.value));
+        e.target.value = _formatDisplay(e.target.value, acc?.currency);
         /* Sync formatted value to received when same currency */
-        if (e.target.id === 'tf-sent-amount' && areSameCurrency(root, accounts)) {
+        if (isSent && areSameCurrency(root, accounts)) {
           root.querySelector('#tf-received-amount').value = e.target.value;
         }
       }
@@ -187,8 +198,8 @@ const TransferForm = (() => {
     root.querySelector('#tf-title').textContent = 'Edit Transfer';
     root.querySelector('#tf-send-account').value = transfer.send_account_id;
     root.querySelector('#tf-receive-account').value = transfer.receive_account_id;
-    root.querySelector('#tf-sent-amount').value = AMOUNT_FMT.format(transfer.sent_value / 100);
-    root.querySelector('#tf-received-amount').value = AMOUNT_FMT.format(transfer.received_value / 100);
+    root.querySelector('#tf-sent-amount').value = formatMoney(transfer.sent_value / 100, transfer.send_currency);
+    root.querySelector('#tf-received-amount').value = formatMoney(transfer.received_value / 100, transfer.receive_currency);
     root.querySelector('#tf-date').value = transfer.date;
     root.querySelector('#tf-description').value = transfer.description ?? '';
     root.querySelector('#tf-actions').innerHTML = `
