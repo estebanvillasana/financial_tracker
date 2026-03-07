@@ -8,6 +8,7 @@ import { bankAccounts, categories, subCategories, fxRates } from '../../services
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { MovementModal } from '../../components/modals/movementModal/movementModal.js';
+import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { finalAppConfig } from '../../defaults.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
@@ -16,6 +17,102 @@ import { fetchMovements, updateMovement, softDeleteMovement } from './actions.js
 /* ── Constants ────────────────────────────────────────────── */
 
 const DEFAULT_LIMIT = 500;
+
+/* ── DatePicker popup trigger helper ──────────────────────── */
+
+/**
+ * Builds a self-contained date-picker trigger element:
+ * a styled button that shows the selected date (or a placeholder),
+ * with a floating calendar popup from the shared DatePicker component.
+ *
+ * @param {string}   placeholder  — label shown when no date is selected
+ * @param {string}   initialValue — initial ISO date (or '')
+ * @param {Function} onChange     — called with the new ISO date (or '') on change/clear
+ * @returns {HTMLElement}
+ */
+function _makeDatePickerField(placeholder, initialValue, onChange) {
+  let currentValue = initialValue || '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ft-date-popup';
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'ft-date-popup__trigger';
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'ft-date-popup__clear';
+  clearBtn.setAttribute('aria-label', `Clear ${placeholder} date`);
+  clearBtn.innerHTML = '<span class="material-symbols-outlined">close</span>';
+  clearBtn.hidden = true;
+
+  const popup = document.createElement('div');
+  popup.className = 'ft-date-popup__calendar';
+  popup.hidden = true;
+
+  function _fmt(iso) {
+    if (!iso) return null;
+    const [y, m, d] = iso.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d} ${months[parseInt(m, 10) - 1]} ${y}`;
+  }
+
+  function _refresh() {
+    const label = _fmt(currentValue);
+    if (label) {
+      trigger.textContent = label;
+      trigger.classList.remove('ft-date-popup__trigger--placeholder');
+      clearBtn.hidden = false;
+    } else {
+      trigger.textContent = placeholder;
+      trigger.classList.add('ft-date-popup__trigger--placeholder');
+      clearBtn.hidden = true;
+    }
+  }
+
+  _refresh();
+
+  const picker = DatePicker.createElement(
+    { value: currentValue },
+    {
+      onChange: isoDate => {
+        currentValue = isoDate;
+        _refresh();
+        popup.hidden = true;
+        onChange?.(currentValue);
+      },
+    }
+  );
+  popup.appendChild(picker);
+
+  trigger.addEventListener('click', e => {
+    e.stopPropagation();
+    /* Close any other open date popups first */
+    document.querySelectorAll('.ft-date-popup__calendar:not([hidden])').forEach(p => {
+      if (p !== popup) p.hidden = true;
+    });
+    popup.hidden = !popup.hidden;
+  });
+
+  clearBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    currentValue = '';
+    _refresh();
+    popup.hidden = true;
+    onChange?.('');
+  });
+
+  /* Close when clicking outside */
+  document.addEventListener('click', e => {
+    if (!wrapper.contains(e.target)) popup.hidden = true;
+  });
+
+  wrapper.appendChild(trigger);
+  wrapper.appendChild(clearBtn);
+  wrapper.appendChild(popup);
+  return wrapper;
+}
 
 /* ── Page Init ────────────────────────────────────────────── */
 
@@ -30,11 +127,7 @@ async function initMovementsPage(root = document) {
   /* DOM handles for toolbar controls */
   const accountSelect = toolbarEl?.querySelector('#movements-account-select');
   const typeToggle    = toolbarEl?.querySelector('#movements-type-toggle');
-  const dateFrom      = toolbarEl?.querySelector('#movements-date-from');
-  const dateTo        = toolbarEl?.querySelector('#movements-date-to');
-  const btnEdit       = toolbarEl?.querySelector('#btn-edit-movement');
-  const btnGroup      = toolbarEl?.querySelector('#btn-show-group');
-  const btnDelete     = toolbarEl?.querySelector('#btn-soft-delete');
+  const datePickers   = toolbarEl?.querySelector('#movements-date-pickers');
 
   const state = {
     accounts: [],
@@ -43,9 +136,10 @@ async function initMovementsPage(root = document) {
     movements: [],
     gridApi: null,
     codeFilter: null,
-    selectedRows: [],
     rates: {},
     typeFilter: '',
+    dateFrom: '',
+    dateTo: '',
   };
 
   /* ── Load AG Grid ─────────────────────────────────────────── */
@@ -83,6 +177,17 @@ async function initMovementsPage(root = document) {
       state.accounts.map(a =>
         `<option value="${a.id}">${a.account} (${normalizeCurrency(a.currency)})</option>`
       ).join('');
+  }
+
+  /* ── Mount date pickers ───────────────────────────────────── */
+
+  if (datePickers) {
+    datePickers.appendChild(_makeDatePickerField('From', '', v => { state.dateFrom = v; reloadGrid(); }));
+    const sep = document.createElement('span');
+    sep.className = 'ft-movements-toolbar__date-sep';
+    sep.textContent = '–';
+    datePickers.appendChild(sep);
+    datePickers.appendChild(_makeDatePickerField('To', '', v => { state.dateTo = v; reloadGrid(); }));
   }
 
   /* ── Mount Grid ───────────────────────────────────────────── */
@@ -143,8 +248,8 @@ async function initMovementsPage(root = document) {
       const params = { limit: DEFAULT_LIMIT };
       if (accountSelect?.value) params.account_id = Number(accountSelect.value);
       if (state.typeFilter) params.type = state.typeFilter;
-      if (dateFrom?.value) params.date_from = dateFrom.value;
-      if (dateTo?.value) params.date_to = dateTo.value;
+      if (state.dateFrom) params.date_from = state.dateFrom;
+      if (state.dateTo) params.date_to = state.dateTo;
       const fresh = await fetchMovements(params);
       refreshGridData(state, Array.isArray(fresh) ? fresh : []);
     } catch (e) {
