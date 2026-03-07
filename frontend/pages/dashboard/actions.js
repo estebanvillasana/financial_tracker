@@ -28,6 +28,26 @@ export function getCurrentMonthRange() {
 }
 
 /**
+ * Returns the ISO date boundaries (YYYY-MM-DD) for the previous calendar month.
+ *
+ * @returns {{ dateFrom: string, dateTo: string }}
+ */
+export function getPreviousMonthRange() {
+  const now = new Date();
+  const firstOfPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = firstOfPrev.getFullYear();
+  const month = firstOfPrev.getMonth(); // 0-indexed
+
+  const lastDay = new Date(year, month + 1, 0);
+
+  const pad = n => String(n).padStart(2, '0');
+  return {
+    dateFrom: `${year}-${pad(month + 1)}-01`,
+    dateTo: `${year}-${pad(month + 1)}-${pad(lastDay.getDate())}`,
+  };
+}
+
+/**
  * Fetches all data the dashboard needs in parallel.
  *
  * Returns a flat object whose keys map directly to widget inputs.
@@ -35,26 +55,30 @@ export function getCurrentMonthRange() {
  * so the dashboard can render partial data instead of failing entirely.
  *
  * @returns {Promise<{
- *   accounts:        Array,
- *   monthMovements:  Array,
- *   recentMovements: Array,
- *   rates:           object,  — FX rates keyed by ISO code, base USD
+ *   accounts:            Array,
+ *   monthMovements:      Array,   — current month (for monthly stats cards)
+ *   prevMonthMovements:  Array,   — previous month (for breakdown reports)
+ *   recentMovements:     Array,
+ *   rates:               object,  — FX rates keyed by ISO code, base USD
  * }>}
  */
 export async function fetchDashboardData() {
   const { dateFrom, dateTo } = getCurrentMonthRange();
+  const { dateFrom: prevFrom, dateTo: prevTo } = getPreviousMonthRange();
 
-  const [accts, monthMov, recentMov, fxData] = await Promise.all([
+  const [accts, monthMov, prevMov, recentMov, fxData] = await Promise.all([
     bankAccounts.getAll({ active: 1 }).catch(() => []),
     movements.getAll({ active: 1, date_from: dateFrom, date_to: dateTo }).catch(() => []),
+    movements.getAll({ active: 1, date_from: prevFrom, date_to: prevTo }).catch(() => []),
     movements.getAll({ active: 1, limit: 15 }).catch(() => []),
     fxRates.getAllRatesLatest().catch(() => null),
   ]);
 
   return {
-    accounts: Array.isArray(accts) ? accts : [],
-    monthMovements: Array.isArray(monthMov) ? monthMov : [],
-    recentMovements: Array.isArray(recentMov) ? recentMov : [],
-    rates: fxData?.rates ?? {},
+    accounts:           Array.isArray(accts)    ? accts    : [],
+    monthMovements:     Array.isArray(monthMov) ? monthMov : [],
+    prevMonthMovements: Array.isArray(prevMov)  ? prevMov  : [],
+    recentMovements:    Array.isArray(recentMov) ? recentMov : [],
+    rates:              fxData?.rates ?? {},
   };
 }
