@@ -1,0 +1,45 @@
+/* ============================================================
+   Movements Page — Page-Specific Styles
+   ============================================================
+   Shared renderers → styles/ag-grid-overrides.css  (ft-grid-*)
+   Edit form styles → components/dumb/movementForm/movementForm.css
+   Only grid host height and page-specific elements go here.
+   ============================================================ */
+
+/* ── Grid Host ──────────────────────────────────────────────── */
+
+.ft-movements-grid {
+  height: calc(100vh - 340px);
+  min-height: 280px;
+  width: 100%;
+}
+
+/* ── Code-Group Banner ──────────────────────────────────────── */
+
+.ft-movements-code-banner {
+  align-items: center;
+  background: var(--ft-color-accent-10);
+  border: 1px solid var(--ft-color-accent);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  font-size: 13px;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 8px 16px;
+}
+
+.ft-movements-code-banner__text {
+  flex: 1;
+}
+
+.ft-movements-code-banner__code {
+  color: var(--ft-color-accent);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+}
+
+/* ── Inactive Row Dim ───────────────────────────────────────── */
+
+.ft-movements-grid .ag-row.ft-row-inactive {
+  opacity: 0.45;
+}
