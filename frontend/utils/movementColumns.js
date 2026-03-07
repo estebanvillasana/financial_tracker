@@ -94,5 +94,13 @@ export function buildMovementColumnDefs(rates, targetCurrency) {
       flex: 1,
       minWidth: 100,
     },
+    {
+      headerName: 'Repetitive Movement',
+      field: 'repetitive_movement',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: p => p.value ?? '—',
+      cellStyle: p => p.value ? {} : { color: 'var(--ft-color-text-muted)' },
+    },
   ];
 }

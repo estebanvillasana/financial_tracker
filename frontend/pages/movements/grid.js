@@ -30,8 +30,13 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
-    isExternalFilterPresent: () => !!state.codeFilter,
-    doesExternalFilterPass: node => !state.codeFilter || node.data.movement_code === state.codeFilter,
+    isExternalFilterPresent: () => !!state.codeFilter || state.noRepetitiveFilter || state.hasRepetitiveFilter,
+    doesExternalFilterPass: node => {
+      if (state.codeFilter && node.data.movement_code !== state.codeFilter) return false;
+      if (state.noRepetitiveFilter && node.data.repetitive_movement_id != null) return false;
+      if (state.hasRepetitiveFilter && node.data.repetitive_movement_id == null) return false;
+      return true;
+    },
     getRowClass: params => params.data?.active === 0 ? 'ft-row-inactive' : '',
     overlayNoRowsTemplate:
       '<span class="ft-small ft-text-muted">No movements found</span>',
