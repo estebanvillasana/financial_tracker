@@ -181,12 +181,23 @@ function isTransfer(mov) {
  */
 export async function mountTopMovementsGrid(hostEl, monthMovements, type, rates, mainCurrency, limit = 10) {
   const isIncome = type === 'Income';
+  const mc = normalizeCurrency(mainCurrency);
+  const tgtRate = rates[mc] ?? 1;
+
+  // Pre-compute converted value so sorting works correctly across currencies
   const filtered = monthMovements
     .filter(m => {
       if (isTransfer(m)) return false;
       return isIncome ? m.type === 'Income' : m.type !== 'Income';
     })
-    .sort((a, b) => Math.abs(Number(b.value ?? 0)) - Math.abs(Number(a.value ?? 0)))
+    .map(m => {
+      const raw = Math.abs(Number(m.value ?? 0));
+      const src = normalizeCurrency(m.currency);
+      const srcRate = rates[src] ?? 1;
+      const converted = src === mc ? raw : Math.round(raw * tgtRate / srcRate);
+      return { ...m, value_converted: converted };
+    })
+    .sort((a, b) => b.value_converted - a.value_converted)
     .slice(0, limit);
 
   const columnDefs = [
@@ -211,9 +222,13 @@ export async function mountTopMovementsGrid(hostEl, monthMovements, type, rates,
       minWidth: 100,
     },
     {
-      headerName: `Amount (${normalizeCurrency(mainCurrency)})`,
-      field: 'value',
-      cellRenderer: convertedAmountRenderer('value', 'currency', rates, mainCurrency),
+      headerName: `Amount (${mc})`,
+      field: 'value_converted',
+      cellRenderer: params => {
+        const cents = params.value;
+        if (cents == null) return '';
+        return `<span class="ft-grid-amount ft-grid-amount--converted">${formatMoneyFromCents(cents, mc)}</span>`;
+      },
       width: 150,
       headerClass: 'ft-ag-header-right',
       cellStyle: { textAlign: 'right' },
