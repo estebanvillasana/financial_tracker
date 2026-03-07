@@ -4,9 +4,9 @@
  * Renders summary stats (InfoCard), category/subcategory breakdowns
  * (Breakdown component), and income vs expense comparison.
  *
- * Calculation approach matches the Dashboard (statsCards.js, breakdowns.js):
- * sums raw movement values (cents) without FX conversion. This keeps the
- * report totals consistent with the dashboard overview.
+ * All monetary totals are converted to the app's main currency using the
+ * latest FX rates before being summed, so multi-currency movements are
+ * correctly reflected in the overview figures.
  */
 
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
@@ -19,17 +19,37 @@ function isTransfer(mov) {
 }
 
 /**
+ * Converts a raw cent value from a movement's currency to the main currency.
+ * Uses the formula: converted = rawCents * (targetRate / sourceRate)
+ *
+ * @param {number} rawCents
+ * @param {string} srcCurrency — 3-letter currency code of the movement
+ * @param {string} mainCurrency — normalized 3-letter main currency code
+ * @param {object} rates — map of currency code → exchange rate (same base)
+ * @returns {number} converted cent value (rounded)
+ */
+function toMainCurrency(rawCents, srcCurrency, mainCurrency, rates) {
+  const src = normalizeCurrency(srcCurrency);
+  if (src === mainCurrency) return rawCents;
+  const srcRate = rates[src] ?? 1;
+  const tgtRate = rates[mainCurrency] ?? 1;
+  return Math.round(rawCents * tgtRate / srcRate);
+}
+
+/**
  * Renders the overview stats cards row.
  *
  * Internal transfers (MT* codes) are excluded so only real income/expenses
- * are reflected in the totals.
+ * are reflected in the totals. All values are converted to the main currency
+ * before summing so multi-currency movements are correctly aggregated.
  *
  * @param {HTMLElement} container — #widget-stats-row
  * @param {object} data
  * @param {Array}  data.monthMovements
  * @param {string} data.mainCurrency
+ * @param {object} data.rates — FX rates map (currency → rate)
  */
-export function renderStatsCards(container, { monthMovements, mainCurrency }) {
+export function renderStatsCards(container, { monthMovements, mainCurrency, rates = {} }) {
   if (!container) return;
   container.innerHTML = '';
 
@@ -42,11 +62,12 @@ export function renderStatsCards(container, { monthMovements, mainCurrency }) {
 
   for (const mov of monthMovements) {
     if (isTransfer(mov)) continue;
-    const abs = Math.abs(Number(mov.value ?? 0));
+    const rawCents = Math.abs(Number(mov.value ?? 0));
+    const converted = toMainCurrency(rawCents, mov.currency, mc, rates);
     if (mov.type === 'Income') {
-      totalIncome += abs;
+      totalIncome += converted;
     } else {
-      totalExpenses += abs;
+      totalExpenses += converted;
     }
     movementCount++;
     if (mov.category) categorySet.add(mov.category);
@@ -110,7 +131,7 @@ export function renderLoadingStats(container) {
  * @param {HTMLElement} container — #breakdown-categories-content
  * @param {object} data
  */
-export function renderCategoryBreakdown(container, { monthMovements, mainCurrency }) {
+export function renderCategoryBreakdown(container, { monthMovements, mainCurrency, rates = {} }) {
   if (!container) return;
 
   const mc = normalizeCurrency(mainCurrency);
@@ -119,7 +140,8 @@ export function renderCategoryBreakdown(container, { monthMovements, mainCurrenc
   for (const mov of monthMovements) {
     if (mov.type === 'Income' || isTransfer(mov)) continue;
     const key = mov.category || 'Uncategorized';
-    grouped[key] = (grouped[key] ?? 0) + Math.abs(Number(mov.value ?? 0));
+    const rawCents = Math.abs(Number(mov.value ?? 0));
+    grouped[key] = (grouped[key] ?? 0) + toMainCurrency(rawCents, mov.currency, mc, rates);
   }
 
   const items = Object.entries(grouped).map(([name, value]) => ({ name, value }));
@@ -145,7 +167,7 @@ export function renderCategoryBreakdown(container, { monthMovements, mainCurrenc
  * @param {HTMLElement} container — #breakdown-subcategories-content
  * @param {object} data
  */
-export function renderSubCategoryBreakdown(container, { monthMovements, mainCurrency }) {
+export function renderSubCategoryBreakdown(container, { monthMovements, mainCurrency, rates = {} }) {
   if (!container) return;
 
   const mc = normalizeCurrency(mainCurrency);
@@ -154,7 +176,8 @@ export function renderSubCategoryBreakdown(container, { monthMovements, mainCurr
   for (const mov of monthMovements) {
     if (mov.type === 'Income' || isTransfer(mov)) continue;
     const key = mov.sub_category || mov.category || 'Uncategorized';
-    grouped[key] = (grouped[key] ?? 0) + Math.abs(Number(mov.value ?? 0));
+    const rawCents = Math.abs(Number(mov.value ?? 0));
+    grouped[key] = (grouped[key] ?? 0) + toMainCurrency(rawCents, mov.currency, mc, rates);
   }
 
   const items = Object.entries(grouped).map(([name, value]) => ({ name, value }));
@@ -180,7 +203,7 @@ export function renderSubCategoryBreakdown(container, { monthMovements, mainCurr
  * @param {HTMLElement} container — #breakdown-income-expense-content
  * @param {object} data
  */
-export function renderIncomeVsExpenses(container, { monthMovements, mainCurrency }) {
+export function renderIncomeVsExpenses(container, { monthMovements, mainCurrency, rates = {} }) {
   if (!container) return;
 
   const mc = normalizeCurrency(mainCurrency);
@@ -189,11 +212,12 @@ export function renderIncomeVsExpenses(container, { monthMovements, mainCurrency
 
   for (const mov of monthMovements) {
     if (isTransfer(mov)) continue;
-    const abs = Math.abs(Number(mov.value ?? 0));
+    const rawCents = Math.abs(Number(mov.value ?? 0));
+    const converted = toMainCurrency(rawCents, mov.currency, mc, rates);
     if (mov.type === 'Income') {
-      income += abs;
+      income += converted;
     } else {
-      expenses += abs;
+      expenses += converted;
     }
   }
 

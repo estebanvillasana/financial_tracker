@@ -127,6 +127,7 @@ async function initMonthlyReportPage(root = document) {
     const renderData = {
       monthMovements: data.monthMovements,
       mainCurrency,
+      rates: data.rates,
     };
 
     // Update subtitle
