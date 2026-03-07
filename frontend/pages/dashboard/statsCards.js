@@ -120,16 +120,6 @@ export async function renderStatsCards(container, { accounts, monthMovements, ma
       },
       options: { variant: netFlowCents >= 0 ? 'success' : 'danger' },
     },
-    {
-      data: {
-        icon: 'credit_card',
-        label: 'Active Accounts',
-        value: String(accounts.length),
-        subValue: _summariseCurrencies(accounts),
-        note: 'Tracked in this app',
-      },
-      options: { variant: 'default' },
-    },
   ];
 
   // ── 4. Render ────────────────────────────────────────────────────────────

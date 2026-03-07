@@ -3,6 +3,7 @@
 log/
 .vscode/
 .ignore/
+TODO.md
 
 # Backend
 backend/data/app.db

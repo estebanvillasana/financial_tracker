@@ -74,12 +74,12 @@ Personal finance tracker with multi-account support, currency conversion, and in
 #TODO
 
 #### Smart
-- [ ] Accounts Summary: Displays all the active bank accounts with a pagination
-- [ ] Table to add movements: Based on AG Grids
+- [x] Accounts Summary: Displays all the active bank accounts with a pagination
+- [x] Table to add movements: Based on AG Grids
 #TODO
 
 #### Modals
-- [ ] Bank account
+- [x] Bank account
 
 
 ## Phase 3 — CLI Application
