@@ -6,14 +6,8 @@ import {
   dateCellRenderer,
   moneyCentsCellRenderer,
   accountCellRenderer,
-  actionsCellRenderer,
 } from '../../utils/gridRenderers.js';
 import { buildGridOptions } from '../../utils/gridHelper.js';
-
-const TRANSFER_ACTIONS = [
-  { id: 'edit', icon: 'edit', title: 'Edit' },
-  { id: 'delete', icon: 'delete', title: 'Delete', variant: 'danger' },
-];
 
 /* ── Column Definitions ───────────────────────────────────── */
 
@@ -73,15 +67,6 @@ function buildColumnDefs() {
       minWidth: 100,
       cellStyle: { color: 'var(--ft-color-text-muted)' },
     },
-    {
-      headerName: '',
-      width: 76,
-      maxWidth: 76,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      cellRenderer: actionsCellRenderer(TRANSFER_ACTIONS),
-    },
   ];
 }
 
@@ -92,14 +77,45 @@ export function mountGrid(hostEl, state, { onEdit, onDelete }) {
     columnDefs: buildColumnDefs(),
     rowData: state.transfers,
     getRowId: p => p.data.movement_code,
+    cellSelection: true,
+    suppressCellFocus: false,
     overlayNoRowsTemplate:
       '<span class="ft-small ft-text-muted">No transfers found</span>',
-    onCellClicked: params => {
-      const btn = params.event?.target?.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.dataset.action;
-      if (action === 'edit') onEdit(params.data);
-      if (action === 'delete') onDelete(params.data);
+    getContextMenuItems: params => {
+      const row = params.node?.data;
+      if (!row) return [];
+
+      const selected = getRangeSelectedRows(params.api);
+      const hasMultiSelection = selected.length > 1;
+      const items = [];
+
+      if (hasMultiSelection) {
+        items.push({
+          name: `Delete ${selected.length} selected`,
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">delete</span>',
+          action: () => onDelete?.(selected),
+        });
+        items.push('separator');
+      }
+
+      items.push({
+        name: 'Edit',
+        icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">edit</span>',
+        action: () => onEdit?.(row),
+      });
+      items.push({
+        name: 'Delete',
+        icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">delete</span>',
+        action: () => onDelete?.(row),
+      });
+
+      return items;
+    },
+    onCellKeyDown: params => {
+      if (params.event.key !== 'Escape') return;
+      if (typeof params.api.clearCellSelection === 'function') params.api.clearCellSelection();
+      else if (typeof params.api.clearRangeSelection === 'function') params.api.clearRangeSelection();
+      params.api.clearFocusedCell();
     },
   });
 
@@ -109,4 +125,25 @@ export function mountGrid(hostEl, state, { onEdit, onDelete }) {
 export function refreshGridData(state, transfers) {
   state.transfers = transfers;
   state.gridApi?.setGridOption('rowData', transfers);
+}
+
+function getRangeSelectedRows(api) {
+  if (!api || typeof api.getCellRanges !== 'function') return [];
+  const ranges = api.getCellRanges() || [];
+  if (!ranges.length) return [];
+
+  const selected = new Map();
+  ranges.forEach(range => {
+    const start = range.startRow?.rowIndex;
+    const end = range.endRow?.rowIndex;
+    if (start == null || end == null) return;
+    const lo = Math.min(start, end);
+    const hi = Math.max(start, end);
+    for (let i = lo; i <= hi; i += 1) {
+      const node = api.getDisplayedRowAtIndex(i);
+      if (node?.data) selected.set(node.id ?? String(i), node.data);
+    }
+  });
+
+  return Array.from(selected.values());
 }

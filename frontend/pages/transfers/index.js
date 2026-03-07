@@ -7,6 +7,7 @@ import { bankAccounts } from '../../services/api.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { TransferForm } from '../../components/dumb/transferForm/transferForm.js';
+import { TransferModal } from '../../components/modals/transferModal/transferModal.js';
 import { mountGrid, refreshGridData } from './grid.js';
 import { createTransfer, updateTransfer, softDeleteTransfer, fetchTransfers } from './actions.js';
 
@@ -21,7 +22,6 @@ async function initTransfersPage(root = document) {
     accounts: [],
     transfers: [],
     gridApi: null,
-    editingCode: null,
   };
 
   /* ── Load AG Grid + data ─────────────────────────────────── */
@@ -89,24 +89,36 @@ async function initTransfersPage(root = document) {
   }
 
   function handleEdit(transfer) {
-    state.editingCode = transfer.movement_code;
-    TransferForm.populate(formEl, transfer);
-    TransferForm.updateCurrencyLabels(formEl, accounts);
-    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    TransferModal.open(transfer, accounts, {
+      onSave: async (movementCode, payload) => {
+        await updateTransfer(movementCode, payload);
+        TransferModal.close();
+        FeedbackBanner.render(feedbackEl, 'Transfer updated.', 'success');
+        await reloadGrid();
+        setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
+      },
+      onClose: () => FeedbackBanner.clear(feedbackEl),
+    });
   }
 
-  function handleDelete(transfer) {
+  function handleDelete(rowOrRows) {
+    const rows = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
+    const codes = rows.map(r => r?.movement_code).filter(Boolean);
+    if (!codes.length) {
+      FeedbackBanner.render(feedbackEl, 'No transfers selected.');
+      return;
+    }
     FeedbackBanner.renderWithActions(
       feedbackEl,
-      `Delete transfer <b>${transfer.send_account_name}</b> \u2192 <b>${transfer.receive_account_name}</b> on ${transfer.date}?`,
+      `Delete <b>${codes.length}</b> transfer${codes.length !== 1 ? 's' : ''}?`,
       [
         {
           label: 'Delete',
           className: 'ft-feedback-banner__btn--danger',
           onClick: async () => {
             try {
-              await softDeleteTransfer(transfer.movement_code);
-              FeedbackBanner.render(feedbackEl, 'Transfer deleted.', 'success');
+              await Promise.all(codes.map(code => softDeleteTransfer(code)));
+              FeedbackBanner.render(feedbackEl, `${codes.length} transfer(s) deleted.`, 'success');
               await reloadGrid();
               setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
             } catch (e) {
@@ -129,14 +141,8 @@ async function initTransfersPage(root = document) {
     }
 
     try {
-      if (state.editingCode) {
-        await updateTransfer(state.editingCode, payload);
-        FeedbackBanner.render(feedbackEl, 'Transfer updated.', 'success');
-      } else {
-        await createTransfer(payload);
-        FeedbackBanner.render(feedbackEl, 'Transfer created.', 'success');
-      }
-      state.editingCode = null;
+      await createTransfer(payload);
+      FeedbackBanner.render(feedbackEl, 'Transfer created.', 'success');
       TransferForm.reset(formEl);
       TransferForm.updateCurrencyLabels(formEl, accounts);
       await reloadGrid();
@@ -147,7 +153,6 @@ async function initTransfersPage(root = document) {
   }
 
   function handleCancel() {
-    state.editingCode = null;
     TransferForm.reset(formEl);
     TransferForm.updateCurrencyLabels(formEl, accounts);
     FeedbackBanner.clear(feedbackEl);
