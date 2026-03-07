@@ -2,10 +2,11 @@
  * Dashboard page bootstrap.
  *
  * Widget layout (top -> bottom):
- *  Row 1 - Stats Cards:       5 InfoCards (balance, income, expenses, flow, accounts)
- *  Row 2 - Accounts Summary:  paginated account cards smart component
- *  Row 3 - Breakdowns:        3 side-by-side bars (category spend, account balances, monthly flow)
- *  Row 4 - Recent Movements:  full-width AG Grid matching the Movements page columns
+ *  Row 1 - Stats:              3 primary InfoCards (balance, savings, debts)
+ *                              3 secondary InfoCards (income, expenses, net flow)
+ *  Row 2 - Accounts Summary:   paginated account cards smart component
+ *  Row 3 - Last Month's Report: 3 breakdown cards (category spend, biggest expenses, account balances)
+ *  Row 4 - Recent Movements:   full-width AG Grid matching the Movements page columns
  */
 
 import { finalAppConfig } from '../../defaults.js';
@@ -19,14 +20,15 @@ import { mountRecentMovements } from './recentMovements.js';
 import { renderBreakdowns } from './breakdowns.js';
 
 const SEL = {
-  stats:               '#dashboard-stats',
-  accountsSummary:     '#widget-accounts-summary',
-  breakdownCategories: '#dashboard-breakdown-categories',
-  breakdownAccounts:   '#dashboard-breakdown-accounts',
-  breakdownFlow:       '#dashboard-breakdown-flow',
-  breakdownPeriod:     '#dashboard-breakdown-period',
-  breakdownFlowPeriod: '#dashboard-breakdown-flow-period',
-  movements:           '#dashboard-movements',
+  statsPrimary:              '#dashboard-stats-primary',
+  statsSecondary:            '#dashboard-stats-secondary',
+  statsSecondaryPeriod:      '#dashboard-stats-secondary-period',
+  accountsSummary:           '#widget-accounts-summary',
+  breakdownCategories:       '#dashboard-breakdown-categories',
+  breakdownExpenses:         '#dashboard-breakdown-expenses',
+  breakdownAccounts:         '#dashboard-breakdown-accounts',
+  breakdownPeriod:           '#dashboard-breakdown-period',
+  movements:                 '#dashboard-movements',
 };
 
 async function initDashboardPage(root = document) {
@@ -37,28 +39,37 @@ async function initDashboardPage(root = document) {
 
   const mainCurrency = normalizeCurrency(finalAppConfig.currency);
 
-  renderLoadingStats(els.stats);
+  renderLoadingStats(els.statsPrimary, els.statsSecondary);
 
   let data;
   try {
     data = await fetchDashboardData();
   } catch {
-    _renderFatalError(els.stats);
+    _renderFatalError(els.statsPrimary);
     return;
   }
 
-  const { accounts, monthMovements, recentMovements, rates } = data;
+  const { accounts, monthMovements, prevMonthMovements, recentMovements, rates } = data;
+
+  // Compute once and stamp both period labels (breakdowns + secondary stats)
+  const prevMonthLabel = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  })();
+  if (els.breakdownPeriod)      els.breakdownPeriod.textContent      = prevMonthLabel;
+  if (els.statsSecondaryPeriod) els.statsSecondaryPeriod.textContent = prevMonthLabel;
 
   // Row 1: stats cards (async FX conversion)
-  const statsPromise = renderStatsCards(els.stats, {
+  const statsPromise = renderStatsCards(els.statsPrimary, els.statsSecondary, {
     accounts,
-    monthMovements,
+    prevMonthMovements,
     mainCurrency,
-  }).catch(() => _renderFatalError(els.stats));
+  }).catch(() => _renderFatalError(els.statsPrimary));
 
   // Row 2: accounts summary (self-contained, kicks off its own fetch)
   const summaryPromise = AccountsSummary.render(els.accountsSummary, {
-    pageSize: 6,
+    pageSize: 12,
     columns: 3,
     defaultCurrency: mainCurrency,
     title: 'Accounts Summary',
@@ -67,13 +78,11 @@ async function initDashboardPage(root = document) {
   // Row 3: breakdowns (synchronous, runs immediately with pre-fetched data)
   renderBreakdowns(
     {
-      categories:  els.breakdownCategories,
-      accounts:    els.breakdownAccounts,
-      flow:        els.breakdownFlow,
-      period:      els.breakdownPeriod,
-      flowPeriod:  els.breakdownFlowPeriod,
+      categories: els.breakdownCategories,
+      expenses:   els.breakdownExpenses,
+      accounts:   els.breakdownAccounts,
     },
-    { monthMovements, accounts, rates, mainCurrency }
+    { prevMonthMovements, accounts, rates, mainCurrency }
   );
 
   // Row 4: recent movements grid (async, lazy-loads AG Grid)
