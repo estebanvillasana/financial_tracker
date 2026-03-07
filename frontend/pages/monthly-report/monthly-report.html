@@ -1,0 +1,71 @@
+<!-- monthly-report.html — Monthly Report page template -->
+
+<div class="ft-page ft-monthly-report">
+  <!-- Header -->
+  <div class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h1">Monthly Report</h1>
+        <p class="ft-small ft-text-muted" id="report-subtitle">Loading report…</p>
+      </div>
+      <div class="ft-monthly-report__toolbar">
+        <input
+          type="month"
+          id="report-month-picker"
+          class="ft-monthly-report__month-input"
+          aria-label="Report month"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Feedback -->
+  <div id="widget-report-feedback"></div>
+
+  <!-- Summary Stats -->
+  <section class="ft-section" id="section-stats">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Overview</h2>
+    </div>
+    <div class="ft-stats-row" id="widget-stats-row"></div>
+  </section>
+
+  <!-- Breakdowns (Category + Subcategory + Income vs Expenses) -->
+  <section class="ft-section" id="section-breakdowns">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Spending Breakdown</h2>
+    </div>
+    <div class="ft-monthly-report__breakdowns">
+      <div class="ft-card" id="widget-breakdown-categories">
+        <h3 class="ft-monthly-report__card-title">By Category</h3>
+        <div id="breakdown-categories-content"></div>
+      </div>
+      <div class="ft-card" id="widget-breakdown-subcategories">
+        <h3 class="ft-monthly-report__card-title">By Sub-category</h3>
+        <div id="breakdown-subcategories-content"></div>
+      </div>
+      <div class="ft-card" id="widget-breakdown-income-expense">
+        <h3 class="ft-monthly-report__card-title">Income vs Expenses</h3>
+        <div id="breakdown-income-expense-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accountant Summary Table (taxable repetitive movements with totals) -->
+  <section class="ft-section" id="section-accountant">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Accountant Summary</h2>
+      <span class="ft-small ft-text-muted" id="accountant-subtitle">Taxable movements — share with your accountant</span>
+    </div>
+    <div class="ft-monthly-report__accountant-grid ft-ag-grid" id="widget-accountant-grid"></div>
+  </section>
+
+  <!-- Tax Invoice Tracker Grid -->
+  <section class="ft-section" id="section-invoice-tracker">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Invoice Tracker</h2>
+      <span class="ft-small ft-text-muted" id="invoice-tracker-subtitle">Movements linked to taxable items — checkmark invoices received</span>
+    </div>
+    <div class="ft-monthly-report__invoice-grid ft-ag-grid" id="widget-invoice-grid"></div>
+  </section>
+</div>
