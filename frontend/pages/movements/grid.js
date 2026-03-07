@@ -2,84 +2,8 @@
  * Movements grid — AG Grid with checkbox selection, converted amount column,
  * and external code-filter support. No inline actions (handled by toolbar).
  */
-import {
-  dateCellRenderer,
-  moneyCentsCellRenderer,
-  accountCellRenderer,
-  typeBadgeRenderer,
-  convertedAmountRenderer,
-  styledCategoryCellRenderer,
-  styledSubCategoryCellRenderer,
-} from '../../utils/gridRenderers.js';
 import { buildGridOptions } from '../../utils/gridHelper.js';
-
-/* ── Column Definitions ───────────────────────────────────── */
-
-/**
- * @param {object}  rates          — FX rates keyed by currency code
- * @param {string}  targetCurrency — app main currency (e.g. 'USD')
- */
-function buildColumnDefs(rates, targetCurrency) {
-  return [
-    {
-      headerName: 'Date',
-      field: 'date',
-      width: 115,
-      sort: 'desc',
-      cellRenderer: dateCellRenderer,
-    },
-    {
-      headerName: 'Movement',
-      field: 'movement',
-      flex: 2,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Account',
-      field: 'account',
-      flex: 1,
-      minWidth: 120,
-      cellRenderer: accountCellRenderer('account', 'currency'),
-    },
-    {
-      headerName: 'Type',
-      field: 'type',
-      width: 85,
-      cellRenderer: typeBadgeRenderer,
-    },
-    {
-      headerName: 'Amount',
-      field: 'value',
-      width: 150,
-      headerClass: 'ft-ag-header-right',
-      cellRenderer: moneyCentsCellRenderer('value', 'currency'),
-      cellStyle: { textAlign: 'right' },
-    },
-    {
-      headerName: 'Converted',
-      field: 'value',
-      colId: 'converted',
-      width: 150,
-      headerClass: 'ft-ag-header-right',
-      cellRenderer: convertedAmountRenderer('value', 'currency', rates, targetCurrency),
-      cellStyle: { textAlign: 'right' },
-    },
-    {
-      headerName: 'Category',
-      field: 'category',
-      cellRenderer: styledCategoryCellRenderer,
-      flex: 1,
-      minWidth: 100,
-    },
-    {
-      headerName: 'Sub-category',
-      field: 'sub_category',
-      cellRenderer: styledSubCategoryCellRenderer,
-      flex: 1,
-      minWidth: 100,
-    },
-  ];
-}
+import { buildMovementColumnDefs } from '../../utils/movementColumns.js';
 
 /* ── Mount ────────────────────────────────────────────────── */
 
@@ -97,7 +21,7 @@ function buildColumnDefs(rates, targetCurrency) {
  */
 export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDelete, onShowGroup }) {
   const gridOptions = buildGridOptions({
-    columnDefs: buildColumnDefs(rates, targetCurrency),
+    columnDefs: buildMovementColumnDefs(rates, targetCurrency),
     rowData: state.movements,
     getRowId: p => String(p.data.id),
     suppressCellFocus: true,
