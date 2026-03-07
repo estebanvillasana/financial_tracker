@@ -1,17 +1,15 @@
 /**
  * Dashboard breakdowns widget.
  *
- * Renders three side-by-side Breakdown cards:
+ * Renders three side-by-side Breakdown cards using the previous month's data:
  *
- *  1. Spending by Category — this month's expenses grouped by category name
- *  2. Balance by Account   — savings accounts ranked by converted balance
- *  3. Monthly Flow         — income vs expenses as a two-item comparison
+ *  1. Spending by Category — previous month's expenses grouped by category
+ *  2. Biggest Expenses     — previous month's top individual expense transactions
+ *  3. Account Balances     — non-savings accounts ranked by absolute balance,
+ *                            green bars for positive, red bars for negative
  *
- * All three use the reusable Breakdown dumb component so the
- * rendering logic is centralised. This module is responsible for:
- *   - Transforming raw API data into the { items, total } shape
- *   - Performing synchronous FX conversion using the pre-fetched rates object
- *   - Delegating all DOM rendering to Breakdown
+ * All three use the reusable Breakdown dumb component. This module transforms
+ * raw API data into the { items, total } shape and delegates DOM rendering.
  */
 
 import { Breakdown } from '../../components/dumb/breakdown/breakdown.js';
@@ -21,40 +19,32 @@ import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.
  * Renders all three breakdown cards.
  *
  * @param {object} containers
- * @param {HTMLElement} containers.categories  — #dashboard-breakdown-categories
- * @param {HTMLElement} containers.accounts    — #dashboard-breakdown-accounts
- * @param {HTMLElement} containers.flow        — #dashboard-breakdown-flow
- * @param {HTMLElement} containers.period      — #dashboard-breakdown-period (label)
- * @param {HTMLElement} containers.flowPeriod  — #dashboard-breakdown-flow-period (label)
+ * @param {HTMLElement} containers.categories — #dashboard-breakdown-categories
+ * @param {HTMLElement} containers.expenses   — #dashboard-breakdown-expenses
+ * @param {HTMLElement} containers.accounts   — #dashboard-breakdown-accounts
  * @param {object}      data
- * @param {Array}       data.monthMovements — current month's movements
- * @param {Array}       data.accounts       — active bank accounts
- * @param {object}      data.rates          — FX rates { MXN: 17.5, USD: 1, ... }
- * @param {string}      data.mainCurrency   — user's main currency code
+ * @param {Array}       data.prevMonthMovements — previous month's movements
+ * @param {Array}       data.accounts           — active bank accounts
+ * @param {object}      data.rates              — FX rates { MXN: 17.5, USD: 1, ... }
+ * @param {string}      data.mainCurrency       — user's main currency code
  */
-export function renderBreakdowns(containers, { monthMovements, accounts, rates, mainCurrency }) {
-  const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-  if (containers.period)     containers.period.textContent = monthLabel;
-  if (containers.flowPeriod) containers.flowPeriod.textContent = monthLabel;
-
-  _renderBreakdown(containers.categories, { monthMovements, mainCurrency });
+export function renderBreakdowns(containers, { prevMonthMovements, accounts, rates, mainCurrency }) {
+  _renderCategoryBreakdown(containers.categories, { prevMonthMovements, mainCurrency });
+  _renderBiggestExpenses(containers.expenses, { prevMonthMovements, mainCurrency });
   _renderAccountBreakdown(containers.accounts, { accounts, rates, mainCurrency });
-  _renderFlowBreakdown(containers.flow, { monthMovements, mainCurrency });
 }
 
 // ── Private renderers ───────────────────────────────────────────────────────
 
 /**
- * Spending by Category — groups expense movements by category name.
+ * Spending by Category — groups the previous month's expenses by category.
  */
-function _renderBreakdown(container, { monthMovements, mainCurrency }) {
+function _renderCategoryBreakdown(container, { prevMonthMovements, mainCurrency }) {
   if (!container) return;
 
-  const expenses = monthMovements.filter(m => m.type !== 'Income');
-
   const grouped = {};
-  for (const mov of expenses) {
+  for (const mov of prevMonthMovements) {
+    if (mov.type === 'Income') continue;
     const key = mov.category || 'Uncategorized';
     grouped[key] = (grouped[key] ?? 0) + Math.abs(Number(mov.value ?? 0));
   }
@@ -70,31 +60,62 @@ function _renderBreakdown(container, { monthMovements, mainCurrency }) {
     },
   }, {
     formatValue: c => formatMoneyFromCents(c, mainCurrency),
-    emptyIcon: 'donut_small',
-    emptyMessage: 'No expenses this month.',
+    emptyIcon:    'donut_small',
+    emptyMessage: 'No expenses last month.',
   });
 }
 
 /**
- * Balance by Account — shows savings accounts (positive balance) ranked by
- * converted balance. Uses a synchronous FX approximation with the rates object.
- * Debt accounts are excluded since they would invert the bar proportions.
+ * Biggest Expenses — the previous month's top individual expense transactions
+ * sorted by amount descending, all bars shown in danger (red) tones.
+ */
+function _renderBiggestExpenses(container, { prevMonthMovements, mainCurrency }) {
+  if (!container) return;
+
+  const items = prevMonthMovements
+    .filter(m => m.type !== 'Income')
+    .map(m => ({
+      name:  m.movement || m.description || 'Unknown',
+      value: Math.abs(Number(m.value ?? 0)),
+    }))
+    .filter(i => i.value > 0);
+
+  const totalCents = items.reduce((s, i) => s + i.value, 0);
+
+  _mount(container, {
+    items,
+    total: {
+      label: 'Total Expenses',
+      value: formatMoneyFromCents(totalCents, mainCurrency),
+    },
+  }, {
+    maxItems:     7,
+    formatValue:  c => formatMoneyFromCents(c, mainCurrency),
+    barColors:    ['var(--ft-color-danger)'],
+    emptyIcon:    'receipt_long',
+    emptyMessage: 'No expenses last month.',
+  });
+}
+
+/**
+ * Account Balances — all non-savings accounts ranked by absolute balance.
+ * Positive balances get a green bar, negative balances a red bar.
+ * Uses the synchronous FX approximation with the pre-fetched rates object.
  */
 function _renderAccountBreakdown(container, { accounts, rates, mainCurrency }) {
   if (!container) return;
 
-  const tgt = normalizeCurrency(mainCurrency);
+  const tgt     = normalizeCurrency(mainCurrency);
   const tgtRate = rates[tgt] ?? 1;
 
-  // Convert each account balance to main currency synchronously
+  const nonSavings = accounts.filter(a => a.type !== 'Savings');
+
   const items = [];
-  for (const acct of accounts) {
+  for (const acct of nonSavings) {
     const rawCents = Number(acct.total_balance ?? 0);
-    if (rawCents <= 0) continue; // skip debts and zero-balance accounts
+    const src      = normalizeCurrency(acct.currency);
 
-    const src = normalizeCurrency(acct.currency);
     let convertedCents;
-
     if (src === tgt || !rates[src]) {
       convertedCents = rawCents;
     } else {
@@ -102,81 +123,40 @@ function _renderAccountBreakdown(container, { accounts, rates, mainCurrency }) {
     }
 
     items.push({
-      name: acct.account,
-      value: convertedCents,
-      // Keep the original currency for per-item display
-      _src: src,
-      _rawCents: rawCents,
+      name:       acct.account,
+      value:      Math.abs(convertedCents),    // positive value drives bar width
+      _realCents: convertedCents,              // signed, used in formatValue + total
+      _color:     convertedCents >= 0
+        ? 'var(--ft-color-success)'
+        : 'var(--ft-color-danger)',
+      _src:       src,
+      _rawCents:  rawCents,
     });
   }
 
-  const totalCents = items.reduce((s, i) => s + i.value, 0);
+  const netCents = items.reduce((s, i) => s + i._realCents, 0);
 
   _mount(container, {
     items,
     total: {
-      label: `Total Savings (${tgt})`,
-      value: formatMoneyFromCents(totalCents, mainCurrency),
+      label: `Net Balance (${tgt})`,
+      value: formatMoneyFromCents(netCents, mainCurrency),
     },
   }, {
-    // Display each account's balance in its own currency for accuracy
-    formatValue: (convertedCents, item) => {
+    formatValue: (_absValue, item) => {
+      // Show native currency for foreign accounts, main currency otherwise
       if (item?._src && item._src !== tgt) {
         return formatMoneyFromCents(item._rawCents, item._src);
       }
-      return formatMoneyFromCents(convertedCents, tgt);
+      return formatMoneyFromCents(item?._realCents ?? 0, tgt);
     },
-    emptyIcon: 'account_balance_wallet',
-    emptyMessage: 'No savings accounts found.',
-  });
-}
-
-/**
- * Monthly Flow — income vs expenses as a two-item bar comparison.
- * The bar proportions show income relative to expenses.
- */
-function _renderFlowBreakdown(container, { monthMovements, mainCurrency }) {
-  if (!container) return;
-
-  let incomeCents = 0;
-  let expenseCents = 0;
-
-  for (const mov of monthMovements) {
-    const abs = Math.abs(Number(mov.value ?? 0));
-    if (mov.type === 'Income') incomeCents += abs;
-    else expenseCents += abs;
-  }
-
-  const netCents = incomeCents - expenseCents;
-  const netLabel = netCents >= 0 ? 'Surplus' : 'Deficit';
-
-  _mount(container, {
-    items: [
-      { name: 'Income', value: incomeCents },
-      { name: 'Expenses', value: expenseCents },
-    ],
-    total: {
-      label: netLabel,
-      value: formatMoneyFromCents(Math.abs(netCents), mainCurrency),
-    },
-  }, {
-    formatValue: c => formatMoneyFromCents(c, mainCurrency),
-    // Income = green, Expenses = red
-    barColors: ['var(--ft-color-success)', 'var(--ft-color-danger)'],
-    emptyIcon: 'swap_vert',
-    emptyMessage: 'No movements this month.',
+    emptyIcon:    'account_balance_wallet',
+    emptyMessage: 'No non-savings accounts found.',
   });
 }
 
 // ── Shared mount helper ─────────────────────────────────────────────────────
 
-/**
- * Mounts a Breakdown element into a container.
- *
- * Breakdown now calls formatValue(value, item) passing the full item
- * object as a second argument. Callers that only need the value can ignore it;
- * callers like _renderAccountBreakdown use it for per-item currency display.
- */
 function _mount(container, data, options) {
   if (!container) return;
   container.innerHTML = '';
