@@ -106,11 +106,33 @@
 /* Shared feedback styles now live in                          */
 /* components/dumb/feedbackBanner/feedbackBanner.css            */
 
+/* ── Page Fill Layout ─────────────────────────────────────── */
+/* Makes the page occupy exactly the content area height so    */
+/* the grid fills the screen without the page scrolling.       */
+
+.ft-add-movements-page {
+  height: 100%;
+  min-height: unset;
+}
+
+/* Grid section grows to fill remaining height after the       */
+/* header, toolbar, and balance cards are laid out.            */
+.ft-add-movements-grid-section {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Table-wrapper grows within the section (feedback + hints    */
+/* still stack above/below at their natural heights).          */
+.ft-add-movements-grid-section > #widget-add-movements-grid {
+  flex: 1;
+  min-height: 0;
+}
+
 /* ── AG Grid Host ─────────────────────────────────────────── */
 
 .ft-add-movements-grid {
-  height: calc(100vh - 420px);
-  min-height: 280px;
+  height: 100%;
   width: 100%;
 }
 
