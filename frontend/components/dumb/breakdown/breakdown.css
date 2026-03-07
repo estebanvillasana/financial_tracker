@@ -1,0 +1,127 @@
+/* ── CategoryBreakdown Dumb Component ────────────────── */
+
+.ft-cat-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+}
+
+/* ── Individual category row ─────────────────────────── */
+
+.ft-cat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-cat-item__header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ft-cat-item__name {
+  color: var(--ft-color-text);
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-cat-item__amount {
+  color: var(--ft-color-text-muted);
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin-left: var(--ft-spacing);
+}
+
+/* ── Bar track + fill ────────────────────────────────── */
+
+.ft-cat-item__bar-track {
+  background: var(--ft-color-elevated);
+  border-radius: 3px;
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ft-cat-item__bar-fill {
+  border-radius: 3px;
+  height: 100%;
+  min-width: 3px;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 0;
+}
+
+/* ── "Others" row — muted styling ────────────────────── */
+
+.ft-cat-item--others .ft-cat-item__name {
+  color: var(--ft-color-text-muted);
+  font-style: italic;
+}
+
+/* ── Total footer ────────────────────────────────────── */
+
+.ft-cat-total {
+  align-items: baseline;
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-cat-total__label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ft-cat-total__value {
+  color: var(--ft-color-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ── Loading skeleton ────────────────────────────────── */
+
+@keyframes ft-cat-shimmer {
+  0%   { opacity: 0.3; }
+  50%  { opacity: 0.6; }
+  100% { opacity: 0.3; }
+}
+
+.ft-cat-breakdown--loading .ft-cat-breakdown__skeleton {
+  animation: ft-cat-shimmer 1.4s ease-in-out infinite;
+  background: var(--ft-color-elevated);
+  border-radius: 3px;
+}
+
+.ft-cat-breakdown__skeleton--name {
+  height: 13px;
+  width: 45%;
+}
+
+.ft-cat-breakdown__skeleton--amount {
+  height: 12px;
+  width: 70px;
+}
+
+.ft-cat-breakdown--loading .ft-cat-breakdown__skeleton--bar {
+  animation: ft-cat-shimmer 1.4s ease-in-out infinite;
+  background: var(--ft-color-elevated);
+}
+
+/* ── Empty state (inherits from layout.css .ft-empty) ── */
+
+.ft-cat-breakdown--empty {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 200px;
+}
