@@ -12,6 +12,7 @@
 
 import { finalAppConfig } from '../../defaults.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { ensureAgChartsLoaded } from '../../lib/agChartsLoader.js';
 
@@ -53,6 +54,7 @@ async function initMonthlyReportPage(root = document) {
   const chartIncVsExp    = root.querySelector('#chart-income-vs-expense');
   const topExpensesHost  = root.querySelector('#widget-top-expenses-grid');
   const topIncomesHost   = root.querySelector('#widget-top-incomes-grid');
+  const ownerFilterEl    = root.querySelector('#widget-owner-filter');
   const accountantHost   = root.querySelector('#widget-accountant-grid');
   const invoiceHost      = root.querySelector('#widget-invoice-grid');
   const exportCsvBtn     = root.querySelector('#btn-export-accountant-csv');
@@ -75,6 +77,7 @@ async function initMonthlyReportPage(root = document) {
   const state = {
     year: prev.year,
     month: prev.month,
+    ownerFilter: '',       // '' = all owners
     // Grid APIs
     accountantGridApi: null,
     invoiceGridApi: null,
@@ -147,67 +150,91 @@ async function initMonthlyReportPage(root = document) {
       return FeedbackBanner.render(feedbackEl, e?.message || 'Failed to load report data.');
     }
 
+    // ── Owner filter setup ──────────────────────────────────────────
+    const owners = [...new Set(
+      data.monthMovements.map(m => m.owner).filter(Boolean)
+    )].sort();
+
+    state.ownerFilter = '';  // reset on month change
+    _renderOwnerFilter(owners, data);
+
+    // Update subtitle
+    const label = getMonthLabel(state.year, state.month);
+    subtitleEl.textContent = `Report for ${label} — ${data.monthMovements.length} movements`;
+
+    // ── Stats + charts (always use full month data) ─────────────────
     const renderData = {
       monthMovements: data.monthMovements,
       mainCurrency,
       rates: data.rates,
     };
 
-    // Update subtitle
-    const label = getMonthLabel(state.year, state.month);
-    subtitleEl.textContent = `Report for ${label} — ${data.monthMovements.length} movements`;
-
-    // ── Stats cards ─────────────────────────────────────────────────
     renderStatsCards(statsRow, renderData);
-
-    // ── Donut charts ────────────────────────────────────────────────
     state.chartExpenseCat = renderExpenseCategoryChart(chartExpenseCat, renderData);
     state.chartIncomeCat  = renderIncomeCategoryChart(chartIncomeCat, renderData);
     state.chartIncVsExp   = renderIncomeVsExpenseChart(chartIncVsExp, renderData);
 
-    // ── Top Movements grids ─────────────────────────────────────────
+    // ── Top Movements grids (full data, not owner-filtered) ─────────
     state.topExpensesGridApi = await mountTopMovementsGrid(
-      topExpensesHost,
-      data.monthMovements,
-      'Expense',
-      data.rates,
-      mainCurrency,
+      topExpensesHost, data.monthMovements, 'Expense', data.rates, mainCurrency,
     );
-
     state.topIncomesGridApi = await mountTopMovementsGrid(
-      topIncomesHost,
-      data.monthMovements,
-      'Income',
-      data.rates,
-      mainCurrency,
+      topIncomesHost, data.monthMovements, 'Income', data.rates, mainCurrency,
     );
 
-    // ── Accountant summary grid ─────────────────────────────────────
+    // ── Accountant + Invoice grids (owner-filtered) ─────────────────
+    await _mountTaxGrids(data);
+
+    // Store data for re-use when filter changes
+    state._data = data;
+  }
+
+  /** Renders (or re-renders) the owner FilterBar. */
+  function _renderOwnerFilter(owners, data) {
+    if (!ownerFilterEl) return;
+
+    const options = [
+      { value: '', label: 'All owners' },
+      ...owners.map(o => ({ value: o, label: o })),
+    ];
+
+    FilterBar.render(ownerFilterEl, {
+      variant: 'bare',
+      hideLabels: true,
+      fields: [{
+        id: 'owner',
+        label: 'Account owner',
+        type: 'select',
+        value: state.ownerFilter,
+        options,
+      }],
+    }, {
+      onFilterChange: async (values) => {
+        state.ownerFilter = values.owner;
+        await _mountTaxGrids(state._data);
+      },
+    });
+  }
+
+  /** Builds and mounts the accountant + invoice grids, applying the owner filter. */
+  async function _mountTaxGrids(data) {
+    // Destroy previous instances
+    if (state.accountantGridApi) { state.accountantGridApi.destroy(); state.accountantGridApi = null; }
+    if (state.invoiceGridApi)    { state.invoiceGridApi.destroy();    state.invoiceGridApi    = null; }
+    accountantHost.innerHTML = '';
+    invoiceHost.innerHTML    = '';
+
+    const filtered = state.ownerFilter
+      ? data.monthMovements.filter(m => m.owner === state.ownerFilter)
+      : data.monthMovements;
+
     const accountantRows = buildAccountantRows(
-      data.monthMovements,
-      data.taxableRepMovements,
-      data.rates,
-      mainCurrency,
+      filtered, data.taxableRepMovements, data.rates, mainCurrency,
     );
+    state.accountantGridApi = await mountAccountantGrid(accountantHost, accountantRows, mainCurrency);
 
-    state.accountantGridApi = await mountAccountantGrid(
-      accountantHost,
-      accountantRows,
-      mainCurrency,
-    );
-
-    // ── Invoice tracker grid ────────────────────────────────────────
-    const taxableMovements = filterTaxableMovements(
-      data.monthMovements,
-      data.taxableRepMovements,
-    );
-
-    state.invoiceGridApi = await mountInvoiceGrid(
-      invoiceHost,
-      taxableMovements,
-      data.rates,
-      mainCurrency,
-    );
+    const taxableMovements = filterTaxableMovements(filtered, data.taxableRepMovements);
+    state.invoiceGridApi = await mountInvoiceGrid(invoiceHost, taxableMovements, data.rates, mainCurrency);
   }
 
   // Initial load

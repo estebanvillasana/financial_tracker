@@ -11,6 +11,7 @@ SELECT
     m.account_id,
     ba.account,
     ba.currency,
+    ba.owner,
     ba.initial_balance,
     m.category_id,
     c.category,
