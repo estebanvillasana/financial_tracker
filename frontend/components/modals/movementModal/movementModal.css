@@ -1,0 +1,269 @@
+/* ============================================================
+   Movement Modal Component
+   Mirrors the BankAccountModal structure with movement-specific
+   fields (type, category, subcategory, date-picker, amount).
+   ============================================================ */
+
+/* ── Dialog card ───────────────────────────────────────────── */
+
+.ft-movement-modal {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-width: 880px;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+
+.ft-movement-modal__header {
+  border-bottom: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.25);
+  padding: calc(var(--ft-spacing) * 1.75) calc(var(--ft-spacing) * 2);
+}
+
+.ft-movement-modal__header-main {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ft-movement-modal__title-wrap {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+}
+
+.ft-movement-modal__title { margin: 0; }
+
+.ft-movement-modal__chip {
+  background: var(--ft-color-surface-alt);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 999px;
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+
+.ft-movement-modal__chip--code {
+  font-family: var(--ft-font-mono, monospace);
+  letter-spacing: 0.25px;
+}
+
+.ft-movement-modal__status {
+  background: var(--ft-color-success-15);
+  border: 1px solid var(--ft-color-success-30);
+  border-radius: 999px;
+  color: var(--ft-color-success);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+
+.ft-movement-modal__status--inactive {
+  background: var(--ft-color-danger-15);
+  border-color: var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-movement-modal__close-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.ft-movement-modal__close-btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+/* ── Body + Form ───────────────────────────────────────────── */
+
+.ft-movement-modal__body {
+  overflow: auto;
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+.ft-movement-modal__form-grid {
+  display: grid;
+  gap: var(--ft-spacing);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ft-movement-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-movement-modal__field--wide {
+  grid-column: 1 / -1;
+}
+
+.ft-movement-modal__field > span {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ft-movement-modal__field input,
+.ft-movement-modal__field select,
+.ft-movement-modal__field textarea {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  min-height: 34px;
+  outline: none;
+  padding: 6px 10px;
+}
+
+.ft-movement-modal__field textarea {
+  resize: vertical;
+}
+
+.ft-movement-modal__field input:focus,
+.ft-movement-modal__field select:focus,
+.ft-movement-modal__field textarea:focus {
+  border-color: var(--ft-color-accent);
+}
+
+/* ── Checkbox field ────────────────────────────────────────── */
+
+.ft-movement-modal__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding-top: 18px;
+}
+
+.ft-movement-modal__field--checkbox input[type="checkbox"] {
+  appearance: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  height: 16px;
+  min-height: unset;
+  padding: 0;
+  width: 16px;
+}
+
+/* ── Date picker host ──────────────────────────────────────── */
+
+.ft-movement-modal__field--date {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+}
+
+.ft-movement-modal__date-host {
+  /* Let the DatePicker component set its own width */
+  max-width: 100%;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+
+.ft-movement-modal__footer {
+  align-items: center;
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  justify-content: space-between;
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+}
+
+.ft-movement-modal__message {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.ft-movement-modal__message--error {
+  color: var(--ft-color-danger);
+}
+
+.ft-movement-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+}
+
+/* ── Danger zone ───────────────────────────────────────────── */
+
+.ft-movement-modal__danger-zone {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+.ft-movement-modal__trash-btn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  width: 32px;
+}
+
+.ft-movement-modal__trash-btn:hover {
+  background: var(--ft-color-danger-10);
+  border-color: var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-movement-modal__confirm {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+.ft-movement-modal__confirm[hidden] { display: none; }
+
+.ft-movement-modal__confirm-label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ft-movement-modal__confirm-btn {
+  background: var(--ft-color-danger-10);
+  border: 1px solid var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-movement-modal__confirm-btn:hover {
+  background: var(--ft-color-danger-15);
+  border-color: var(--ft-color-danger-60);
+}
+
+@media (max-width: 720px) {
+  .ft-movement-modal__form-grid {
+    grid-template-columns: 1fr;
+  }
+}
