@@ -1,0 +1,207 @@
+/* ============================================================
+   Bulk Add Modal — Component Styles
+   Mirrors CategoryModal / MovementModal structure
+   ============================================================ */
+
+.ft-bulk-add-modal {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-width: 640px;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+
+.ft-bulk-add-modal__header {
+  border-bottom: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: calc(var(--ft-spacing) * 1.75) calc(var(--ft-spacing) * 2);
+}
+
+.ft-bulk-add-modal__header-main {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ft-bulk-add-modal__title {
+  margin: 0;
+}
+
+.ft-bulk-add-modal__close-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.ft-bulk-add-modal__close-btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+/* ── Body ──────────────────────────────────────────────── */
+
+.ft-bulk-add-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+  overflow-y: auto;
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+.ft-bulk-add-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1);
+}
+
+.ft-bulk-add-modal__section-label {
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* ── Form Grid ─────────────────────────────────────────── */
+
+.ft-bulk-add-modal__form-grid {
+  display: grid;
+  gap: var(--ft-spacing);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ft-bulk-add-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-bulk-add-modal__field--wide {
+  grid-column: 1 / -1;
+}
+
+.ft-bulk-add-modal__field--compact {
+  min-width: 0;
+}
+
+.ft-bulk-add-modal__field > span {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ft-bulk-add-modal__field input,
+.ft-bulk-add-modal__field select,
+.ft-bulk-add-modal__field textarea {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  min-height: 34px;
+  outline: none;
+  padding: 6px 10px;
+}
+
+.ft-bulk-add-modal__field input:focus,
+.ft-bulk-add-modal__field select:focus,
+.ft-bulk-add-modal__field textarea:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-bulk-add-modal__field textarea {
+  font-family: 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* ── Date Range Row ────────────────────────────────────── */
+
+.ft-bulk-add-modal__range-row {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+.ft-bulk-add-modal__range-row .ft-bulk-add-modal__field {
+  flex: 1;
+}
+
+.ft-bulk-add-modal__range-btn {
+  height: 34px;
+  white-space: nowrap;
+}
+
+/* ── Preview ───────────────────────────────────────────── */
+
+.ft-bulk-add-modal__preview {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.ft-bulk-add-modal__preview--ready {
+  color: var(--ft-color-success);
+}
+
+.ft-bulk-add-modal__preview--warning {
+  color: var(--ft-color-warning, var(--ft-color-danger));
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+
+.ft-bulk-add-modal__footer {
+  align-items: center;
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  justify-content: space-between;
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+}
+
+.ft-bulk-add-modal__message {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.ft-bulk-add-modal__message--error {
+  color: var(--ft-color-danger);
+}
+
+.ft-bulk-add-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  margin-left: auto;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .ft-bulk-add-modal__form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-bulk-add-modal__range-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

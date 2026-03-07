@@ -7,13 +7,14 @@
  * - handleAccountChange: currency warning + grid refresh
  */
 import { bankAccounts, movements } from '../../services/api.js';
-import { createSentinelRow, isAddRow } from './constants.js';
+import { createDraftRow, createSentinelRow, isAddRow } from './constants.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { getSelectedAccount } from './utils.js';
 import { validateAllDrafts } from './validation.js';
 import { commitSentinelRow, syncRowsFromGrid, applyRowTypeAttributes, clearErrorHighlights, highlightErrorCells } from './grid.js';
 import { saveDraftsImmediate, clearDrafts } from './drafts.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { BulkAddModal } from '../../components/modals/bulkAddModal/bulkAddModal.js';
 import {
   updateHeaderButtons,
   renderBalanceCards,
@@ -194,4 +195,58 @@ function handleAccountChange(newAccountId, state, domRefs) {
   saveDraftsImmediate(state);
 }
 
-export { commitDrafts, requestDiscard, handleAccountChange };
+/* ── Bulk Add ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Opens the Bulk Add modal and inserts generated rows into the grid.
+ *
+ * @param {object}   state              - Page state
+ * @param {object}   domRefs            - DOM element references
+ * @param {Function} refreshSummaryState - Summary refresh callback
+ */
+function handleBulkAdd(state, domRefs, refreshSummaryState) {
+  BulkAddModal.open(
+    {
+      type: state.draftType,
+      categories: state.categories,
+      subCategories: state.subCategories,
+      repetitiveMovements: state.repetitiveMovements,
+    },
+    (rowDataList) => {
+      if (!state.gridApi || rowDataList.length === 0) return;
+
+      const newRows = rowDataList.map(data => {
+        const row = createDraftRow(data.type || state.draftType);
+        row.movement = data.movement || '';
+        row.description = data.description || '';
+        row.date = data.date || row.date;
+        row.amount = data.amount || null;
+        row.category_id = data.category_id || null;
+        row.sub_category_id = data.sub_category_id || null;
+        row.repetitive_movement_id = data.repetitive_movement_id || null;
+        return row;
+      });
+
+      state.gridApi.applyTransaction({
+        add: newRows,
+        addIndex: state.rows.length,
+      });
+
+      syncRowsFromGrid(state);
+      refreshSummaryState(state, domRefs);
+      requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+
+      FeedbackBanner.render(
+        domRefs.feedbackEl,
+        `Added ${newRows.length} draft movement${newRows.length === 1 ? '' : 's'} from bulk add.`,
+        'success',
+      );
+      setTimeout(() => {
+        const current = domRefs.feedbackEl?.querySelector('.ft-feedback-banner--success');
+        if (current) FeedbackBanner.clear(domRefs.feedbackEl);
+      }, 5000);
+    },
+  );
+}
+
+export { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd };

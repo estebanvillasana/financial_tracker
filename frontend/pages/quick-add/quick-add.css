@@ -1,0 +1,468 @@
+/* ============================================================
+   Quick Add — Page-Specific Styles
+   ============================================================
+
+   Terminal-like prompt aesthetic for keyboard-first entry.
+   Covers:
+   - Account toolbar with lock state
+   - Session tally bar
+   - Flow area (prompt lines, active/completed fields)
+   - Review card
+   - History list
+   - Keyboard hints bar
+   ============================================================ */
+
+/* ── Page Layout ──────────────────────────────────────── */
+
+.ft-quick-add-page {
+  height: 100%;
+  min-height: unset;
+}
+
+/* ── Account Toolbar ──────────────────────────────────── */
+
+.ft-quick-add-toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ft-quick-add-toolbar__left {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ft-quick-add-toolbar__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ft-quick-add-toolbar__select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 13px;
+  height: 34px;
+  min-width: 260px;
+  padding: 0 10px;
+}
+
+.ft-quick-add-toolbar__select:disabled {
+  opacity: 0.65;
+}
+
+.ft-quick-add-toolbar__locked {
+  align-items: center;
+  color: var(--ft-color-text);
+  display: flex;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.ft-quick-add-toolbar__locked .material-symbols-outlined {
+  color: var(--ft-color-success);
+  font-size: 16px;
+}
+
+.ft-quick-add-toolbar__change-btn {
+  background: transparent;
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.ft-quick-add-toolbar__change-btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+/* ── Session Tally ────────────────────────────────────── */
+
+.ft-quick-add-tally {
+  align-items: center;
+  color: var(--ft-color-text-muted);
+  display: flex;
+  font-size: 13px;
+  gap: 16px;
+  min-height: 20px;
+  padding: 4px 0;
+}
+
+.ft-quick-add-tally__stat {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ft-quick-add-tally__stat .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.ft-quick-add-tally__stat--highlight {
+  color: var(--ft-color-text);
+  font-weight: 600;
+}
+
+/* ── Flow Section ─────────────────────────────────────── */
+
+.ft-quick-add-flow-section {
+  flex: 1;
+  min-height: 0;
+}
+
+.ft-quick-add-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 600px;
+}
+
+/* ── Prompt Line ──────────────────────────────────────── */
+
+.ft-qa-prompt {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-height: 38px;
+  padding: 4px 0;
+}
+
+.ft-qa-prompt__label {
+  color: var(--ft-color-accent, var(--ft-color-text-muted));
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  min-width: 110px;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.ft-qa-prompt__chevron {
+  color: var(--ft-color-accent, var(--ft-color-text-muted));
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ── Active field input ───────────────────────────────── */
+
+.ft-qa-prompt__input {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  height: 34px;
+  min-width: 0;
+  outline: none;
+  padding: 6px 10px;
+}
+
+.ft-qa-prompt__input:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-qa-prompt__input--textarea {
+  height: auto;
+  min-height: 34px;
+  resize: none;
+}
+
+/* ── Type toggle (inline) ─────────────────────────────── */
+
+.ft-qa-type-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ft-qa-type-toggle__btn {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  height: 34px;
+  padding: 0 16px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.ft-qa-type-toggle__btn:hover:not(.ft-qa-type-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+}
+
+.ft-qa-type-toggle__btn--active.ft-qa-type-toggle__btn--expense {
+  background: var(--ft-color-danger-15);
+  border-color: var(--ft-color-danger-30);
+  color: var(--ft-color-danger);
+}
+
+.ft-qa-type-toggle__btn--active.ft-qa-type-toggle__btn--income {
+  background: var(--ft-color-success-15);
+  border-color: var(--ft-color-success-30);
+  color: var(--ft-color-success);
+}
+
+/* ── Invoice toggle (inline) ──────────────────────────── */
+
+.ft-qa-invoice-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ft-qa-invoice-toggle__btn {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  height: 34px;
+  padding: 0 16px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-qa-invoice-toggle__btn:hover:not(.ft-qa-invoice-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+}
+
+.ft-qa-invoice-toggle__btn--active {
+  background: var(--ft-color-accent-15, var(--ft-color-elevated));
+  border-color: var(--ft-color-accent, var(--ft-color-border));
+  color: var(--ft-color-text);
+  font-weight: 500;
+}
+
+/* ── Completed field (locked) ─────────────────────────── */
+
+.ft-qa-prompt--done .ft-qa-prompt__label {
+  color: var(--ft-color-text-muted-30, var(--ft-color-text-muted));
+}
+
+.ft-qa-prompt--done .ft-qa-prompt__chevron {
+  color: var(--ft-color-success);
+}
+
+.ft-qa-prompt__value {
+  color: var(--ft-color-text);
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* ── Filtered select dropdown ─────────────────────────── */
+
+.ft-qa-select-wrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.ft-qa-select-dropdown {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  left: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 10;
+}
+
+.ft-qa-select-option {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 10px;
+  transition: background 80ms ease;
+}
+
+.ft-qa-select-option:hover,
+.ft-qa-select-option--highlighted {
+  background: var(--ft-color-elevated);
+}
+
+.ft-qa-select-option--empty {
+  color: var(--ft-color-text-muted);
+  font-style: italic;
+}
+
+/* ── Review Card ──────────────────────────────────────── */
+
+.ft-qa-review {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 600px;
+  padding: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-qa-review__title {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.ft-qa-review__grid {
+  display: grid;
+  gap: 4px 16px;
+  grid-template-columns: auto 1fr;
+}
+
+.ft-qa-review__label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.ft-qa-review__value {
+  color: var(--ft-color-text);
+  font-size: 13px;
+}
+
+.ft-qa-review__hint {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ── Success card ─────────────────────────────────────── */
+
+.ft-qa-success {
+  align-items: center;
+  background: var(--ft-color-success-15);
+  border: 1px solid var(--ft-color-success-30);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 600px;
+  padding: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-qa-success .material-symbols-outlined {
+  color: var(--ft-color-success);
+  font-size: 28px;
+}
+
+.ft-qa-success__text {
+  color: var(--ft-color-text);
+  font-size: 13px;
+}
+
+.ft-qa-success__hint {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+}
+
+/* ── History Section ──────────────────────────────────── */
+
+.ft-quick-add-history-section {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ft-qa-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ft-qa-history-item {
+  align-items: center;
+  border-radius: var(--ft-radius-widget);
+  display: flex;
+  font-size: 12px;
+  gap: 12px;
+  padding: 4px 8px;
+}
+
+.ft-qa-history-item:hover {
+  background: var(--ft-color-surface);
+}
+
+.ft-qa-history-item__name {
+  color: var(--ft-color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-qa-history-item__date {
+  color: var(--ft-color-text-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ft-qa-history-item__amount {
+  color: var(--ft-color-text);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: right;
+}
+
+.ft-qa-history-item__type {
+  border-radius: 999px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  text-transform: uppercase;
+}
+
+.ft-qa-history-item__type--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-qa-history-item__type--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+/* ── Keyboard Hints Bar ───────────────────────────────── */
+
+.ft-quick-add-hints {
+  color: var(--ft-color-text-muted-30, var(--ft-color-text-muted));
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 6px 2px 0;
+  text-align: right;
+}
+
+.ft-quick-add-hints kbd {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+}

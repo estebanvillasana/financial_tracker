@@ -26,7 +26,7 @@ import {
   renderAccountToolbar,
 } from './render.js';
 import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';import { saveDrafts, restoreDrafts } from './drafts.js';
-import { commitDrafts, requestDiscard, handleAccountChange } from './actions.js';
+import { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd } from './actions.js';
 
 /* ── State Refresh ────────────────────────────────────────────────────────── */
 
@@ -98,6 +98,12 @@ function wireEvents(state, domRefs, toolbarEl) {
   toolbarEl.addEventListener('click', event => {
     if (!event.target.closest('#btn-commit-movements')) return;
     commitDrafts(state, domRefs, refreshSummaryState);
+  });
+
+  /* ── Bulk Add ── */
+  toolbarEl.addEventListener('click', event => {
+    if (!event.target.closest('#btn-bulk-add-movements')) return;
+    handleBulkAdd(state, domRefs, refreshSummaryState);
   });
 }
 

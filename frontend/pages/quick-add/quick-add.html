@@ -1,0 +1,49 @@
+<!--
+  Quick Add page template.
+  Keyboard-first sequential movement entry.
+  Smart behavior wired by pages/quick-add/index.js after route load.
+
+  Layout:
+    1. Page header — title + subtitle
+    2. Account selector bar (locks after selection)
+    3. Session tally (running count + total)
+    4. Flow area — sequential field prompts
+    5. History — recently added movements
+    6. Keyboard hints bar
+-->
+<div class="ft-page ft-quick-add-page">
+  <header class="ft-page__header">
+    <div>
+      <h1 class="ft-h2">Quick Add</h1>
+      <p class="ft-small ft-text-muted">Keyboard-first movement entry — no mouse needed</p>
+    </div>
+  </header>
+
+  <!-- Account selector bar -->
+  <div class="ft-toolbar ft-quick-add-toolbar" id="widget-quick-add-toolbar">
+    <span class="ft-small ft-text-muted">Loading accounts…</span>
+  </div>
+
+  <!-- Session tally -->
+  <div class="ft-quick-add-tally" id="widget-quick-add-tally"></div>
+
+  <!-- Main flow area -->
+  <section class="ft-section ft-quick-add-flow-section">
+    <div id="widget-quick-add-feedback"></div>
+    <div class="ft-quick-add-flow" id="widget-quick-add-flow">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">bolt</span>
+        <p class="ft-small">Select an account to start adding movements</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recently added history -->
+  <section class="ft-section ft-quick-add-history-section" id="widget-quick-add-history"></section>
+
+  <!-- Keyboard hints -->
+  <div class="ft-quick-add-hints" id="widget-quick-add-hints">
+    <kbd>Enter</kbd> confirm / next · <kbd>Esc</kbd> skip optional / cancel ·
+    <kbd>E</kbd>/<kbd>I</kbd> expense/income · <kbd>↑</kbd><kbd>↓</kbd> navigate options
+  </div>
+</div>

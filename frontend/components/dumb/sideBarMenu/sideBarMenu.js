@@ -5,6 +5,7 @@ const SideBarMenu = (() => {
     { page: 'dashboard',     icon: 'home',          label: 'Dashboard'     },
     { page: 'movements',     icon: 'receipt_long',  label: 'Movements'     },
     { page: 'add-movements', icon: 'post_add',      label: 'Add Movements' },
+    { page: 'quick-add',     icon: 'bolt',          label: 'Quick Add'     },
     { page: 'transfers',     icon: 'sync_alt',      label: 'Transfers'     },
     { page: 'categories',    icon: 'sell',          label: 'Categories'    },
     { page: 'repetitive',    icon: 'event_repeat',  label: 'Repetitive'    },

@@ -86,6 +86,10 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
         </div>
       </div>
       <div class="ft-add-movements-toolbar__actions">
+        <button class="ft-btn ft-btn--ghost" id="btn-bulk-add-movements">
+          <span class="material-symbols-outlined" aria-hidden="true">playlist_add</span>
+          Bulk Add
+        </button>
         <button class="ft-btn ft-btn--ghost" id="btn-discard-movements" disabled>Discard</button>
         <button class="ft-btn ft-btn--primary" id="btn-commit-movements" disabled>
           <span class="material-symbols-outlined" aria-hidden="true">check</span>

@@ -6,6 +6,7 @@ const ROUTES = {
   dashboard:        'pages/dashboard/dashboard.html',
   movements:        'pages/movements/movements.html',
   'add-movements':  'pages/add-movements/add-movements.html',
+  'quick-add':      'pages/quick-add/quick-add.html',
   transfers:        'pages/transfers/transfers.html',
   categories:       'pages/categories/categories.html',
   repetitive:       'pages/repetitive-movements/repetitive-movements.html',
@@ -16,6 +17,7 @@ let pageLoadToken = 0;
 const PAGE_INITIALIZERS = {
   dashboard: async () => (await import('./pages/dashboard/index.js')).initDashboardPage,
   'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
+  'quick-add': async () => (await import('./pages/quick-add/index.js')).initQuickAddPage,
   movements: async () => (await import('./pages/movements/index.js')).initMovementsPage,
   transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
   categories: async () => (await import('./pages/categories/index.js')).initCategoriesPage,
