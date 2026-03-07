@@ -158,7 +158,89 @@ export async function mountAccountantGrid(hostEl, rows, mainCurrency) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   2. INVOICE TRACKER GRID
+   2. TOP MOVEMENTS GRIDS
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Returns true for internal money transfers (movement_code starts with "MT").
+ */
+function isTransfer(mov) {
+  return typeof mov.movement_code === 'string' && mov.movement_code.startsWith('MT');
+}
+
+/**
+ * Mounts a compact "Top N" movements grid (expenses or incomes).
+ *
+ * @param {HTMLElement} hostEl
+ * @param {Array}  monthMovements — all movements for the month
+ * @param {'Expense'|'Income'} type — which type to show
+ * @param {object} rates
+ * @param {string} mainCurrency
+ * @param {number} [limit=10]
+ * @returns {Promise<object>} gridApi
+ */
+export async function mountTopMovementsGrid(hostEl, monthMovements, type, rates, mainCurrency, limit = 10) {
+  const isIncome = type === 'Income';
+  const filtered = monthMovements
+    .filter(m => {
+      if (isTransfer(m)) return false;
+      return isIncome ? m.type === 'Income' : m.type !== 'Income';
+    })
+    .sort((a, b) => Math.abs(Number(b.value ?? 0)) - Math.abs(Number(a.value ?? 0)))
+    .slice(0, limit);
+
+  const columnDefs = [
+    {
+      headerName: 'Date',
+      field: 'date',
+      cellRenderer: dateCellRenderer,
+      width: 100,
+      sort: null,
+    },
+    {
+      headerName: 'Movement',
+      field: 'movement',
+      flex: 2,
+      minWidth: 130,
+    },
+    {
+      headerName: 'Account',
+      field: 'account',
+      cellRenderer: accountCellRenderer('account', 'currency'),
+      flex: 1,
+      minWidth: 100,
+    },
+    {
+      headerName: 'Amount',
+      field: 'value',
+      cellRenderer: moneyCentsCellRenderer('value', 'currency'),
+      width: 130,
+      headerClass: 'ft-ag-header-right',
+      cellStyle: { textAlign: 'right' },
+    },
+    {
+      headerName: 'Category',
+      field: 'category',
+      cellRenderer: styledCategoryCellRenderer,
+      flex: 1,
+      minWidth: 90,
+    },
+  ];
+
+  const emptyLabel = isIncome ? 'incomes' : 'expenses';
+
+  return createStandardGrid(hostEl, {
+    columnDefs,
+    rowData: filtered,
+    domLayout: 'autoHeight',
+    suppressCellFocus: true,
+    overlayNoRowsTemplate:
+      `<span class="ft-small ft-text-muted">No ${emptyLabel} this month</span>`,
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. INVOICE TRACKER GRID
    ═══════════════════════════════════════════════════════════════ */
 
 /**

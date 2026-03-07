@@ -60,6 +60,26 @@
   text-transform: uppercase;
 }
 
+/* ── Chart containers ─────────────────────────────────────── */
+
+.ft-monthly-report__chart-container {
+  height: 300px;
+}
+
+/* ── Top Movements (two grids side by side) ───────────────── */
+
+.ft-monthly-report__top-movements {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 1100px) {
+  .ft-monthly-report__top-movements {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Accountant Grid ──────────────────────────────────────── */
 
 .ft-monthly-report__accountant-grid {

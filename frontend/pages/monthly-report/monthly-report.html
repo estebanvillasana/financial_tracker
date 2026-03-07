@@ -30,23 +30,40 @@
     <div class="ft-stats-row" id="widget-stats-row"></div>
   </section>
 
-  <!-- Breakdowns (Category + Subcategory + Income vs Expenses) -->
+  <!-- Breakdowns (AG Charts donut visualisations) -->
   <section class="ft-section" id="section-breakdowns">
     <div class="ft-section__header">
-      <h2 class="ft-h3">Spending Breakdown</h2>
+      <h2 class="ft-h3">Breakdowns</h2>
     </div>
     <div class="ft-monthly-report__breakdowns">
-      <div class="ft-card" id="widget-breakdown-categories">
-        <h3 class="ft-monthly-report__card-title">By Category</h3>
-        <div id="breakdown-categories-content"></div>
+      <div class="ft-card" id="widget-chart-expense-categories">
+        <h3 class="ft-monthly-report__card-title">Expenses by Category</h3>
+        <div class="ft-monthly-report__chart-container" id="chart-expense-categories"></div>
       </div>
-      <div class="ft-card" id="widget-breakdown-subcategories">
-        <h3 class="ft-monthly-report__card-title">By Sub-category</h3>
-        <div id="breakdown-subcategories-content"></div>
+      <div class="ft-card" id="widget-chart-income-categories">
+        <h3 class="ft-monthly-report__card-title">Income by Category</h3>
+        <div class="ft-monthly-report__chart-container" id="chart-income-categories"></div>
       </div>
-      <div class="ft-card" id="widget-breakdown-income-expense">
+      <div class="ft-card" id="widget-chart-income-vs-expense">
         <h3 class="ft-monthly-report__card-title">Income vs Expenses</h3>
-        <div id="breakdown-income-expense-content"></div>
+        <div class="ft-monthly-report__chart-container" id="chart-income-vs-expense"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Movements (Top 10 Expenses + Top 10 Incomes) -->
+  <section class="ft-section" id="section-top-movements">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Top Movements</h2>
+    </div>
+    <div class="ft-monthly-report__top-movements">
+      <div>
+        <h3 class="ft-monthly-report__card-title">Top 10 Expenses</h3>
+        <div class="ft-ag-grid" id="widget-top-expenses-grid"></div>
+      </div>
+      <div>
+        <h3 class="ft-monthly-report__card-title">Top 10 Incomes</h3>
+        <div class="ft-ag-grid" id="widget-top-incomes-grid"></div>
       </div>
     </div>
   </section>
