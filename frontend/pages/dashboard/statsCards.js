@@ -1,13 +1,18 @@
 /**
  * Dashboard stats cards widget.
  *
- * Renders five InfoCard components summarising the user's financial position:
+ * Renders two groups of InfoCard components:
  *
- *  1. Total Balance   — sum of all accounts, converted to main currency
- *  2. Monthly Income  — total income for the current calendar month
- *  3. Monthly Expenses— total expenses for the current calendar month
- *  4. Net Cash Flow   — income minus expenses this month
- *  5. Active Accounts — count of active bank accounts
+ * Primary (net worth snapshot — account-level, always current):
+ *  1. Balance   — sum of all non-savings accounts (any sign)
+ *  2. Available — sum of non-savings accounts with a positive balance
+ *  3. Savings   — sum of all savings-type accounts
+ *  4. Debts     — sum of all accounts with a negative balance
+ *
+ * Secondary (previous month's activity — shown below the breakdown report):
+ *  5. Income    — total income for the previous calendar month
+ *  6. Expenses  — total expenses for the previous calendar month
+ *  7. Net Flow  — income minus expenses for the previous month
  *
  * All monetary values are formatted in the user's configured main currency.
  * FX conversion is performed for multi-currency portfolios.
@@ -17,104 +22,159 @@ import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
 import { AccountSummaryCard } from '../../components/dumb/accountSummaryCard/accountSummaryCard.js';
 import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
 
-/** Number of skeleton cards to show while loading. */
-const CARD_COUNT = 5;
-
 /**
- * Renders loading skeletons into the stats container.
+ * Renders loading skeletons into both stats containers.
  *
- * @param {HTMLElement} container — the #dashboard-stats element
+ * @param {HTMLElement} primaryContainer   — the #dashboard-stats-primary element
+ * @param {HTMLElement} secondaryContainer — the #dashboard-stats-secondary element
  */
-export function renderLoadingStats(container) {
-  if (!container) return;
-  container.innerHTML = '';
-  for (let i = 0; i < CARD_COUNT; i++) {
-    container.appendChild(
-      InfoCard.createLoadingElement({ hasSubValue: true, hasNote: true })
-    );
-  }
+export function renderLoadingStats(primaryContainer, secondaryContainer) {
+  _fillSkeletons(primaryContainer,   4, { hasSubValue: true, hasNote: true });
+  _fillSkeletons(secondaryContainer, 3, { hasSubValue: true, hasNote: true });
 }
 
 /**
- * Computes and renders all five stat cards.
+ * Computes and renders all stat cards across two containers.
  *
- * @param {HTMLElement} container    — the #dashboard-stats element
+ * @param {HTMLElement} primaryContainer   — the #dashboard-stats-primary element
+ * @param {HTMLElement} secondaryContainer — the #dashboard-stats-secondary element
  * @param {object}      params
- * @param {Array}       params.accounts       — active bank accounts
- * @param {Array}       params.monthMovements — movements for the current month
- * @param {string}      params.mainCurrency   — user's main currency (normalised)
+ * @param {Array}       params.accounts            — active bank accounts
+ * @param {Array}       params.monthMovements      — movements for the current month (unused, kept for compat)
+ * @param {Array}       params.prevMonthMovements  — movements for the previous month
+ * @param {string}      params.mainCurrency        — user's main currency (normalised)
  */
-export async function renderStatsCards(container, { accounts, monthMovements, mainCurrency }) {
-  if (!container) return;
+export async function renderStatsCards(primaryContainer, secondaryContainer, { accounts, prevMonthMovements, mainCurrency }) {
 
   // ── 1. Convert all account balances to main currency ─────────────────────
   const convertedCents = await Promise.all(
     accounts.map(acct => _getConvertedCents(acct, mainCurrency))
   );
 
-  const totalBalanceCents = convertedCents.reduce((sum, v) => sum + v, 0);
-  const totalSavingsCents = convertedCents.reduce((sum, v) => (v > 0 ? sum + v : sum), 0);
-  const totalDebtsCents = convertedCents.reduce((sum, v) => (v < 0 ? sum + v : sum), 0);
+  let balanceCents    = 0; // sum of non-savings accounts (any sign)
+  let availableCents  = 0; // sum of non-savings accounts with positive balance
+  let savingsCents    = 0; // sum of savings-type accounts
+  let debtsCents      = 0; // sum of accounts with negative balance
+  let nonSavingsCount = 0;
+  let availableCount  = 0;
+  let savingsCount    = 0;
+  let debtCount       = 0;
 
-  // ── 2. Compute monthly income / expenses from movement data ──────────────
-  let monthIncomeCents = 0;
-  let monthExpenseCents = 0;
+  for (let i = 0; i < accounts.length; i++) {
+    const cents     = convertedCents[i];
+    const isSavings = accounts[i].type === 'Savings';
 
-  for (const mov of monthMovements) {
-    const amountCents = Math.abs(Number(mov.value ?? 0));
-    if (mov.type === 'Income') {
-      monthIncomeCents += amountCents;
+    if (isSavings) {
+      savingsCents += cents;
+      savingsCount++;
     } else {
-      monthExpenseCents += amountCents;
+      balanceCents += cents;
+      nonSavingsCount++;
+      if (cents > 0) {
+        availableCents += cents;
+        availableCount++;
+      }
+    }
+
+    if (cents < 0) {
+      debtsCents += cents;
+      debtCount++;
     }
   }
 
-  const netFlowCents = monthIncomeCents - monthExpenseCents;
+  // ── 2. Compute previous month income / expenses ───────────────────────────
+  let prevIncomeCents  = 0;
+  let prevExpenseCents = 0;
 
-  // ── 3. Build card data array ─────────────────────────────────────────────
-  const monthLabel = new Date().toLocaleString('en-US', { month: 'long' });
+  for (const mov of prevMonthMovements) {
+    const abs = Math.abs(Number(mov.value ?? 0));
+    if (mov.type === 'Income') prevIncomeCents  += abs;
+    else                       prevExpenseCents += abs;
+  }
 
-  const cards = [
+  const netFlowCents  = prevIncomeCents - prevExpenseCents;
+  const prevMonthLabel = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  })();
+
+  // ── 3. Primary cards (net worth snapshot) ────────────────────────────────
+  const primaryCards = [
     {
       data: {
-        icon: 'account_balance',
-        label: 'Total Balance',
-        value: formatMoneyFromCents(totalBalanceCents, mainCurrency),
+        icon:     'account_balance',
+        label:    'Balance',
+        value:    formatMoneyFromCents(balanceCents, mainCurrency),
         subValue: `In ${mainCurrency}`,
-        note: totalDebtsCents < 0
-          ? `${formatMoneyFromCents(totalSavingsCents, mainCurrency, { showCode: false })} savings · ${formatMoneyFromCents(totalDebtsCents, mainCurrency, { showCode: false })} debts`
-          : `Across ${accounts.length} account${accounts.length === 1 ? '' : 's'}`,
+        note:     `${nonSavingsCount} account${nonSavingsCount !== 1 ? 's' : ''} · excl. savings`,
       },
-      options: { variant: 'accent' },
+      options: { variant: balanceCents < 0 ? 'danger' : 'accent' },
     },
     {
       data: {
-        icon: 'trending_up',
-        label: 'Monthly Income',
-        value: formatMoneyFromCents(monthIncomeCents, mainCurrency),
-        subValue: monthLabel,
-        note: `${monthMovements.filter(m => m.type === 'Income').length} transactions`,
+        icon:     'payments',
+        label:    'Available',
+        value:    formatMoneyFromCents(availableCents, mainCurrency),
+        subValue: `In ${mainCurrency}`,
+        note:     `${availableCount} account${availableCount !== 1 ? 's' : ''} with positive balance`,
       },
       options: { variant: 'success' },
     },
     {
       data: {
-        icon: 'trending_down',
-        label: 'Monthly Expenses',
-        value: formatMoneyFromCents(monthExpenseCents, mainCurrency),
-        subValue: monthLabel,
-        note: `${monthMovements.filter(m => m.type !== 'Income').length} transactions`,
+        icon:     'savings',
+        label:    'Savings',
+        value:    formatMoneyFromCents(savingsCents, mainCurrency),
+        subValue: `In ${mainCurrency}`,
+        note:     `${savingsCount} savings account${savingsCount !== 1 ? 's' : ''}`,
+      },
+      options: { variant: 'success' },
+    },
+    {
+      data: {
+        icon:     debtsCents < 0 ? 'credit_score' : 'check_circle',
+        label:    'Debts',
+        value:    formatMoneyFromCents(Math.abs(debtsCents), mainCurrency),
+        subValue: `In ${mainCurrency}`,
+        note:     debtsCents < 0
+          ? `${debtCount} account${debtCount !== 1 ? 's' : ''} in the negative`
+          : 'No outstanding debts',
+      },
+      options: { variant: debtsCents < 0 ? 'danger' : 'default' },
+    },
+  ];
+
+  // ── 4. Secondary cards (previous month activity) ──────────────────────────
+  const secondaryCards = [
+    {
+      data: {
+        icon:     'trending_up',
+        label:    'Income',
+        value:    formatMoneyFromCents(prevIncomeCents, mainCurrency),
+        subValue: prevMonthLabel,
+        note:     `${prevMonthMovements.filter(m => m.type === 'Income').length} transactions`,
+      },
+      options: { variant: 'success' },
+    },
+    {
+      data: {
+        icon:     'trending_down',
+        label:    'Expenses',
+        value:    formatMoneyFromCents(prevExpenseCents, mainCurrency),
+        subValue: prevMonthLabel,
+        note:     `${prevMonthMovements.filter(m => m.type !== 'Income').length} transactions`,
       },
       options: { variant: 'danger' },
     },
     {
       data: {
-        icon: netFlowCents >= 0 ? 'savings' : 'warning',
-        label: 'Net Cash Flow',
-        value: formatMoneyFromCents(netFlowCents, mainCurrency),
-        subValue: monthLabel,
+        icon:     netFlowCents >= 0 ? 'savings' : 'warning',
+        label:    'Net Flow',
+        value:    formatMoneyFromCents(netFlowCents, mainCurrency),
+        subValue: prevMonthLabel,
         trend: {
-          value: netFlowCents >= 0 ? 'Positive' : 'Negative',
+          value:     netFlowCents >= 0 ? 'Surplus' : 'Deficit',
           direction: netFlowCents >= 0 ? 'up' : 'down',
         },
       },
@@ -122,14 +182,28 @@ export async function renderStatsCards(container, { accounts, monthMovements, ma
     },
   ];
 
-  // ── 4. Render ────────────────────────────────────────────────────────────
+  // ── 5. Render ─────────────────────────────────────────────────────────────
+  _fillCards(primaryContainer,   primaryCards);
+  _fillCards(secondaryContainer, secondaryCards);
+}
+
+// ── Private helpers ─────────────────────────────────────────────────────────
+
+function _fillCards(container, cards) {
+  if (!container) return;
   container.innerHTML = '';
   for (const card of cards) {
     container.appendChild(InfoCard.createElement(card.data, card.options));
   }
 }
 
-// ── Private helpers ─────────────────────────────────────────────────────────
+function _fillSkeletons(container, count, skeletonOptions = {}) {
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    container.appendChild(InfoCard.createLoadingElement(skeletonOptions));
+  }
+}
 
 /**
  * Converts a single account's balance to the main currency.
@@ -137,7 +211,7 @@ export async function renderStatsCards(container, { accounts, monthMovements, ma
  */
 async function _getConvertedCents(account, mainCurrency) {
   const acctCurrency = normalizeCurrency(account?.currency);
-  const rawCents = Number(account?.total_balance ?? 0);
+  const rawCents     = Number(account?.total_balance ?? 0);
 
   if (!acctCurrency || acctCurrency === mainCurrency) {
     return Number.isFinite(rawCents) ? rawCents : 0;
@@ -148,15 +222,4 @@ async function _getConvertedCents(account, mainCurrency) {
   });
 
   return Number.isFinite(converted) ? converted : 0;
-}
-
-/**
- * Returns a short summary of currencies present across accounts.
- * E.g. "USD, EUR, MXN" or "USD only".
- */
-function _summariseCurrencies(accounts) {
-  const unique = [...new Set(accounts.map(a => normalizeCurrency(a.currency)).filter(Boolean))];
-  if (unique.length === 0) return '';
-  if (unique.length === 1) return `${unique[0]} only`;
-  return unique.join(', ');
 }
