@@ -144,3 +144,65 @@
   background: var(--ft-color-danger-15);
   color: var(--ft-color-danger);
 }
+
+/* ── Type Badge (Income / Expense) ────────────────────────── */
+
+.ft-grid-type {
+  border-radius: var(--ft-radius-widget);
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.ft-grid-type--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}
+
+.ft-grid-type--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+/* ── Category Cell ────────────────────────────────────────── */
+
+.ft-grid-category {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-grid-category__sep {
+  color: var(--ft-color-text-muted-30);
+  margin: 0 4px;
+}
+
+.ft-grid-category__sub {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+}
+
+/* ── Movement Code Badge (clickable) ──────────────────────── */
+
+.ft-grid-code {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-grid-code:hover {
+  background: var(--ft-color-accent-15);
+  border-color: var(--ft-color-accent);
+  color: var(--ft-color-accent);
+}

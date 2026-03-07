@@ -2,7 +2,8 @@
  * Shared AG Grid cell renderer factories.
  *
  * Provides reusable cell renderers for common column types:
- * dates, money amounts, account badges, and action buttons.
+ * dates, money amounts, account badges, type badges, category
+ * labels, movement-code badges, and action buttons.
  *
  * CSS classes (ft-grid-*) are defined in styles/ag-grid-overrides.css.
  */
@@ -40,6 +41,36 @@ export function accountCellRenderer(nameField, currencyField) {
     if (!name) return '';
     return `<span class="ft-grid-account">${name}<span class="ft-grid-account__currency">${cur}</span></span>`;
   };
+}
+
+/** Renders "Income" / "Expense" as a colour-coded badge. */
+export function typeBadgeRenderer(params) {
+  const type = params.value;
+  if (!type) return '';
+  const mod = type === 'Income' ? 'income' : 'expense';
+  return `<span class="ft-grid-type ft-grid-type--${mod}">${type}</span>`;
+}
+
+/**
+ * Renders category (+ optional sub-category) in one cell.
+ * Shows "Category › Sub" when both are present.
+ */
+export function categoryCellRenderer(params) {
+  const cat = params.data?.category ?? '';
+  const sub = params.data?.sub_category ?? '';
+  if (!cat) return '';
+  if (!sub) return `<span class="ft-grid-category">${cat}</span>`;
+  return `<span class="ft-grid-category">${cat}<span class="ft-grid-category__sep">›</span><span class="ft-grid-category__sub">${sub}</span></span>`;
+}
+
+/**
+ * Renders a movement_code as a clickable badge.
+ * Emits data-action="filter-code" for event delegation.
+ */
+export function movementCodeRenderer(params) {
+  const code = params.value;
+  if (!code) return '';
+  return `<button class="ft-grid-code" data-action="filter-code" title="Show related movements">${code}</button>`;
 }
 
 /**
