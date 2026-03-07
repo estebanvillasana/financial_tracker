@@ -21,12 +21,10 @@ import { ensureAgGridLoaded, getGridTheme } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import {
   updateHeaderButtons,
-  updateTableActionButtons,
   renderBalanceCards,
   renderAccountToolbar,
 } from './render.js';
-import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';
-import { saveDrafts, restoreDrafts } from './drafts.js';
+import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';import { saveDrafts, restoreDrafts } from './drafts.js';
 import { commitDrafts, requestDiscard, handleAccountChange } from './actions.js';
 
 /* ── State Refresh ────────────────────────────────────────────────────────── */
@@ -43,7 +41,6 @@ function refreshSummaryState(state, domRefs) {
   renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
   renderBalanceCards(domRefs.balancesEl, state);
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
-  updateTableActionButtons(state, domRefs.removeSelectedBtn);
   saveDrafts(state);
 }
 
@@ -90,17 +87,6 @@ function wireEvents(state, domRefs, toolbarEl) {
     FeedbackBanner.clear(feedbackEl);
   });
 
-  /* ── Remove selected ── */
-  toolbarEl.addEventListener('click', event => {
-    if (!event.target.closest('#btn-remove-selected-drafts')) return;
-    const selectedRows = state.gridApi.getSelectedRows().filter(row => !isAddRow(row));
-    if (selectedRows.length === 0) return;
-    state.gridApi.applyTransaction({ remove: selectedRows });
-    refreshSummaryState(state, domRefs);
-    FeedbackBanner.clear(feedbackEl);
-    requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
-  });
-
   /* ── Discard (with confirmation) ── */
   toolbarEl.addEventListener('click', event => {
     if (!event.target.closest('#btn-discard-movements')) return;
@@ -136,7 +122,6 @@ async function initAddMovementsPage(root = document) {
     feedbackEl,
     commitBtn: null,
     discardBtn: null,
-    removeSelectedBtn: null,
   };
 
   toolbarEl.innerHTML = '<span class="ft-small ft-text-muted">Loading accounts\u2026</span>';
@@ -219,7 +204,6 @@ async function initAddMovementsPage(root = document) {
     getGridTheme,
     refreshSummaryState,
     renderFeedback: FeedbackBanner.render,
-    updateTableActionButtons,
   });
 
   /* ── Restore draft rows into grid ── */
@@ -232,7 +216,6 @@ async function initAddMovementsPage(root = document) {
   }
 
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
-  updateTableActionButtons(state, domRefs.removeSelectedBtn);
 
   /* Show restored message */
   if (savedDrafts && savedDrafts.rows.length > 0) {

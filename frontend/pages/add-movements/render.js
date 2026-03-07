@@ -19,12 +19,6 @@ function updateHeaderButtons(state, commitBtn, discardBtn) {
   if (commitBtn) commitBtn.disabled = !hasRows || !hasAccount || state.isCommitting;
 }
 
-function updateTableActionButtons(state, removeSelectedBtn) {
-  if (!removeSelectedBtn) return;
-  const selectedCount = state.gridApi ? state.gridApi.getSelectedRows().length : 0;
-  removeSelectedBtn.disabled = selectedCount === 0;
-}
-
 /* ── Balance Cards ────────────────────────────────────────────────────────── */
 
 function renderBalanceCards(target, state) {
@@ -92,10 +86,6 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
         </div>
       </div>
       <div class="ft-add-movements-toolbar__actions">
-        <button class="ft-btn ft-btn--ghost" id="btn-remove-selected-drafts" disabled>
-          <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-          Remove
-        </button>
         <button class="ft-btn ft-btn--ghost" id="btn-discard-movements" disabled>Discard</button>
         <button class="ft-btn ft-btn--primary" id="btn-commit-movements" disabled>
           <span class="material-symbols-outlined" aria-hidden="true">check</span>
@@ -106,7 +96,6 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
 
     domRefs.commitBtn = toolbarEl.querySelector('#btn-commit-movements');
     domRefs.discardBtn = toolbarEl.querySelector('#btn-discard-movements');
-    domRefs.removeSelectedBtn = toolbarEl.querySelector('#btn-remove-selected-drafts');
     return;
   }
 
@@ -117,7 +106,6 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
 
 export {
   updateHeaderButtons,
-  updateTableActionButtons,
   renderBalanceCards,
   renderAccountToolbar,
 };

@@ -145,11 +145,8 @@ function buildGridOptions(state, domRefs, handlers) {
     theme: handlers.getGridTheme(),
     rowData: [createSentinelRow(state.draftType)],
     cellSelection: true,
-    rowSelection: 'multiple',
     suppressClickEdit: false,
-    suppressRowClickSelection: true,
     getRowId: params => params.data._id,
-    isRowSelectable: params => !isAddRow(params.data),
     getRowClass: params => (isAddRow(params.data) ? 'ag-row-add-phantom' : undefined),
     defaultColDef: {
       editable: params => !isAddRow(params.data),
@@ -160,21 +157,6 @@ function buildGridOptions(state, domRefs, handlers) {
       minWidth: 120,
     },
     columnDefs: [
-      /* ── Row selection checkbox ── */
-      {
-        colId: '__select',
-        headerName: '',
-        width: 46,
-        minWidth: 46,
-        maxWidth: 46,
-        editable: false,
-        sortable: false,
-        filter: false,
-        resizable: false,
-        checkboxSelection: params => !isAddRow(params.data),
-        headerCheckboxSelection: true,
-      },
-
       /* ── Movement name ── */
       {
         field: 'movement',
@@ -317,6 +299,24 @@ function buildGridOptions(state, domRefs, handlers) {
       },
     ],
 
+    /* ── Right-Click Context Menu ── */
+
+    getContextMenuItems: params => {
+      if (!params.node?.data || isAddRow(params.node.data)) return [];
+      return [
+        {
+          name: 'Remove row',
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">delete</span>',
+          action: () => {
+            params.api.applyTransaction({ remove: [params.node.data] });
+            handlers.refreshSummaryState(state, domRefs);
+            handlers.renderFeedback(domRefs.feedbackEl, '');
+            requestAnimationFrame(() => applyRowTypeAttributes(params.api));
+          },
+        },
+      ];
+    },
+
     /* ── Grid Event Handlers ── */
 
     onCellValueChanged: params => {
@@ -359,8 +359,6 @@ function buildGridOptions(state, domRefs, handlers) {
       }
     },
 
-    onSelectionChanged: () => handlers.updateTableActionButtons(state, domRefs.removeSelectedBtn),
-
     onCellFocused: params => {
       const node = params.rowIndex != null ? params.api.getDisplayedRowAtIndex(params.rowIndex) : null;
       const isNowSentinel = isAddRow(node?.data);
@@ -373,11 +371,9 @@ function buildGridOptions(state, domRefs, handlers) {
 
     onCellKeyDown: params => {
       if (params.event.key === 'Escape') {
-        params.api.deselectAll();
         if (typeof params.api.clearCellSelection === 'function') params.api.clearCellSelection();
         else if (typeof params.api.clearRangeSelection === 'function') params.api.clearRangeSelection();
         params.api.clearFocusedCell();
-        handlers.updateTableActionButtons(state, domRefs.removeSelectedBtn);
         return;
       }
       if (!isAddRow(params.data) || params.event.key !== 'Enter') return;
@@ -423,7 +419,7 @@ function mountGrid(gridHost, state, domRefs, handlers) {
     const editableColumns = state.gridApi
       .getAllDisplayedColumns()
       .map(col => col.getColId())
-      .filter(colId => !['__select', '__actions'].includes(colId));
+      .filter(colId => !['__actions'].includes(colId));
 
     const startColIndex = editableColumns.indexOf(focusedCell.column.getColId());
     if (startColIndex < 0) return;
