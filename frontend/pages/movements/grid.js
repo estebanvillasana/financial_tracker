@@ -22,18 +22,6 @@ import { buildGridOptions } from '../../utils/gridHelper.js';
 function buildColumnDefs(rates, targetCurrency) {
   return [
     {
-      colId: '__select',
-      headerName: '',
-      width: 46,
-      minWidth: 46,
-      maxWidth: 46,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
-    },
-    {
       headerName: 'Date',
       field: 'date',
       width: 115,
@@ -101,18 +89,18 @@ function buildColumnDefs(rates, targetCurrency) {
  * @param {HTMLElement} hostEl — grid container
  * @param {object}      state  — shared page state (mutated: .gridApi)
  * @param {object}      opts
- * @param {Function}    opts.getGridTheme
  * @param {object}      opts.rates           — FX rates
  * @param {string}      opts.targetCurrency  — main currency
- * @param {Function}    opts.onSelectionChanged — called with selected rows array
+ * @param {Function}    opts.onEdit          — called with a single row object to edit
+ * @param {Function}    opts.onDelete        — called with a single row object to delete
+ * @param {Function}    opts.onShowGroup     — called with movement_code string
  */
-export function mountGrid(hostEl, state, { rates, targetCurrency, onSelectionChanged }) {
+export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDelete, onShowGroup }) {
   const gridOptions = buildGridOptions({
     columnDefs: buildColumnDefs(rates, targetCurrency),
     rowData: state.movements,
     getRowId: p => String(p.data.id),
     suppressCellFocus: true,
-    rowSelection: 'multiple',
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
@@ -121,9 +109,33 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onSelectionCha
     getRowClass: params => params.data?.active === 0 ? 'ft-row-inactive' : '',
     overlayNoRowsTemplate:
       '<span class="ft-small ft-text-muted">No movements found</span>',
-    onSelectionChanged: () => {
-      const selected = state.gridApi.getSelectedRows();
-      onSelectionChanged?.(selected);
+    getContextMenuItems: params => {
+      const row = params.node?.data;
+      if (!row) return [];
+
+      const items = [
+        {
+          name: 'Edit',
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">edit</span>',
+          action: () => onEdit?.(row),
+        },
+        {
+          name: row.active === 0 ? 'Delete (already inactive)' : 'Delete',
+          disabled: row.active === 0,
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">delete</span>',
+          action: () => onDelete?.(row),
+        },
+      ];
+
+      if (row.movement_code) {
+        items.push('separator', {
+          name: 'Show Group',
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">link</span>',
+          action: () => onShowGroup?.(row.movement_code),
+        });
+      }
+
+      return items;
     },
   });
 

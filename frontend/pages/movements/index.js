@@ -198,14 +198,14 @@ async function initMovementsPage(root = document) {
   mountGrid(gridHost, state, {
     rates: state.rates,
     targetCurrency: normalizeCurrency(finalAppConfig.currency),
-    onSelectionChanged: handleSelectionChange,
+    onEdit: handleEdit,
+    onDelete: row => handleBulkDelete([row]),
+    onShowGroup: handleFilterCode,
   });
 
   /* ── Toolbar Events ───────────────────────────────────────── */
 
   accountSelect?.addEventListener('change', reloadGrid);
-  dateFrom?.addEventListener('change', reloadGrid);
-  dateTo?.addEventListener('change', reloadGrid);
 
   typeToggle?.addEventListener('click', e => {
     const btn = e.target.closest('[data-type]');
@@ -216,30 +216,6 @@ async function initMovementsPage(root = document) {
     );
     reloadGrid();
   });
-
-  btnEdit?.addEventListener('click', () => {
-    if (state.selectedRows.length === 1) handleEdit(state.selectedRows[0]);
-  });
-
-  btnGroup?.addEventListener('click', () => {
-    if (state.selectedRows.length === 1 && state.selectedRows[0].movement_code) {
-      handleFilterCode(state.selectedRows[0].movement_code);
-    }
-  });
-
-  btnDelete?.addEventListener('click', () => {
-    if (state.selectedRows.length > 0) handleBulkDelete(state.selectedRows);
-  });
-
-  /* ── Selection ────────────────────────────────────────────── */
-
-  function handleSelectionChange(rows) {
-    state.selectedRows = rows;
-    const count = rows.length;
-    if (btnEdit) btnEdit.disabled = count !== 1;
-    if (btnGroup) btnGroup.disabled = count !== 1 || !rows[0]?.movement_code;
-    if (btnDelete) btnDelete.disabled = count === 0;
-  }
 
   /* ── Reload ───────────────────────────────────────────────── */
 
