@@ -18,3 +18,8 @@ export function updateMovement(id, payload) {
 export function softDeleteMovement(id) {
   return movements.softDelete(id);
 }
+
+/** Restore a soft-deleted movement by ID. */
+export function restoreMovement(id) {
+  return movements.restore(id);
+}

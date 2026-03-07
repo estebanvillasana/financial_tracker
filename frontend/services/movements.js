@@ -32,6 +32,10 @@ const movements = {
     return request(`/movements/${id}/soft-delete`, { method: 'PATCH' });
   },
 
+  restore(id) {
+    return request(`/movements/${id}/restore`, { method: 'PATCH' });
+  },
+
   /**
    * Atomic batch create for multiple movements
    */
