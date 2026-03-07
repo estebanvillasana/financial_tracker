@@ -12,7 +12,7 @@ import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { finalAppConfig } from '../../defaults.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
-import { fetchMovements, updateMovement, softDeleteMovement } from './actions.js';
+import { fetchMovements, updateMovement, softDeleteMovement, restoreMovement } from './actions.js';
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -51,6 +51,7 @@ async function initMovementsPage(root = document) {
     movements: [],
     gridApi: null,
     codeFilter: null,
+    showDeleted: false,
     rates: {},
     typeFilter: '',
     dateFrom: '',
@@ -72,7 +73,7 @@ async function initMovementsPage(root = document) {
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
-      fetchMovements({ limit: DEFAULT_LIMIT }),
+      fetchMovements({ limit: DEFAULT_LIMIT, active: 1 }),
       fxRates.getAllRatesLatest(),
     ]);
     state.accounts  = Array.isArray(accs)    ? accs    : [];
@@ -123,7 +124,9 @@ async function initMovementsPage(root = document) {
     rates: state.rates,
     targetCurrency: normalizeCurrency(finalAppConfig.currency),
     onEdit: handleEdit,
-    onDelete: row => handleBulkDelete([row]),
+    onDelete: rowOrRows => handleBulkDelete(Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows]),
+    onRestore: handleRestore,
+    onBulkRestore: handleBulkRestore,
     onShowGroup: handleFilterCode,
   });
 
@@ -141,6 +144,14 @@ async function initMovementsPage(root = document) {
     reloadGrid();
   });
 
+  /* ── Show Deleted Toggle ──────────────────────────────────── */
+
+  const showDeletedToggle = toolbarEl?.querySelector('#movements-show-deleted');
+  showDeletedToggle?.addEventListener('change', () => {
+    state.showDeleted = showDeletedToggle.checked;
+    reloadGrid();
+  });
+
   /* ── Reload ───────────────────────────────────────────────── */
 
   async function reloadGrid() {
@@ -150,8 +161,33 @@ async function initMovementsPage(root = document) {
       if (state.typeFilter) params.type = state.typeFilter;
       if (state.dateFrom) params.date_from = state.dateFrom;
       if (state.dateTo) params.date_to = state.dateTo;
-      const fresh = await fetchMovements(params);
-      refreshGridData(state, Array.isArray(fresh) ? fresh : []);
+
+      let fresh = [];
+      if (state.showDeleted) {
+        const [activeRows, inactiveRows] = await Promise.all([
+          fetchMovements({ ...params, active: 1 }),
+          fetchMovements({ ...params, active: 0 }),
+        ]);
+        const merged = []
+          .concat(Array.isArray(activeRows) ? activeRows : [])
+          .concat(Array.isArray(inactiveRows) ? inactiveRows : []);
+        const seen = new Set();
+        fresh = merged.filter(row => {
+          const id = row?.id;
+          if (id == null || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        }).sort((a, b) => {
+          if (a.date === b.date) return (Number(b.id) || 0) - (Number(a.id) || 0);
+          return a.date < b.date ? 1 : -1;
+        });
+      } else {
+        const activeOnly = await fetchMovements({ ...params, active: 1 });
+        fresh = Array.isArray(activeOnly) ? activeOnly : [];
+      }
+
+      refreshGridData(state, fresh);
+      if (state.codeFilter) applyExternalFilter(state);
     } catch (e) {
       FeedbackBanner.render(feedbackEl, e?.message || 'Failed to reload movements.');
     }
@@ -205,6 +241,60 @@ async function initMovementsPage(root = document) {
               setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
             } catch (e) {
               FeedbackBanner.render(feedbackEl, e?.message || 'Bulk delete failed.');
+            }
+          },
+        },
+        { label: 'Cancel', onClick: () => FeedbackBanner.clear(feedbackEl) },
+      ],
+    );
+  }
+
+  /* ── Restore ───────────────────────────────────────────────── */
+
+  function handleRestore(row) {
+    FeedbackBanner.renderWithActions(
+      feedbackEl,
+      `Restore movement <b>${row.movement}</b>?`,
+      [
+        {
+          label: 'Restore',
+          className: 'ft-feedback-banner__btn--success',
+          onClick: async () => {
+            try {
+              await restoreMovement(row.id);
+              FeedbackBanner.render(feedbackEl, 'Movement restored.', 'success');
+              await reloadGrid();
+              setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
+            } catch (e) {
+              FeedbackBanner.render(feedbackEl, e?.message || 'Restore failed.');
+            }
+          },
+        },
+        { label: 'Cancel', onClick: () => FeedbackBanner.clear(feedbackEl) },
+      ],
+    );
+  }
+
+  function handleBulkRestore(rows) {
+    if (!rows.length) {
+      FeedbackBanner.render(feedbackEl, 'No inactive movements selected.');
+      return;
+    }
+    FeedbackBanner.renderWithActions(
+      feedbackEl,
+      `Restore <b>${rows.length}</b> movement${rows.length !== 1 ? 's' : ''}?`,
+      [
+        {
+          label: 'Restore',
+          className: 'ft-feedback-banner__btn--success',
+          onClick: async () => {
+            try {
+              await Promise.all(rows.map(m => restoreMovement(m.id)));
+              FeedbackBanner.render(feedbackEl, `${rows.length} movement(s) restored.`, 'success');
+              await reloadGrid();
+              setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
+            } catch (e) {
+              FeedbackBanner.render(feedbackEl, e?.message || 'Bulk restore failed.');
             }
           },
         },

@@ -185,3 +185,35 @@
 .ft-movements-grid .ag-row.ft-row-inactive {
   opacity: 0.45;
 }
+
+/* ── Show-Deleted Toggle ───────────────────────────────────── */
+
+.ft-movements-toolbar__toggle {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.ft-movements-toolbar__toggle input[type="checkbox"] {
+  accent-color: var(--ft-color-accent);
+  cursor: pointer;
+  height: 14px;
+  margin: 0;
+  width: 14px;
+}
+
+.ft-movements-toolbar__toggle-label {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* ── Balance Column ────────────────────────────────────────── */
+
+.ft-grid-amount--balance-na {
+  color: var(--ft-color-text-muted);
+}
