@@ -10,8 +10,7 @@
   flex-shrink: 0;
   height: 100vh;
   overflow: hidden;
-  position: sticky;
-  top: 0;
+  position: relative; /* sticky not needed inside overflow:hidden flex parent — and caused body-level scroll */
   transition: width 200ms ease;
   width: 220px;
 }
