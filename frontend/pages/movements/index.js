@@ -1,14 +1,15 @@
 /**
  * Movements page bootstrap.
  *
- * Orchestrates: filter bar, edit form, grid, data loading, and event wiring.
- * Follows the same pattern as the transfers page.
+ * Orchestrates: toolbar, grid with checkbox selection, movement modal,
+ * code-group banner, FX rates for currency conversion, and bulk actions.
  */
-import { bankAccounts, categories, subCategories } from '../../services/api.js';
+import { bankAccounts, categories, subCategories, fxRates } from '../../services/api.js';
 import { ensureAgGridLoaded, getGridTheme } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
-import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
-import { MovementForm } from '../../components/dumb/movementForm/movementForm.js';
+import { MovementModal } from '../../components/modals/movementModal/movementModal.js';
+import { normalizeCurrency } from '../../utils/formatters.js';
+import { finalAppConfig } from '../../defaults.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
 import { fetchMovements, updateMovement, softDeleteMovement } from './actions.js';
 
@@ -19,13 +20,21 @@ const DEFAULT_LIMIT = 500;
 /* ── Page Init ────────────────────────────────────────────── */
 
 async function initMovementsPage(root = document) {
-  const filterSection  = root.querySelector('#widget-movements-filter');
-  const feedbackEl     = root.querySelector('#widget-movements-feedback');
-  const codeBannerEl   = root.querySelector('#widget-movements-code-banner');
-  const formSection    = root.querySelector('#widget-movements-form');
-  const gridWrapper    = root.querySelector('#widget-movements-grid');
+  const toolbarEl     = root.querySelector('#widget-movements-toolbar');
+  const feedbackEl    = root.querySelector('#widget-movements-feedback');
+  const codeBannerEl  = root.querySelector('#widget-movements-code-banner');
+  const gridWrapper   = root.querySelector('#widget-movements-grid');
 
   if (!gridWrapper) return;
+
+  /* DOM handles for toolbar controls */
+  const accountSelect = toolbarEl?.querySelector('#movements-account-select');
+  const typeToggle    = toolbarEl?.querySelector('#movements-type-toggle');
+  const dateFrom      = toolbarEl?.querySelector('#movements-date-from');
+  const dateTo        = toolbarEl?.querySelector('#movements-date-to');
+  const btnEdit       = toolbarEl?.querySelector('#btn-edit-movement');
+  const btnGroup      = toolbarEl?.querySelector('#btn-show-group');
+  const btnDelete     = toolbarEl?.querySelector('#btn-soft-delete');
 
   const state = {
     accounts: [],
@@ -33,11 +42,13 @@ async function initMovementsPage(root = document) {
     subs: [],
     movements: [],
     gridApi: null,
-    editingId: null,
     codeFilter: null,
+    selectedRows: [],
+    rates: {},
+    typeFilter: '',
   };
 
-  /* ── Load AG Grid library ─────────────────────────────────── */
+  /* ── Load AG Grid ─────────────────────────────────────────── */
 
   try {
     await ensureAgGridLoaded();
@@ -45,46 +56,34 @@ async function initMovementsPage(root = document) {
     return FeedbackBanner.render(feedbackEl, e?.message || 'Failed to load grid library.');
   }
 
-  /* ── Load reference data + movements in parallel ──────────── */
+  /* ── Load data in parallel ────────────────────────────────── */
 
   try {
-    const [accs, catList, subList, movs] = await Promise.all([
+    const [accs, catList, subList, movs, fxData] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
       fetchMovements({ limit: DEFAULT_LIMIT }),
+      fxRates.getAllRatesLatest(),
     ]);
     state.accounts  = Array.isArray(accs)    ? accs    : [];
     state.cats      = Array.isArray(catList)  ? catList  : [];
     state.subs      = Array.isArray(subList)  ? subList  : [];
     state.movements = Array.isArray(movs)     ? movs     : [];
+    state.rates     = fxData?.rates || {};
   } catch (e) {
     return FeedbackBanner.render(feedbackEl, e?.message || 'Failed to load data.');
   }
 
-  /* ── Render Filter Bar ────────────────────────────────────── */
+  /* ── Populate account select ──────────────────────────────── */
 
-  const filterConfig = _buildFilterConfig(state);
-  const filterRoot = FilterBar.render(filterSection, filterConfig, {
-    onFilterChange: () => reloadGrid(),
-    onAction: (actionId) => {
-      if (actionId === 'reset') {
-        FilterBar.setValues(filterRoot, { account: '', type: '', dateFrom: '', dateTo: '' });
-        reloadGrid();
-      }
-    },
-  });
-
-  /* ── Render Edit Form (hidden initially) ──────────────────── */
-
-  const formConfig = { accounts: state.accounts, categories: state.cats, subCategories: state.subs };
-  formSection.innerHTML = MovementForm.buildHTML(formConfig);
-  const formEl = formSection.querySelector('#mf-root');
-
-  MovementForm.hydrate(formEl, formConfig, {
-    onSubmit: handleSubmit,
-    onCancel: handleCancel,
-  });
+  if (accountSelect) {
+    accountSelect.innerHTML =
+      '<option value="">All accounts</option>' +
+      state.accounts.map(a =>
+        `<option value="${a.id}">${a.account} (${normalizeCurrency(a.currency)})</option>`
+      ).join('');
+  }
 
   /* ── Mount Grid ───────────────────────────────────────────── */
 
@@ -93,79 +92,115 @@ async function initMovementsPage(root = document) {
 
   mountGrid(gridHost, state, {
     getGridTheme,
-    onEdit: handleEdit,
-    onDelete: handleDelete,
-    onFilterCode: handleFilterCode,
+    rates: state.rates,
+    targetCurrency: normalizeCurrency(finalAppConfig.currency),
+    onSelectionChanged: handleSelectionChange,
   });
 
-  /* ── Helpers ─────────────────────────────────────────────── */
+  /* ── Toolbar Events ───────────────────────────────────────── */
+
+  accountSelect?.addEventListener('change', reloadGrid);
+  dateFrom?.addEventListener('change', reloadGrid);
+  dateTo?.addEventListener('change', reloadGrid);
+
+  typeToggle?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-type]');
+    if (!btn) return;
+    state.typeFilter = btn.dataset.type;
+    typeToggle.querySelectorAll('[data-type]').forEach(b =>
+      b.classList.toggle('ft-movements-type-toggle__btn--active', b === btn),
+    );
+    reloadGrid();
+  });
+
+  btnEdit?.addEventListener('click', () => {
+    if (state.selectedRows.length === 1) handleEdit(state.selectedRows[0]);
+  });
+
+  btnGroup?.addEventListener('click', () => {
+    if (state.selectedRows.length === 1 && state.selectedRows[0].movement_code) {
+      handleFilterCode(state.selectedRows[0].movement_code);
+    }
+  });
+
+  btnDelete?.addEventListener('click', () => {
+    if (state.selectedRows.length > 0) handleBulkDelete(state.selectedRows);
+  });
+
+  /* ── Selection ────────────────────────────────────────────── */
+
+  function handleSelectionChange(rows) {
+    state.selectedRows = rows;
+    const count = rows.length;
+    if (btnEdit) btnEdit.disabled = count !== 1;
+    if (btnGroup) btnGroup.disabled = count !== 1 || !rows[0]?.movement_code;
+    if (btnDelete) btnDelete.disabled = count === 0;
+  }
+
+  /* ── Reload ───────────────────────────────────────────────── */
 
   async function reloadGrid() {
     try {
-      const filters = _getServerFilters(filterRoot);
-      const fresh = await fetchMovements(filters);
+      const params = { limit: DEFAULT_LIMIT };
+      if (accountSelect?.value) params.account_id = Number(accountSelect.value);
+      if (state.typeFilter) params.type = state.typeFilter;
+      if (dateFrom?.value) params.date_from = dateFrom.value;
+      if (dateTo?.value) params.date_to = dateTo.value;
+      const fresh = await fetchMovements(params);
       refreshGridData(state, Array.isArray(fresh) ? fresh : []);
     } catch (e) {
       FeedbackBanner.render(feedbackEl, e?.message || 'Failed to reload movements.');
     }
   }
 
-  /* ── Edit Flow ──────────────────────────────────────────── */
+  /* ── Edit via Modal ───────────────────────────────────────── */
 
   function handleEdit(movement) {
-    state.editingId = movement.id;
-    formEl.classList.add('ft-movement-form--visible');
-    MovementForm.populate(formEl, movement, formConfig);
-    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    MovementModal.open(movement, {
+      accounts: state.accounts,
+      categories: state.cats,
+      subCategories: state.subs,
+    }, {
+      onSave: async (id, payload) => {
+        await updateMovement(id, payload);
+        MovementModal.close();
+        FeedbackBanner.render(feedbackEl, 'Movement updated.', 'success');
+        await reloadGrid();
+        setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
+      },
+      onSoftDelete: async (id) => {
+        await softDeleteMovement(id);
+        MovementModal.close();
+        FeedbackBanner.render(feedbackEl, 'Movement deleted.', 'success');
+        await reloadGrid();
+        setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
+      },
+    });
   }
 
-  function handleCancel() {
-    state.editingId = null;
-    formEl.classList.remove('ft-movement-form--visible');
-    MovementForm.reset(formEl);
-    FeedbackBanner.clear(feedbackEl);
-  }
+  /* ── Bulk Delete ──────────────────────────────────────────── */
 
-  async function handleSubmit() {
-    FeedbackBanner.clear(feedbackEl);
-    const values = MovementForm.getValues(formEl);
-    const { valid, errors, payload } = MovementForm.validate(values);
-
-    if (!valid) {
-      return FeedbackBanner.render(feedbackEl, errors.join(' '));
+  function handleBulkDelete(rows) {
+    const active = rows.filter(r => r.active === 1);
+    if (!active.length) {
+      FeedbackBanner.render(feedbackEl, 'No active movements selected.');
+      return;
     }
-
-    try {
-      await updateMovement(state.editingId, payload);
-      FeedbackBanner.render(feedbackEl, 'Movement updated.', 'success');
-      state.editingId = null;
-      formEl.classList.remove('ft-movement-form--visible');
-      MovementForm.reset(formEl);
-      await reloadGrid();
-      setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
-    } catch (e) {
-      FeedbackBanner.render(feedbackEl, e?.message || 'Update failed.');
-    }
-  }
-
-  /* ── Delete Flow ────────────────────────────────────────── */
-
-  function handleDelete(movement) {
     FeedbackBanner.renderWithActions(
       feedbackEl,
-      `Soft-delete <b>${movement.movement}</b> on ${movement.date}?`,
+      `Soft-delete <b>${active.length}</b> movement${active.length !== 1 ? 's' : ''}?`,
       [
         {
           label: 'Delete',
           className: 'ft-feedback-banner__btn--danger',
           onClick: async () => {
             try {
-              await softDeleteMovement(movement.id);
-              FeedbackBanner.render(feedbackEl, 'Movement deleted.', 'success');
+              await Promise.all(active.map(m => softDeleteMovement(m.id)));
+              FeedbackBanner.render(feedbackEl, `${active.length} movement(s) deleted.`, 'success');
               await reloadGrid();
               setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
             } catch (e) {
-              FeedbackBanner.render(feedbackEl, e?.message || 'Delete failed.');
+              FeedbackBanner.render(feedbackEl, e?.message || 'Bulk delete failed.');
             }
           },
         },
@@ -174,7 +209,7 @@ async function initMovementsPage(root = document) {
     );
   }
 
-  /* ── Code Group Filter ──────────────────────────────────── */
+  /* ── Code-Group Filter ────────────────────────────────────── */
 
   function handleFilterCode(code) {
     state.codeFilter = code;
@@ -210,71 +245,11 @@ async function initMovementsPage(root = document) {
       ?.addEventListener('click', clearCodeFilter);
 
     codeBannerEl.querySelector('[data-banner-action="delete-all"]')
-      ?.addEventListener('click', () => handleDeleteGroup(code));
+      ?.addEventListener('click', () => {
+        const active = state.movements.filter(m => m.movement_code === code && m.active === 1);
+        handleBulkDelete(active);
+      });
   }
-
-  function handleDeleteGroup(code) {
-    const matching = state.movements.filter(m => m.movement_code === code && m.active === 1);
-    FeedbackBanner.renderWithActions(
-      feedbackEl,
-      `Soft-delete <b>${matching.length}</b> movement${matching.length !== 1 ? 's' : ''} with code <span style="font-family:monospace">${code}</span>?`,
-      [
-        {
-          label: 'Delete All',
-          className: 'ft-feedback-banner__btn--danger',
-          onClick: async () => {
-            try {
-              await Promise.all(matching.map(m => softDeleteMovement(m.id)));
-              FeedbackBanner.render(feedbackEl, `${matching.length} movements deleted.`, 'success');
-              clearCodeFilter();
-              await reloadGrid();
-              setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
-            } catch (e) {
-              FeedbackBanner.render(feedbackEl, e?.message || 'Bulk delete failed.');
-            }
-          },
-        },
-        { label: 'Cancel', onClick: () => FeedbackBanner.clear(feedbackEl) },
-      ],
-    );
-  }
-}
-
-/* ── Private Helpers ──────────────────────────────────────── */
-
-function _buildFilterConfig(state) {
-  const accountOpts = [
-    { value: '', label: 'All accounts' },
-    ...state.accounts.map(a => ({ value: String(a.id), label: a.account })),
-  ];
-
-  return {
-    variant: 'bare',
-    hideLabels: true,
-    fields: [
-      { id: 'account',  type: 'select', options: accountOpts },
-      { id: 'type',     type: 'select', options: [
-        { value: '', label: 'All types' },
-        { value: 'Income', label: 'Income' },
-        { value: 'Expense', label: 'Expense' },
-      ]},
-      { id: 'dateFrom', type: 'date', placeholder: 'From' },
-      { id: 'dateTo',   type: 'date', placeholder: 'To' },
-    ],
-    actions: [
-      { id: 'reset', label: 'Reset', icon: 'restart_alt' },
-    ],
-  };
-}
-
-function _getServerFilters(filterRoot) {
-  const vals = FilterBar.getValues(filterRoot);
-  const params = { limit: DEFAULT_LIMIT };
-  if (vals.account)  params.account_id = Number(vals.account);
-  if (vals.type)     params.type = vals.type;
-  if (vals.dateFrom) params.date_from = vals.dateFrom;
-  if (vals.dateTo)   params.date_to = vals.dateTo;
-  return params;
 }
 
 export { initMovementsPage };

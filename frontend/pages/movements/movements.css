@@ -2,8 +2,7 @@
    Movements Page — Page-Specific Styles
    ============================================================
    Shared renderers → styles/ag-grid-overrides.css  (ft-grid-*)
-   Edit form styles → components/dumb/movementForm/movementForm.css
-   Only grid host height and page-specific elements go here.
+   Modal styles     → components/modals/movementModal/movementModal.css
    ============================================================ */
 
 /* ── Grid Host ──────────────────────────────────────────────── */
@@ -12,6 +11,123 @@
   height: calc(100vh - 340px);
   min-height: 280px;
   width: 100%;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
+
+.ft-movements-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.ft-movements-toolbar__left {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ft-movements-toolbar__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ft-movements-toolbar__select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 13px;
+  height: 34px;
+  min-width: 260px;
+  padding: 0 10px;
+}
+
+.ft-movements-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Date Inputs ─────────────────────────────────────────────── */
+
+.ft-movements-toolbar__dates {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.ft-movements-toolbar__date-input {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font-size: 13px;
+  height: 34px;
+  padding: 0 10px;
+  width: 140px;
+}
+
+.ft-movements-toolbar__date-input:focus {
+  border-color: var(--ft-color-accent);
+  outline: none;
+}
+
+.ft-movements-toolbar__date-sep {
+  color: var(--ft-color-text-muted);
+  font-size: 13px;
+}
+
+/* ── Type Toggle (All / Expense / Income) ─────────────────── */
+
+.ft-movements-type-toggle {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.ft-movements-type-toggle__btn {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 14px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-movements-type-toggle__btn:hover:not(.ft-movements-type-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-movements-type-toggle__btn--active.ft-movements-type-toggle__btn--all {
+  background: var(--ft-color-accent-10);
+  color: var(--ft-color-accent);
+}
+
+.ft-movements-type-toggle__btn--active.ft-movements-type-toggle__btn--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-movements-type-toggle__btn--active.ft-movements-type-toggle__btn--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
 }
 
 /* ── Code-Group Banner ──────────────────────────────────────── */
@@ -28,9 +144,7 @@
   padding: 8px 16px;
 }
 
-.ft-movements-code-banner__text {
-  flex: 1;
-}
+.ft-movements-code-banner__text { flex: 1; }
 
 .ft-movements-code-banner__code {
   color: var(--ft-color-accent);
@@ -38,7 +152,7 @@
   font-weight: 600;
 }
 
-/* ── Inactive Row Dim ───────────────────────────────────────── */
+/* ── Inactive Row ───────────────────────────────────────────── */
 
 .ft-movements-grid .ag-row.ft-row-inactive {
   opacity: 0.45;

@@ -1,28 +1,35 @@
 /**
- * Movements grid — AG Grid column definitions, mount, and data refresh.
- * Uses shared cell renderers from utils/gridRenderers.js.
+ * Movements grid — AG Grid with checkbox selection, converted amount column,
+ * and external code-filter support. No inline actions (handled by toolbar).
  */
 import {
   dateCellRenderer,
   moneyCentsCellRenderer,
   accountCellRenderer,
   typeBadgeRenderer,
-  categoryCellRenderer,
-  movementCodeRenderer,
-  actionsCellRenderer,
+  convertedAmountRenderer,
 } from '../../utils/gridRenderers.js';
-
-/* ── Action Button Definitions ────────────────────────────── */
-
-const MOVEMENT_ACTIONS = [
-  { id: 'edit', icon: 'edit', title: 'Edit' },
-  { id: 'delete', icon: 'delete', title: 'Soft-delete', variant: 'danger' },
-];
 
 /* ── Column Definitions ───────────────────────────────────── */
 
-function buildColumnDefs() {
+/**
+ * @param {object}  rates          — FX rates keyed by currency code
+ * @param {string}  targetCurrency — app main currency (e.g. 'USD')
+ */
+function buildColumnDefs(rates, targetCurrency) {
   return [
+    {
+      colId: '__select',
+      headerName: '',
+      width: 46,
+      minWidth: 46,
+      maxWidth: 46,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+    },
     {
       headerName: 'Date',
       field: 'date',
@@ -46,7 +53,7 @@ function buildColumnDefs() {
     {
       headerName: 'Type',
       field: 'type',
-      width: 90,
+      width: 85,
       cellRenderer: typeBadgeRenderer,
     },
     {
@@ -58,26 +65,25 @@ function buildColumnDefs() {
       cellStyle: { textAlign: 'right' },
     },
     {
+      headerName: 'Converted',
+      field: 'value',
+      colId: 'converted',
+      width: 150,
+      headerClass: 'ft-ag-header-right',
+      cellRenderer: convertedAmountRenderer('value', 'currency', rates, targetCurrency),
+      cellStyle: { textAlign: 'right' },
+    },
+    {
       headerName: 'Category',
       field: 'category',
       flex: 1,
-      minWidth: 120,
-      cellRenderer: categoryCellRenderer,
+      minWidth: 100,
     },
     {
-      headerName: 'Code',
-      field: 'movement_code',
-      width: 165,
-      cellRenderer: movementCodeRenderer,
-    },
-    {
-      headerName: '',
-      width: 76,
-      maxWidth: 76,
-      sortable: false,
-      filter: false,
-      resizable: false,
-      cellRenderer: actionsCellRenderer(MOVEMENT_ACTIONS),
+      headerName: 'Sub-category',
+      field: 'sub_category',
+      flex: 1,
+      minWidth: 100,
     },
   ];
 }
@@ -87,23 +93,24 @@ function buildColumnDefs() {
 /**
  * Creates the AG Grid instance inside `hostEl`.
  *
- * @param {HTMLElement} hostEl  — grid container
- * @param {object}      state   — shared page state (mutated: .gridApi, .movements)
+ * @param {HTMLElement} hostEl — grid container
+ * @param {object}      state  — shared page state (mutated: .gridApi)
  * @param {object}      opts
  * @param {Function}    opts.getGridTheme
- * @param {Function}    opts.onEdit          — called with row data
- * @param {Function}    opts.onDelete        — called with row data
- * @param {Function}    opts.onFilterCode    — called with movement_code string
+ * @param {object}      opts.rates           — FX rates
+ * @param {string}      opts.targetCurrency  — main currency
+ * @param {Function}    opts.onSelectionChanged — called with selected rows array
  */
-export function mountGrid(hostEl, state, { getGridTheme, onEdit, onDelete, onFilterCode }) {
+export function mountGrid(hostEl, state, { getGridTheme, rates, targetCurrency, onSelectionChanged }) {
   const gridOptions = {
     theme: getGridTheme(),
-    columnDefs: buildColumnDefs(),
+    columnDefs: buildColumnDefs(rates, targetCurrency),
     rowData: state.movements,
     getRowId: p => String(p.data.id),
     domLayout: 'normal',
     suppressCellFocus: true,
     animateRows: true,
+    rowSelection: 'multiple',
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
@@ -111,19 +118,14 @@ export function mountGrid(hostEl, state, { getGridTheme, onEdit, onDelete, onFil
       sortable: true,
       resizable: true,
     },
-    /* External filter for movement_code grouping */
     isExternalFilterPresent: () => !!state.codeFilter,
     doesExternalFilterPass: node => node.data.movement_code === state.codeFilter,
     getRowClass: params => params.data?.active === 0 ? 'ft-row-inactive' : '',
     overlayNoRowsTemplate:
       '<span class="ft-small ft-text-muted">No movements found</span>',
-    onCellClicked: params => {
-      const btn = params.event?.target?.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.dataset.action;
-      if (action === 'edit') onEdit(params.data);
-      if (action === 'delete') onDelete(params.data);
-      if (action === 'filter-code') onFilterCode(params.data.movement_code);
+    onSelectionChanged: () => {
+      const selected = state.gridApi.getSelectedRows();
+      onSelectionChanged?.(selected);
     },
   };
 
@@ -136,7 +138,7 @@ export function refreshGridData(state, movements) {
   state.gridApi?.setGridOption('rowData', movements);
 }
 
-/** Trigger external filter re-evaluation (after codeFilter changes). */
+/** Trigger external filter re-evaluation. */
 export function applyExternalFilter(state) {
   state.gridApi?.onFilterChanged();
 }

@@ -6,17 +6,40 @@
     </div>
   </header>
 
-  <!-- Filter Bar -->
-  <section class="ft-section" id="widget-movements-filter"></section>
+  <!-- Toolbar (account + type toggle + date filters + actions) -->
+  <div class="ft-movements-toolbar ft-section" id="widget-movements-toolbar">
+    <div class="ft-movements-toolbar__left">
+      <label class="ft-movements-toolbar__label" for="movements-account-select">Account</label>
+      <select id="movements-account-select" class="ft-movements-toolbar__select"></select>
+      <div class="ft-movements-type-toggle" id="movements-type-toggle">
+        <button class="ft-movements-type-toggle__btn ft-movements-type-toggle__btn--all ft-movements-type-toggle__btn--active" data-type="">All</button>
+        <button class="ft-movements-type-toggle__btn ft-movements-type-toggle__btn--expense" data-type="Expense">Expense</button>
+        <button class="ft-movements-type-toggle__btn ft-movements-type-toggle__btn--income" data-type="Income">Income</button>
+      </div>
+      <div class="ft-movements-toolbar__dates">
+        <input type="date" id="movements-date-from" class="ft-movements-toolbar__date-input" title="From date" />
+        <span class="ft-movements-toolbar__date-sep">–</span>
+        <input type="date" id="movements-date-to" class="ft-movements-toolbar__date-input" title="To date" />
+      </div>
+    </div>
+    <div class="ft-movements-toolbar__actions">
+      <button class="ft-btn ft-btn--ghost" id="btn-edit-movement" disabled title="Edit selected">
+        <span class="material-symbols-outlined" aria-hidden="true">edit</span> Edit
+      </button>
+      <button class="ft-btn ft-btn--ghost" id="btn-show-group" disabled title="Show movements with same code">
+        <span class="material-symbols-outlined" aria-hidden="true">link</span> Show Group
+      </button>
+      <button class="ft-btn ft-btn--ghost" id="btn-soft-delete" disabled title="Soft-delete selected">
+        <span class="material-symbols-outlined" aria-hidden="true">delete</span> Delete
+      </button>
+    </div>
+  </div>
 
   <!-- Feedback -->
   <div id="widget-movements-feedback"></div>
 
   <!-- Code-Group Banner (shown when filtering by movement_code) -->
   <div id="widget-movements-code-banner"></div>
-
-  <!-- Edit Form (hidden by default) -->
-  <section class="ft-section" id="widget-movements-form"></section>
 
   <!-- Movements Grid -->
   <section class="ft-section">
