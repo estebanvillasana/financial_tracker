@@ -14,13 +14,14 @@ import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBan
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { escapeHtml } from '../../utils/formHelpers.js';
 import { createFlow } from './flow.js';
-import { renderAccountToolbar, renderTally, renderFlow, renderHistory } from './render.js';
+import { renderAccountToolbar, renderAccountPanel, renderTally, renderFlow, renderHistory, MONTH_NAMES } from './render.js';
 import { saveMovement } from './actions.js';
 
 /* ── Phases: 'idle' | 'input' | 'review' | 'success' | 'saving' ── */
 
 async function initQuickAddPage(root = document) {
   const toolbarEl = root.querySelector('#widget-quick-add-toolbar');
+  const accountPanelEl = root.querySelector('#widget-quick-add-account-panel');
   const tallyEl = root.querySelector('#widget-quick-add-tally');
   const flowEl = root.querySelector('#widget-quick-add-flow');
   const feedbackEl = root.querySelector('#widget-quick-add-feedback');
@@ -74,6 +75,7 @@ async function initQuickAddPage(root = document) {
   /* ── Render helpers ── */
   function refresh() {
     renderAccountToolbar(toolbarEl, state);
+    renderAccountPanel(accountPanelEl, state);
     renderTally(tallyEl, sessionStats);
     renderFlow(flowEl, flow, state, phase);
     renderHistory(historyEl, history, sessionStats.currency);
@@ -104,6 +106,59 @@ async function initQuickAddPage(root = document) {
       refresh();
     }
   });
+
+  /* ── Refresh account data (updates balance after save) ── */
+  async function _refreshAccountData() {
+    try {
+      const freshAccounts = await bankAccounts.getAll({ active: 1 });
+      state.accounts = freshAccounts;
+      renderAccountPanel(accountPanelEl, state);
+    } catch (_) { /* silent — balance card just won't update */ }
+  }
+
+  /* ── Smart date helpers ── */
+
+  function _getSmartDateEl() {
+    return flowEl.querySelector('.ft-qa-smart-date');
+  }
+
+  function _smartDateValues(el) {
+    return {
+      year: parseInt(el.dataset.year, 10),
+      month: parseInt(el.dataset.month, 10),
+      day: parseInt(el.dataset.day, 10),
+      segment: parseInt(el.dataset.segment, 10),
+    };
+  }
+
+  function _daysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+  }
+
+  function _clampDay(year, month, day) {
+    return Math.min(day, _daysInMonth(year, month));
+  }
+
+  function _updateSmartDate(el, year, month, day, segment) {
+    month = ((month - 1 + 12) % 12) + 1; // clamp 1–12
+    day = _clampDay(year, month, day);
+    el.dataset.year = year;
+    el.dataset.month = month;
+    el.dataset.day = day;
+    el.dataset.segment = segment;
+
+    const segs = el.querySelectorAll('.ft-qa-smart-date__seg');
+    segs[0].textContent = String(day).padStart(2, '0');
+    segs[1].textContent = MONTH_NAMES[month - 1];
+    segs[2].textContent = String(year);
+
+    segs.forEach((s, i) => s.classList.toggle('ft-qa-smart-date__seg--active', i === segment));
+  }
+
+  function _smartDateIso(el) {
+    const { year, month, day } = _smartDateValues(el);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
 
   /* ── Global keyboard handler ── */
   const keyHandler = async (e) => {
@@ -146,6 +201,8 @@ async function initQuickAddPage(root = document) {
           sessionStats.totalCents += cents;
           history.push({ movement: values.movement, date: values.date, type: values.type, amount });
           phase = 'success';
+          // Refresh account data so balance card reflects the new movement
+          _refreshAccountData();
         } else {
           phase = 'review';
         }
@@ -166,7 +223,45 @@ async function initQuickAddPage(root = document) {
     const step = flow.currentStep();
     if (!step) return;
 
-    /* Type toggle: E/I keys or click */
+    /* Smart date: segment-based arrow key navigation */
+    if (step.inputType === 'smart-date') {
+      const dateEl = _getSmartDateEl();
+      if (!dateEl) return;
+      const { year, month, day, segment } = _smartDateValues(dateEl);
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        _updateSmartDate(dateEl, year, month, day, Math.max(0, segment - 1));
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        _updateSmartDate(dateEl, year, month, day, Math.min(2, segment + 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (segment === 0) _updateSmartDate(dateEl, year, month, Math.min(_daysInMonth(year, month), day + 1), segment);
+        else if (segment === 1) _updateSmartDate(dateEl, year, month + 1, day, segment);
+        else _updateSmartDate(dateEl, year + 1, month, day, segment);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (segment === 0) _updateSmartDate(dateEl, year, month, Math.max(1, day - 1), segment);
+        else if (segment === 1) _updateSmartDate(dateEl, year, month - 1, day, segment);
+        else _updateSmartDate(dateEl, year - 1, month, day, segment);
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        _advanceStep(_smartDateIso(dateEl));
+        return;
+      }
+      return;
+    }
+
+    /* Type toggle: E/I keys, arrows, or click */
     if (step.inputType === 'type-toggle') {
       if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
@@ -180,6 +275,13 @@ async function initQuickAddPage(root = document) {
         _advanceStep('Income');
         return;
       }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const active = flowEl.querySelector('.ft-qa-type-toggle__btn--active');
+        const next = active?.dataset.value === 'Expense' ? 'Income' : 'Expense';
+        _selectTypeToggle(flowEl, next);
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
         const active = flowEl.querySelector('.ft-qa-type-toggle__btn--active');
@@ -189,7 +291,7 @@ async function initQuickAddPage(root = document) {
       return;
     }
 
-    /* Invoice toggle: Y/N keys */
+    /* Invoice toggle: Y/N keys, arrows */
     if (step.inputType === 'yn-toggle') {
       if (e.key === 'y' || e.key === 'Y') {
         e.preventDefault();
@@ -201,6 +303,13 @@ async function initQuickAddPage(root = document) {
         e.preventDefault();
         const active = flowEl.querySelector('.ft-qa-invoice-toggle__btn--active');
         _advanceStep(active?.dataset.value || '0');
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const active = flowEl.querySelector('.ft-qa-invoice-toggle__btn--active');
+        const next = active?.dataset.value === '0' ? '1' : '0';
+        _selectInvoiceToggle(flowEl, next);
         return;
       }
       if (e.key === 'Escape' && !step.required) {

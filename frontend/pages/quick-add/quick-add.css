@@ -466,3 +466,103 @@
   font-size: 10px;
   padding: 1px 5px;
 }
+
+/* ── Account Info Panel ──────────────────────────────────── */
+
+.ft-quick-add-account-panel {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ft-quick-add-account-panel:empty {
+  display: none;
+}
+
+.ft-quick-add-account-panel .ft-info-card {
+  flex: 1 1 260px;
+  max-width: 360px;
+}
+
+/* ── Smart Date Selector ──────────────────────────────────── */
+
+.ft-qa-smart-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  padding: 6px 12px;
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-md, 6px);
+  background: var(--ft-color-elevated);
+  cursor: default;
+  outline: none;
+  transition: border-color 0.15s;
+  user-select: none;
+}
+
+.ft-qa-smart-date:focus {
+  border-color: var(--ft-color-primary, #4f8ff7);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ft-color-primary, #4f8ff7) 25%, transparent);
+}
+
+.ft-qa-smart-date__sep {
+  color: var(--ft-color-text-muted);
+  pointer-events: none;
+}
+
+.ft-qa-smart-date__seg {
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ft-qa-smart-date__seg--active {
+  background: var(--ft-color-primary, #4f8ff7);
+  color: #fff;
+}
+
+.ft-qa-smart-date-hint {
+  display: block;
+  margin-top: 6px;
+}
+
+.ft-qa-smart-date-hint kbd {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
+/* ── Amount with Currency ─────────────────────────────────── */
+
+.ft-qa-amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ft-qa-prompt__input--amount {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.ft-qa-amount-currency {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ft-color-text-muted);
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-sm, 4px);
+  padding: 3px 8px;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}

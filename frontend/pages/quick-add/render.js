@@ -8,6 +8,20 @@
 import { escapeHtml } from '../../utils/formHelpers.js';
 import { normalizeCurrency, formatMoneyFromCents, formatMoney } from '../../utils/formatters.js';
 import { categoryLabelById, subCategoryLabelById } from '../../utils/lookups.js';
+import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
+
+/* ── Months lookup ────────────────────────────────────────── */
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function _formatSmartDate(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} ${MONTH_NAMES[m - 1]} ${y}`;
+}
 
 /* ── Account Toolbar ──────────────────────────────────────── */
 
@@ -49,6 +63,34 @@ function renderAccountToolbar(toolbarEl, state) {
         Start Adding
       </button>
     </div>`;
+}
+
+/* ── Account Info Panel (balance cards) ───────────────────── */
+
+function renderAccountPanel(panelEl, state) {
+  if (!panelEl) return;
+  panelEl.innerHTML = '';
+
+  if (!state.accountLocked) return;
+
+  const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+  if (!account) return;
+
+  const balance = Number(account.total_balance ?? 0);
+  const currency = normalizeCurrency(account.currency);
+
+  panelEl.appendChild(
+    InfoCard.createElement(
+      {
+        icon: 'account_balance',
+        label: 'Current Balance',
+        value: formatMoneyFromCents(balance, currency),
+        subValue: `${account.account} · ${account.owner}`,
+        note: `Currency ${currency}`,
+      },
+      { variant: 'default' },
+    ),
+  );
 }
 
 /* ── Session Tally ────────────────────────────────────────── */
@@ -124,6 +166,11 @@ function renderFlow(flowEl, flow, state, phase) {
 
   // Focus the active input
   requestAnimationFrame(() => {
+    const smartDate = flowEl.querySelector('.ft-qa-smart-date');
+    if (smartDate) {
+      smartDate.focus();
+      return;
+    }
     const input = flowEl.querySelector('.ft-qa-prompt__input, .ft-qa-type-toggle__btn--active, .ft-qa-invoice-toggle__btn--active');
     if (input) input.focus();
   });
@@ -184,6 +231,49 @@ function _renderActiveStep(step, state, values) {
       </div>`;
   }
 
+  /* Smart date input: segmented DD MONTH YYYY with arrow key navigation */
+  if (step.inputType === 'smart-date') {
+    const iso = defaultVal || new Date().toISOString().slice(0, 10);
+    const [y, m, d] = iso.split('-').map(Number);
+    return `
+      <div class="ft-qa-prompt" data-step="${step.key}">
+        <span class="ft-qa-prompt__label">${step.label}</span>
+        <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
+        <div class="ft-qa-smart-date" tabindex="0" data-year="${y}" data-month="${m}" data-day="${d}" data-segment="0">
+          <span class="ft-qa-smart-date__seg ft-qa-smart-date__seg--active" data-seg="0">${String(d).padStart(2, '0')}</span>
+          <span class="ft-qa-smart-date__sep"> </span>
+          <span class="ft-qa-smart-date__seg" data-seg="1">${MONTH_NAMES[m - 1]}</span>
+          <span class="ft-qa-smart-date__sep"> </span>
+          <span class="ft-qa-smart-date__seg" data-seg="2">${y}</span>
+        </div>
+        <span class="ft-qa-smart-date-hint ft-small ft-text-muted">
+          <kbd>←</kbd><kbd>→</kbd> segment · <kbd>↑</kbd><kbd>↓</kbd> change · <kbd>Enter</kbd> confirm
+        </span>
+      </div>`;
+  }
+
+  /* Amount input with currency label */
+  if (step.inputType === 'number') {
+    const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+    const currency = normalizeCurrency(account?.currency);
+    return `
+      <div class="ft-qa-prompt" data-step="${step.key}">
+        <span class="ft-qa-prompt__label">${step.label}</span>
+        <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
+        <div class="ft-qa-amount-wrap">
+          <input
+            class="ft-qa-prompt__input ft-qa-prompt__input--amount"
+            type="text"
+            value=""
+            placeholder="0.00"
+            inputmode="decimal"
+            autocomplete="off"
+          />
+          <span class="ft-qa-amount-currency">${escapeHtml(currency)}</span>
+        </div>
+      </div>`;
+  }
+
   return `
     <div class="ft-qa-prompt" data-step="${step.key}">
       <span class="ft-qa-prompt__label">${step.label}</span>
@@ -193,7 +283,6 @@ function _renderActiveStep(step, state, values) {
         type="text"
         value="${escapeHtml(defaultVal)}"
         placeholder="${escapeHtml(step.placeholder || '')}"
-        ${step.inputType === 'number' ? 'inputmode="decimal"' : ''}
         autocomplete="off"
       />
     </div>`;
@@ -220,7 +309,7 @@ function _renderReview(flowEl, flow, state) {
         <span class="ft-qa-review__label">Movement</span>
         <span class="ft-qa-review__value">${escapeHtml(values.movement)}</span>
         <span class="ft-qa-review__label">Date</span>
-        <span class="ft-qa-review__value">${escapeHtml(values.date)}</span>
+        <span class="ft-qa-review__value">${_formatSmartDate(values.date)}</span>
         <span class="ft-qa-review__label">Type</span>
         <span class="ft-qa-review__value">${escapeHtml(values.type)}</span>
         <span class="ft-qa-review__label">Amount</span>
@@ -268,7 +357,7 @@ function renderHistory(historyEl, history, currency) {
     <div class="ft-qa-history-item">
       <span class="ft-qa-history-item__type ft-qa-history-item__type--${item.type.toLowerCase()}">${item.type}</span>
       <span class="ft-qa-history-item__name">${escapeHtml(item.movement)}</span>
-      <span class="ft-qa-history-item__date">${escapeHtml(item.date)}</span>
+      <span class="ft-qa-history-item__date">${_formatSmartDate(item.date)}</span>
       <span class="ft-qa-history-item__amount">${formatMoney(item.amount, currency)}</span>
     </div>`).join('');
 
@@ -281,10 +370,16 @@ function renderHistory(historyEl, history, currency) {
 
 function _formatDisplayValue(step, value, state) {
   if (value === null || value === undefined) return '(skipped)';
+  if (step.key === 'date') return _formatSmartDate(value);
   if (step.key === 'category_id') return categoryLabelById(state.categories, value) || '—';
   if (step.key === 'sub_category_id') return subCategoryLabelById(state.subCategories, value) || '—';
   if (step.key === 'invoice') return value ? 'Yes' : 'No';
+  if (step.key === 'amount') {
+    const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+    const currency = normalizeCurrency(account?.currency);
+    return formatMoney(Number(value), currency);
+  }
   return String(value);
 }
 
-export { renderAccountToolbar, renderTally, renderFlow, renderHistory };
+export { renderAccountToolbar, renderAccountPanel, renderTally, renderFlow, renderHistory, MONTH_NAMES };

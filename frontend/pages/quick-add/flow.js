@@ -21,8 +21,7 @@ const FIELD_STEPS = [
   {
     key: 'date',
     label: 'Date',
-    inputType: 'text',
-    placeholder: 'YYYY-MM-DD',
+    inputType: 'smart-date',
     required: true,
     defaultFn: () => new Date().toISOString().slice(0, 10),
     validate: v => (isValidIsoDate(v) ? null : 'Must be a valid date (YYYY-MM-DD).'),
