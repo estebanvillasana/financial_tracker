@@ -1,0 +1,71 @@
+/* ── Dashboard Page ──────────────────────────────────── */
+
+/* Quick actions nav in the header */
+.ft-dashboard__actions {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+/* 5-column stats row override (narrower min to fit 5 cards) */
+.ft-stats-row--5 {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+/* ── Breakdowns Row ──────────────────────────────────── */
+
+/* 3 equal-width cards side by side */
+.ft-dashboard__breakdowns {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .ft-dashboard__breakdowns {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .ft-dashboard__breakdowns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Individual breakdown card */
+.ft-dashboard__breakdown-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+  min-height: 280px;
+}
+
+/* Card title row */
+.ft-dashboard__breakdown-header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ── Recent Movements Grid ───────────────────────────── */
+
+.ft-dashboard__movements-wrapper {
+  min-height: 340px;
+}
+
+.ft-dashboard__movements-grid {
+  height: 340px;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .ft-dashboard__actions {
+    display: none;
+  }
+
+  .ft-stats-row--5 {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
