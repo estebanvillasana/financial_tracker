@@ -148,6 +148,16 @@
   white-space: nowrap;
 }
 
+/* DatePicker fields fill each range column */
+.ft-bulk-add-modal__range-row .ft-date-popup {
+  width: 100%;
+}
+
+.ft-bulk-add-modal__range-row .ft-date-popup__trigger {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Preview ───────────────────────────────────────────── */
 
 .ft-bulk-add-modal__preview {

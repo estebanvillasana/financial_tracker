@@ -54,8 +54,14 @@
   <!-- Accountant Summary Table (taxable repetitive movements with totals) -->
   <section class="ft-section" id="section-accountant">
     <div class="ft-section__header">
-      <h2 class="ft-h3">Accountant Summary</h2>
-      <span class="ft-small ft-text-muted" id="accountant-subtitle">Taxable movements — share with your accountant</span>
+      <div>
+        <h2 class="ft-h3">Accountant Summary</h2>
+        <span class="ft-small ft-text-muted" id="accountant-subtitle">Taxable movements — share with your accountant</span>
+      </div>
+      <button type="button" class="ft-btn ft-btn--ghost" id="btn-export-accountant-csv">
+        <span class="material-symbols-outlined">download</span>
+        Export CSV
+      </button>
     </div>
     <div class="ft-monthly-report__accountant-grid ft-ag-grid" id="widget-accountant-grid"></div>
   </section>

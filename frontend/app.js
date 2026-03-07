@@ -10,6 +10,7 @@ const ROUTES = {
   transfers:        'pages/transfers/transfers.html',
   categories:       'pages/categories/categories.html',
   repetitive:       'pages/repetitive-movements/repetitive-movements.html',
+  'monthly-report': 'pages/monthly-report/monthly-report.html',
 };
 
 const DEFAULT_ROUTE = 'dashboard';
@@ -22,6 +23,7 @@ const PAGE_INITIALIZERS = {
   transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
   categories: async () => (await import('./pages/categories/index.js')).initCategoriesPage,
   repetitive: async () => (await import('./pages/repetitive-movements/index.js')).initRepetitiveMovementsPage,
+  'monthly-report': async () => (await import('./pages/monthly-report/index.js')).initMonthlyReportPage,
 };
 
 function getPage() {

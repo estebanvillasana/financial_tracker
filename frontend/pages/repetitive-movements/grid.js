@@ -9,10 +9,11 @@
 import { buildGridOptions } from '../../utils/gridHelper.js';
 import { typeBadgeRenderer, actionsCellRenderer } from '../../utils/gridRenderers.js';
 import { escapeHtml } from '../../utils/formHelpers.js';
+import { formatMoneyFromCents } from '../../utils/formatters.js';
 
 /* ── Column defs ──────────────────────────────────────── */
 
-function _getColumnDefs(callbacks) {
+function _getColumnDefs(state, callbacks) {
   return [
     {
       headerName: 'Movement',
@@ -39,9 +40,8 @@ function _getColumnDefs(callbacks) {
       field: 'tax_report',
       width: 100,
       cellRenderer: params => {
-        const val = Number(params.value);
-        if (val === 1) {
-          return '<span class="ft-grid-badge ft-grid-badge--tax"><span class="material-symbols-outlined ft-grid-badge__icon" aria-hidden="true">receipt_long</span>Taxable</span>';
+        if (Number(params.value) === 1) {
+          return '<span class="ft-grid-type ft-grid-type--tax">Taxable</span>';
         }
         return '<span class="ft-text-muted">—</span>';
       },
@@ -53,10 +53,25 @@ function _getColumnDefs(callbacks) {
       cellRenderer: params => {
         const val = params.value;
         if (val === null || val === undefined) return '<span class="ft-text-muted">—</span>';
-        if (Number(val) === 1) {
-          return '<span class="ft-grid-badge ft-grid-badge--sub-active"><span class="material-symbols-outlined ft-grid-badge__icon" aria-hidden="true">check_circle</span>Active</span>';
-        }
-        return '<span class="ft-grid-badge ft-grid-badge--sub-cancelled"><span class="material-symbols-outlined ft-grid-badge__icon" aria-hidden="true">cancel</span>Cancelled</span>';
+        const isSubActive = Number(val) === 1;
+        const mod = isSubActive ? 'sub-active' : 'sub-cancelled';
+        const label = isSubActive ? 'Active' : 'Cancelled';
+        return `<span class="ft-grid-type ft-grid-type--${mod}">${label}</span>`;
+      },
+    },
+    {
+      headerName: 'Avg. Paid',
+      colId: 'avg_amount_cents',
+      field: 'avg_amount_cents',
+      width: 130,
+      hide: true,
+      type: 'numericColumn',
+      headerClass: 'ft-ag-header-right',
+      cellStyle: { textAlign: 'right' },
+      cellRenderer: params => {
+        const cents = Number(params.value);
+        if (!Number.isFinite(cents) || cents === 0) return '<span class="ft-text-muted">—</span>';
+        return `<span class="ft-grid-amount">${formatMoneyFromCents(cents, state.mainCurrency)}</span>`;
       },
     },
     {
@@ -70,15 +85,12 @@ function _getColumnDefs(callbacks) {
       },
     },
     {
-      headerName: 'Status',
-      field: 'active',
-      width: 90,
-      cellRenderer: params => {
-        const isActive = Number(params.value) === 1;
-        const cls = isActive ? 'active' : 'inactive';
-        const label = isActive ? 'Active' : 'Deleted';
-        return `<span class="ft-grid-type ft-grid-type--${isActive ? 'income' : ''}" style="${isActive ? '' : 'background:var(--ft-color-surface-alt);color:var(--ft-color-text-muted);'}">${label}</span>`;
-      },
+      colId: '_row_sort_order',
+      field: '_row_sort_order',
+      hide: true,
+      sort: 'asc',
+      sortIndex: 0,
+      suppressColumnsToolPanel: true,
     },
   ];
 }
@@ -87,7 +99,7 @@ function _getColumnDefs(callbacks) {
 
 export function mountGrid(container, state, callbacks) {
   const gridOptions = buildGridOptions({
-    columnDefs: _getColumnDefs(callbacks),
+    columnDefs: _getColumnDefs(state, callbacks),
     rowData: state.repetitiveMovements,
     getRowId: p => String(p.data.id),
     domLayout: 'autoHeight',

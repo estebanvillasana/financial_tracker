@@ -15,10 +15,15 @@
 
 import { escapeHtml, buildCategoryOptions, buildSubCategoryOptions } from '../../../utils/formHelpers.js';
 import { isValidIsoDate } from '../../../utils/validators.js';
+import { DatePicker } from '../../dumb/datePicker/datePicker.js';
 
 const BulkAddModal = (() => {
 
   let activeModal = null;
+  let _rangeFrom  = '';
+  let _rangeTo    = '';
+  let _fromCleanup = null;
+  let _toCleanup   = null;
 
   /* ── Close ──────────────────────────────────────────────── */
 
@@ -27,6 +32,12 @@ const BulkAddModal = (() => {
       activeModal.remove();
       activeModal = null;
     }
+    _fromCleanup?.();
+    _toCleanup?.();
+    _rangeFrom  = '';
+    _rangeTo    = '';
+    _fromCleanup = null;
+    _toCleanup   = null;
     document.removeEventListener('keydown', _handleEsc);
   }
 
@@ -157,11 +168,11 @@ const BulkAddModal = (() => {
             <div class="ft-bulk-add-modal__range-row">
               <div class="ft-bulk-add-modal__field ft-bulk-add-modal__field--compact">
                 <span>From</span>
-                <input type="date" name="range_from" />
+                <div id="bulk-range-from-wrap"></div>
               </div>
               <div class="ft-bulk-add-modal__field ft-bulk-add-modal__field--compact">
                 <span>To</span>
-                <input type="date" name="range_to" />
+                <div id="bulk-range-to-wrap"></div>
               </div>
               <button class="ft-btn ft-btn--ghost ft-bulk-add-modal__range-btn" data-action="fill-range">
                 <span class="material-symbols-outlined" aria-hidden="true">date_range</span>
@@ -217,6 +228,21 @@ const BulkAddModal = (() => {
   function _wireEvents(modal, config, onGenerate) {
     const { type, categories, subCategories } = config;
 
+    /* Mount date range pickers */
+    const fromWrap = modal.querySelector('#bulk-range-from-wrap');
+    const toWrap   = modal.querySelector('#bulk-range-to-wrap');
+
+    if (fromWrap) {
+      const fromPicker = DatePicker.createPickerField('From', '', v => { _rangeFrom = v; });
+      _fromCleanup = fromPicker._cleanup;
+      fromWrap.appendChild(fromPicker);
+    }
+    if (toWrap) {
+      const toPicker = DatePicker.createPickerField('To', '', v => { _rangeTo = v; });
+      _toCleanup = toPicker._cleanup;
+      toWrap.appendChild(toPicker);
+    }
+
     /* Close / Generate via delegation */
     modal.addEventListener('click', e => {
       const action = e.target.closest('[data-action]')?.dataset?.action;
@@ -241,8 +267,8 @@ const BulkAddModal = (() => {
   /* ── Fill Range ─────────────────────────────────────────── */
 
   function _handleFillRange(modal) {
-    const from = modal.querySelector('[name="range_from"]')?.value;
-    const to = modal.querySelector('[name="range_to"]')?.value;
+    const from = _rangeFrom;
+    const to   = _rangeTo;
 
     if (!from || !to) {
       _setMessage(modal, 'Select both From and To dates.', true);

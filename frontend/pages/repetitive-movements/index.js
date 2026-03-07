@@ -8,6 +8,7 @@
 
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
+import { TypeToggle } from '../../components/dumb/typeToggle/typeToggle.js';
 import { RepetitiveMovementModal } from '../../components/modals/repetitiveMovementModal/repetitiveMovementModal.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { normalizeCurrency, formatMoney } from '../../utils/formatters.js';
@@ -32,7 +33,7 @@ async function initRepetitiveMovementsPage(root = document) {
   const toolbarEl         = root.querySelector('#widget-repetitive-toolbar');
   const tabsEl            = root.querySelector('#repetitive-tabs');
   const newBtn            = root.querySelector('#btn-new-repetitive');
-  const typeToggle        = toolbarEl?.querySelector('#repetitive-type-toggle');
+  let typeToggle          = toolbarEl?.querySelector('#repetitive-type-toggle');
   const showDeletedToggle = toolbarEl?.querySelector('#repetitive-show-deleted');
 
   if (!gridWrapper) return;
@@ -46,6 +47,8 @@ async function initRepetitiveMovementsPage(root = document) {
     typeFilter: '',
     showDeleted: false,
     gridApi: null,
+    avgCosts: new Map(),
+    mainCurrency,
   };
 
   /* ── Load AG Grid + data in parallel ────────────────── */
@@ -70,6 +73,7 @@ async function initRepetitiveMovementsPage(root = document) {
   /* ── Render summary info cards ──────────────────────── */
 
   await _renderStats();
+  state.repetitiveMovements = _buildGridRows(state.repetitiveMovements);
 
   /* ── Mount Grid ─────────────────────────────────────── */
 
@@ -102,20 +106,27 @@ async function initRepetitiveMovementsPage(root = document) {
       typeToggle.style.display = state.activeTab === 'subscriptions' ? 'none' : '';
     }
 
+    if (state.gridApi) {
+      state.gridApi.setColumnsVisible(['avg_amount_cents'], state.activeTab === 'subscriptions');
+    }
+
     applyExternalFilter(state);
   });
 
   /* ── Toolbar Events ─────────────────────────────────── */
 
-  typeToggle?.addEventListener('click', e => {
-    const btn = e.target.closest('[data-type]');
-    if (!btn) return;
-    state.typeFilter = btn.dataset.type;
-    typeToggle.querySelectorAll('[data-type]').forEach(b =>
-      b.classList.toggle('ft-repetitive-type-toggle__btn--active', b === btn),
-    );
-    applyExternalFilter(state);
-  });
+  if (typeToggle) {
+    const typeToggleEl = TypeToggle.createElement({
+      activeType: state.typeFilter,
+      id: 'repetitive-type-toggle',
+      onChange: nextType => {
+        state.typeFilter = nextType;
+        applyExternalFilter(state);
+      },
+    });
+    typeToggle.replaceWith(typeToggleEl);
+    typeToggle = typeToggleEl;
+  }
 
   showDeletedToggle?.addEventListener('change', () => {
     state.showDeleted = showDeletedToggle.checked;
@@ -148,8 +159,8 @@ async function initRepetitiveMovementsPage(root = document) {
     } catch (e) {
       FeedbackBanner.render(feedbackEl, e?.message || 'Failed to reload data.');
     }
-    refreshGridData(state, state.repetitiveMovements);
     await _renderStats();
+    refreshGridData(state, _buildGridRows(state.repetitiveMovements));
   }
 
   /* ── Render Stats ───────────────────────────────────── */
@@ -159,17 +170,24 @@ async function initRepetitiveMovementsPage(root = document) {
 
     const activeItems = state.repetitiveMovements.filter(rm => Number(rm.active) === 1);
     const subs = activeItems.filter(rm => rm.active_subscription !== null && rm.active_subscription !== undefined);
+    const subsAll = state.repetitiveMovements
+      .filter(rm => rm.active_subscription !== null && rm.active_subscription !== undefined);
     const activeSubs = subs.filter(rm => Number(rm.active_subscription) === 1);
     const taxable = activeItems.filter(rm => Number(rm.tax_report) === 1);
 
     // Compute total monthly subscription cost
     let totalMonthlyCents = 0;
+    let avgCosts = new Map();
     try {
-      const avgCosts = await _computeSubAvgCosts(activeSubs, state.rates, mainCurrency);
-      for (const cents of avgCosts.values()) {
-        totalMonthlyCents += cents;
-      }
-    } catch { /* ignore */ }
+      avgCosts = await _computeSubAvgCosts(subsAll, state.rates, mainCurrency);
+      activeSubs.forEach(sub => {
+        const cents = avgCosts.get(sub.id);
+        if (Number.isFinite(cents)) totalMonthlyCents += cents;
+      });
+    } catch (e) {
+      console.error('Failed to compute subscription averages:', e);
+    }
+    state.avgCosts = avgCosts;
 
     const monthlyCostDisplay = totalMonthlyCents > 0
       ? formatMoney(totalMonthlyCents / 100, mainCurrency)
@@ -357,7 +375,8 @@ async function initRepetitiveMovementsPage(root = document) {
         }
 
         avgMap.set(sub.id, count > 0 ? Math.round(totalCents / count) : 0);
-      } catch {
+      } catch (e) {
+        console.error('Failed to compute subscription average:', sub.id, e);
         avgMap.set(sub.id, 0);
       }
     });
@@ -389,6 +408,23 @@ async function initRepetitiveMovementsPage(root = document) {
     }
 
     return cents;
+  }
+
+  function _buildGridRows(items) {
+    return items.map(row => {
+      const isSub = row.active_subscription !== null && row.active_subscription !== undefined;
+      let _row_sort_order;
+      if (isSub && Number(row.active_subscription) === 1) _row_sort_order = 0;
+      else if (isSub) _row_sort_order = 1;
+      else _row_sort_order = 2;
+
+      const avgCents = isSub ? (state.avgCosts?.get(row.id) ?? null) : null;
+      return {
+        ...row,
+        _row_sort_order,
+        avg_amount_cents: Number.isFinite(avgCents) ? avgCents : null,
+      };
+    });
   }
 }
 

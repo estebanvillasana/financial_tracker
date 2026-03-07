@@ -106,6 +106,14 @@ export async function mountAccountantGrid(hostEl, rows, mainCurrency) {
       },
     },
     {
+      headerName: 'Description',
+      field: 'description',
+      flex: 2,
+      minWidth: 160,
+      wrapText: true,
+      autoHeight: true,
+    },
+    {
       headerName: 'Type',
       field: 'type',
       cellRenderer: typeBadgeRenderer,
@@ -136,12 +144,6 @@ export async function mountAccountantGrid(hostEl, rows, mainCurrency) {
         if (cents == null) return '';
         return `<span class="ft-grid-amount">${formatMoneyFromCents(cents, mc)}</span>`;
       },
-    },
-    {
-      headerName: 'Description',
-      field: 'description',
-      flex: 1,
-      minWidth: 120,
     },
   ];
 

@@ -391,13 +391,12 @@ const DatePicker = (() => {
     popup.hidden = true;
 
     function _refresh() {
-      const label = currentValue ? formatDateDisplay(currentValue) : null;
-      if (label) {
-        trigger.textContent = label;
+      const label = currentValue ? formatDateDisplay(currentValue) : placeholder;
+      trigger.innerHTML = `<span class="material-symbols-outlined ft-date-popup__icon">calendar_month</span><span>${label}</span>`;
+      if (currentValue) {
         trigger.classList.remove('ft-date-popup__trigger--placeholder');
         clearBtn.hidden = false;
       } else {
-        trigger.textContent = placeholder;
         trigger.classList.add('ft-date-popup__trigger--placeholder');
         clearBtn.hidden = true;
       }
@@ -418,6 +417,21 @@ const DatePicker = (() => {
     );
     popup.appendChild(picker);
 
+    /* Positions the popup relative to the trigger using fixed coords,
+       so it escapes overflow:hidden/auto scroll containers (e.g. modals). */
+    function _positionPopup() {
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      popup.style.left = `${rect.left}px`;
+      if (spaceBelow >= 320 || spaceBelow >= rect.top) {
+        popup.style.top    = `${rect.bottom + 4}px`;
+        popup.style.bottom = 'auto';
+      } else {
+        popup.style.top    = 'auto';
+        popup.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+      }
+    }
+
     trigger.addEventListener('click', e => {
       e.stopPropagation();
       /* Close any other open date popups first */
@@ -425,6 +439,7 @@ const DatePicker = (() => {
         if (p !== popup) p.hidden = true;
       });
       popup.hidden = !popup.hidden;
+      if (!popup.hidden) _positionPopup();
     });
 
     clearBtn.addEventListener('click', e => {

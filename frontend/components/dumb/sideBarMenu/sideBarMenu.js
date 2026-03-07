@@ -9,6 +9,7 @@ const SideBarMenu = (() => {
     { page: 'transfers',     icon: 'sync_alt',      label: 'Transfers'     },
     { page: 'categories',    icon: 'sell',          label: 'Categories'    },
     { page: 'repetitive',    icon: 'event_repeat',  label: 'Repetitive'    },
+    { page: 'monthly-report', icon: 'summarize',   label: 'Monthly Report' },
   ];
 
   function _buildHTML() {

@@ -111,3 +111,14 @@
   display: flex;
   gap: 6px;
 }
+
+/* ── DatePicker integration ─────────────────────────────── */
+
+.ft-transfer-form__field--date .ft-date-popup {
+  width: 100%;
+}
+
+.ft-transfer-form__field--date .ft-date-popup__trigger {
+  flex: 1;
+  min-width: 0;
+}

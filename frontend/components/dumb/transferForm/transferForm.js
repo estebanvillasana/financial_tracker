@@ -28,20 +28,50 @@ import {
   findAccount as _findAccount,
   buildAccountOptions,
 } from '../../../utils/formHelpers.js';
+import { DatePicker } from '../datePicker/datePicker.js';
 
 const TransferForm = (() => {
 
   /* ── Private ────────────────────────────────────────────── */
 
+  /** Per-root state: { date: string } */
+  const _roots = new WeakMap();
+
   function _accountOpts(accounts) {
     return buildAccountOptions(accounts);
+  }
+
+  /**
+   * Creates (or replaces) the DatePicker field inside #tf-date-wrap.
+   * Stores the current value in the root's WeakMap state.
+   */
+  function _mountDatePicker(root, value) {
+    const state = _roots.get(root);
+    const wrap = root.querySelector('#tf-date-wrap');
+    if (!wrap) return;
+
+    if (wrap._pickerEl) {
+      wrap._pickerEl._cleanup?.();
+      wrap._pickerEl.remove();
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const initial = value || today;
+    if (state) state.date = initial;
+
+    const pickerEl = DatePicker.createPickerField('Date', initial, isoDate => {
+      const s = _roots.get(root);
+      if (s) s.date = isoDate || new Date().toISOString().slice(0, 10);
+    });
+
+    wrap._pickerEl = pickerEl;
+    wrap.appendChild(pickerEl);
   }
 
   /* ── Build ──────────────────────────────────────────────── */
 
   function buildHTML(accounts) {
     const opts = _accountOpts(accounts);
-    const today = new Date().toISOString().slice(0, 10);
     return `<div class="ft-card ft-transfer-form" id="tf-root">
   <span class="ft-transfer-form__title" id="tf-title">New Transfer</span>
   <div class="ft-transfer-form__body">
@@ -67,10 +97,9 @@ const TransferForm = (() => {
       </label>
     </div>
     <div class="ft-transfer-form__row">
-      <label class="ft-transfer-form__field ft-transfer-form__field--date">
+      <div class="ft-transfer-form__field ft-transfer-form__field--date" id="tf-date-wrap">
         <span class="ft-transfer-form__label">Date</span>
-        <input class="ft-transfer-form__control" id="tf-date" type="date" value="${today}">
-      </label>
+      </div>
       <label class="ft-transfer-form__field ft-transfer-form__field--desc">
         <span class="ft-transfer-form__label">Description</span>
         <input class="ft-transfer-form__control" id="tf-description" type="text" placeholder="Optional">
@@ -90,6 +119,10 @@ const TransferForm = (() => {
 
   function hydrate(root, accounts, handlers = {}) {
     if (!root) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    _roots.set(root, { date: today });
+    _mountDatePicker(root, today);
 
     /* Account change → update labels, re-format amounts, auto-sync same-currency */
     root.addEventListener('change', e => {
@@ -151,13 +184,14 @@ const TransferForm = (() => {
   function getValues(root) {
     if (!root) return {};
     const q = s => root.querySelector(s);
+    const state = _roots.get(root);
     return {
-      sendAccountId:   Number(q('#tf-send-account')?.value) || 0,
+      sendAccountId:    Number(q('#tf-send-account')?.value) || 0,
       receiveAccountId: Number(q('#tf-receive-account')?.value) || 0,
-      sentAmount:      q('#tf-sent-amount')?.value?.trim() ?? '',
-      receivedAmount:  q('#tf-received-amount')?.value?.trim() ?? '',
-      date:            q('#tf-date')?.value?.trim() ?? '',
-      description:     q('#tf-description')?.value?.trim() || null,
+      sentAmount:       q('#tf-sent-amount')?.value?.trim() ?? '',
+      receivedAmount:   q('#tf-received-amount')?.value?.trim() ?? '',
+      date:             state?.date ?? '',
+      description:      q('#tf-description')?.value?.trim() || null,
     };
   }
 
@@ -168,7 +202,7 @@ const TransferForm = (() => {
     root.querySelector('#tf-receive-account').value = transfer.receive_account_id;
     root.querySelector('#tf-sent-amount').value = formatMoney(transfer.sent_value / 100, transfer.send_currency);
     root.querySelector('#tf-received-amount').value = formatMoney(transfer.received_value / 100, transfer.receive_currency);
-    root.querySelector('#tf-date').value = transfer.date;
+    _mountDatePicker(root, transfer.date);
     root.querySelector('#tf-description').value = transfer.description ?? '';
     root.querySelector('#tf-actions').innerHTML = `
       <button class="ft-btn ft-btn--ghost" type="button" id="tf-cancel">Cancel</button>
@@ -185,7 +219,7 @@ const TransferForm = (() => {
     root.querySelector('#tf-receive-account').value = '';
     root.querySelector('#tf-sent-amount').value = '';
     root.querySelector('#tf-received-amount').value = '';
-    root.querySelector('#tf-date').value = new Date().toISOString().slice(0, 10);
+    _mountDatePicker(root, new Date().toISOString().slice(0, 10));
     root.querySelector('#tf-description').value = '';
     root.querySelector('#tf-sent-label').textContent = 'Sent';
     root.querySelector('#tf-received-label').textContent = 'Received';

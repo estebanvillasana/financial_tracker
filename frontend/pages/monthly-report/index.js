@@ -50,6 +50,7 @@ async function initMonthlyReportPage(root = document) {
   const incExpContent    = root.querySelector('#breakdown-income-expense-content');
   const accountantHost   = root.querySelector('#widget-accountant-grid');
   const invoiceHost      = root.querySelector('#widget-invoice-grid');
+  const exportCsvBtn     = root.querySelector('#btn-export-accountant-csv');
 
   if (!statsRow || !accountantHost || !invoiceHost) return;
 
@@ -69,6 +70,23 @@ async function initMonthlyReportPage(root = document) {
     accountantGridApi: null,
     invoiceGridApi: null,
   };
+
+  // ── CSV export ────────────────────────────────────────────────────────
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+      if (!state.accountantGridApi) return;
+      const label = getMonthLabel(state.year, state.month).replace(/\s+/g, '-');
+      state.accountantGridApi.exportDataAsCsv({
+        fileName: `accountant-summary-${label}.csv`,
+        processCellCallback: (params) => {
+          if (params.column.getColId() === 'total_cents') {
+            return (Number(params.value) / 100).toFixed(2);
+          }
+          return params.value;
+        },
+      });
+    });
+  }
 
   // ── Month picker setup ───────────────────────────────────────────────
   const pad = n => String(n).padStart(2, '0');
