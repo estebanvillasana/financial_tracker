@@ -19,7 +19,6 @@
  */
 
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
-import { AccountSummaryCard } from '../../components/dumb/accountSummaryCard/accountSummaryCard.js';
 import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
 
 /**
@@ -40,21 +39,23 @@ export function renderLoadingStats(primaryContainer, secondaryContainer) {
  * @param {HTMLElement} secondaryContainer — the #dashboard-stats-secondary element
  * @param {object}      params
  * @param {Array}       params.accounts            — active bank accounts
- * @param {Array}       params.monthMovements      — movements for the current month (unused, kept for compat)
  * @param {Array}       params.prevMonthMovements  — movements for the previous month
  * @param {string}      params.mainCurrency        — user's main currency (normalised)
+ * @param {object}      params.rates               — pre-fetched FX rates (base USD)
+ * @param {string}      params.prevMonthLabel      — display label e.g. "February 2026"
  */
-export async function renderStatsCards(primaryContainer, secondaryContainer, { accounts, prevMonthMovements, mainCurrency }) {
+export function renderStatsCards(primaryContainer, secondaryContainer, { accounts, prevMonthMovements, mainCurrency, rates, prevMonthLabel }) {
 
   // ── 1. Convert all account balances to main currency ─────────────────────
-  const convertedCents = await Promise.all(
-    accounts.map(acct => _getConvertedCents(acct, mainCurrency))
-  );
+  const tgt     = normalizeCurrency(mainCurrency);
+  const tgtRate = rates[tgt] ?? 1;
 
-  let balanceCents    = 0; // sum of non-savings accounts (any sign)
-  let availableCents  = 0; // sum of non-savings accounts with positive balance
-  let savingsCents    = 0; // sum of savings-type accounts
-  let debtsCents      = 0; // sum of accounts with negative balance
+  const convertedCents = accounts.map(acct => _getConvertedCents(acct, tgt, tgtRate, rates));
+
+  let balanceCents    = 0;
+  let availableCents  = 0;
+  let savingsCents    = 0;
+  let debtsCents      = 0;
   let nonSavingsCount = 0;
   let availableCount  = 0;
   let savingsCount    = 0;
@@ -93,11 +94,6 @@ export async function renderStatsCards(primaryContainer, secondaryContainer, { a
   }
 
   const netFlowCents  = prevIncomeCents - prevExpenseCents;
-  const prevMonthLabel = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  })();
 
   // ── 3. Primary cards (net worth snapshot) ────────────────────────────────
   const primaryCards = [
@@ -146,6 +142,9 @@ export async function renderStatsCards(primaryContainer, secondaryContainer, { a
   ];
 
   // ── 4. Secondary cards (previous month activity) ──────────────────────────
+  const incomeCount  = prevMonthMovements.filter(m => m.type === 'Income').length;
+  const expenseCount = prevMonthMovements.length - incomeCount;
+
   const secondaryCards = [
     {
       data: {
@@ -153,7 +152,7 @@ export async function renderStatsCards(primaryContainer, secondaryContainer, { a
         label:    'Income',
         value:    formatMoneyFromCents(prevIncomeCents, mainCurrency),
         subValue: prevMonthLabel,
-        note:     `${prevMonthMovements.filter(m => m.type === 'Income').length} transactions`,
+        note:     `${incomeCount} transaction${incomeCount !== 1 ? 's' : ''}`,
       },
       options: { variant: 'success' },
     },
@@ -163,7 +162,7 @@ export async function renderStatsCards(primaryContainer, secondaryContainer, { a
         label:    'Expenses',
         value:    formatMoneyFromCents(prevExpenseCents, mainCurrency),
         subValue: prevMonthLabel,
-        note:     `${prevMonthMovements.filter(m => m.type !== 'Income').length} transactions`,
+        note:     `${expenseCount} transaction${expenseCount !== 1 ? 's' : ''}`,
       },
       options: { variant: 'danger' },
     },
@@ -206,20 +205,22 @@ function _fillSkeletons(container, count, skeletonOptions = {}) {
 }
 
 /**
- * Converts a single account's balance to the main currency.
- * Returns the value in cents. Falls back to the raw balance on FX error.
+ * Converts a single account's balance to the main currency using pre-fetched rates.
+ * Falls back to the raw balance if the source currency has no rate entry.
+ *
+ * @param {object} account   - Bank account object
+ * @param {string} tgt       - Normalised target currency code
+ * @param {number} tgtRate   - rates[tgt] — USD → target rate
+ * @param {object} rates     - Full rates map { USD: 1, MXN: 17.5, ... }
+ * @returns {number}         - Balance in target-currency cents
  */
-async function _getConvertedCents(account, mainCurrency) {
-  const acctCurrency = normalizeCurrency(account?.currency);
-  const rawCents     = Number(account?.total_balance ?? 0);
+function _getConvertedCents(account, tgt, tgtRate, rates) {
+  const src      = normalizeCurrency(account?.currency);
+  const rawCents = Number(account?.total_balance ?? 0);
 
-  if (!acctCurrency || acctCurrency === mainCurrency) {
+  if (!src || src === tgt || !rates[src]) {
     return Number.isFinite(rawCents) ? rawCents : 0;
   }
 
-  const converted = await AccountSummaryCard.getLatestConvertedTotalCents(account, {
-    defaultCurrency: mainCurrency,
-  });
-
-  return Number.isFinite(converted) ? converted : 0;
+  return Math.round(rawCents * tgtRate / rates[src]);
 }
