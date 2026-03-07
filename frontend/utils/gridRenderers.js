@@ -129,6 +129,21 @@ export function convertedAmountRenderer(valueField, currencyField, rates, target
 }
 
 /**
+ * Renders the cumulative account balance at the movement's date.
+ * Shows '—' for inactive (soft-deleted) rows.
+ *
+ * @param {string} currencyField — row data field holding ISO currency code
+ */
+export function balanceCellRenderer(currencyField) {
+  return params => {
+    const balance = params.data?.balance_at_date;
+    const cur = params.data?.[currencyField] ?? '';
+    if (balance == null) return '<span class="ft-grid-amount ft-grid-amount--balance-na">—</span>';
+    return `<span class="ft-grid-amount ft-grid-amount--balance">${formatMoneyFromCents(balance, cur)}</span>`;
+  };
+}
+
+/**
  * Factory: renders a row of icon action buttons (edit, delete, etc.).
  * Each button emits a `data-action` attribute for event delegation.
  *

@@ -14,12 +14,13 @@ import {
   convertedAmountRenderer,
   styledCategoryCellRenderer,
   styledSubCategoryCellRenderer,
+  balanceCellRenderer,
 } from './gridRenderers.js';
 
 /**
- * Builds the standard 8-column movements table column definitions.
+ * Builds the standard 9-column movements table column definitions.
  *
- * Columns: Date | Movement | Account | Type | Amount | Converted | Category | Sub-category
+ * Columns: Date | Movement | Account | Type | Amount | Converted | Balance | Category | Sub-category
  *
  * @param {object} rates          - FX rates keyed by uppercase ISO code (base USD).
  * @param {string} targetCurrency - App's main currency code (e.g. 'USD').
@@ -69,6 +70,15 @@ export function buildMovementColumnDefs(rates, targetCurrency) {
       width: 145,
       headerClass: 'ft-ag-header-right',
       cellStyle: { textAlign: 'right' },
+    },
+    {
+      headerName: 'Balance',
+      field: 'balance_at_date',
+      cellRenderer: balanceCellRenderer('currency'),
+      width: 155,
+      headerClass: 'ft-ag-header-right',
+      cellStyle: { textAlign: 'right' },
+      sortable: false,
     },
     {
       headerName: 'Category',
