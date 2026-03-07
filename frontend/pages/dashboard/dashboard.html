@@ -1,0 +1,79 @@
+<div class="ft-page ft-dashboard">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Dashboard</h1>
+        <p class="ft-small ft-text-muted">Financial overview in your main currency</p>
+      </div>
+      <nav class="ft-dashboard__actions">
+        <a href="#add-movements" class="ft-btn ft-btn--primary">
+          <span class="material-symbols-outlined" aria-hidden="true">post_add</span>
+          Add Movements
+        </a>
+        <a href="#transfers" class="ft-btn ft-btn--ghost">
+          <span class="material-symbols-outlined" aria-hidden="true">sync_alt</span>
+          Transfer
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Row 1: Stats -->
+  <section class="ft-section">
+    <div class="ft-stats-row ft-stats-row--5" id="dashboard-stats" aria-live="polite"></div>
+  </section>
+
+  <!-- Row 2: Accounts Summary -->
+  <section class="ft-section" id="widget-accounts-summary" aria-live="polite">
+    <div class="ft-empty">
+      <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">account_balance_wallet</span>
+      <p class="ft-small">Loading accounts...</p>
+    </div>
+  </section>
+
+  <!-- Row 3: Breakdowns -->
+  <section class="ft-section">
+    <div class="ft-dashboard__breakdowns">
+
+      <div class="ft-card ft-dashboard__breakdown-card">
+        <div class="ft-dashboard__breakdown-header">
+          <span class="ft-label">Spending by Category</span>
+          <span class="ft-small ft-text-muted" id="dashboard-breakdown-period"></span>
+        </div>
+        <div id="dashboard-breakdown-categories" aria-live="polite"></div>
+      </div>
+
+      <div class="ft-card ft-dashboard__breakdown-card">
+        <div class="ft-dashboard__breakdown-header">
+          <span class="ft-label">Balance by Account</span>
+          <span class="ft-small ft-text-muted">Savings accounts</span>
+        </div>
+        <div id="dashboard-breakdown-accounts" aria-live="polite"></div>
+      </div>
+
+      <div class="ft-card ft-dashboard__breakdown-card">
+        <div class="ft-dashboard__breakdown-header">
+          <span class="ft-label">Monthly Flow</span>
+          <span class="ft-small ft-text-muted" id="dashboard-breakdown-flow-period"></span>
+        </div>
+        <div id="dashboard-breakdown-flow" aria-live="polite"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Row 4: Recent Movements (full width) -->
+  <section class="ft-section">
+    <div class="ft-section__header">
+      <h2 class="ft-h3">Recent Movements</h2>
+      <a href="#movements" class="ft-link ft-small">View all</a>
+    </div>
+    <div class="ft-table-wrapper ft-dashboard__movements-wrapper" id="dashboard-movements" aria-live="polite">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        <p class="ft-small">Loading movements...</p>
+      </div>
+    </div>
+  </section>
+
+</div>
