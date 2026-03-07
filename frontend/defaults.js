@@ -9,10 +9,15 @@ export const defaultsAppConfig = {
 };
 
 export const finalAppConfig = await (async () => {
+	const savedCurrency = localStorage.getItem('ft-app-currency');
 	try {
 		const { appConfig } = await import('./config.js');
-		return { ...defaultsAppConfig, ...(appConfig || {}) };
+		const base = { ...defaultsAppConfig, ...(appConfig || {}) };
+		if (savedCurrency) base.currency = savedCurrency;
+		return base;
 	} catch {
-		return { ...defaultsAppConfig };
+		const base = { ...defaultsAppConfig };
+		if (savedCurrency) base.currency = savedCurrency;
+		return base;
 	}
 })();
