@@ -7,8 +7,8 @@ const ROUTES = {
   movements:        'pages/movements/movements.html',
   'add-movements':  'pages/add-movements/add-movements.html',
   transfers:        'pages/transfers/transfers.html',
-  categories:       'pages/categories.html',
-  repetitive:       'pages/repetitive-movements.html',
+  categories:       'pages/categories/categories.html',
+  repetitive:       'pages/repetitive-movements/repetitive-movements.html',
 };
 
 const DEFAULT_ROUTE = 'dashboard';
@@ -18,6 +18,8 @@ const PAGE_INITIALIZERS = {
   'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
   movements: async () => (await import('./pages/movements/index.js')).initMovementsPage,
   transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
+  categories: async () => (await import('./pages/categories/index.js')).initCategoriesPage,
+  repetitive: async () => (await import('./pages/repetitive-movements/index.js')).initRepetitiveMovementsPage,
 };
 
 function getPage() {

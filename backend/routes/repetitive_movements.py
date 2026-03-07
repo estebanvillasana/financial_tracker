@@ -9,6 +9,7 @@ from models.repetitive_movements import (
     delete_repetitive_movement,
     get_all_repetitive_movements,
     get_repetitive_movement_by_id,
+    restore_repetitive_movement,
     soft_delete_repetitive_movement,
     update_repetitive_movement,
 )
@@ -136,6 +137,21 @@ def route_soft_delete(id: int):
     """Soft-deletes a repetitive movement by setting active=0."""
 
     repetitive_movement = soft_delete_repetitive_movement(id=id)
+
+    if repetitive_movement is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repetitive movement with id {id} not found"
+        )
+
+    return repetitive_movement
+
+
+@router.patch("/{id}/restore", response_model=RepetitiveMovementResponse)
+def route_restore(id: int):
+    """Restores a soft-deleted repetitive movement by setting active=1."""
+
+    repetitive_movement = restore_repetitive_movement(id=id)
 
     if repetitive_movement is None:
         raise HTTPException(

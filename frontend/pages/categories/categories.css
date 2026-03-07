@@ -1,37 +1,5 @@
 /* ── Categories Page ─────────────────────────────────── */
 
-/* ── Type toggle (toolbar) ───────────────────────────── */
-
-.ft-categories-type-toggle {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.ft-categories-type-toggle__btn {
-  background: transparent;
-  border: 1px solid var(--ft-color-border);
-  border-radius: var(--ft-radius-widget);
-  color: var(--ft-color-text-muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  height: 30px;
-  padding: 0 12px;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.ft-categories-type-toggle__btn:hover {
-  background: var(--ft-color-elevated);
-  color: var(--ft-color-text);
-}
-
-.ft-categories-type-toggle__btn--active {
-  background: var(--ft-color-accent-15);
-  border-color: var(--ft-color-accent);
-  color: var(--ft-color-accent);
-}
-
 .ft-categories-toolbar__deleted-toggle {
   align-items: center;
   cursor: pointer;

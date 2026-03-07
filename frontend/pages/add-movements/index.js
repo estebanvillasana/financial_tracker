@@ -14,6 +14,7 @@ import { bankAccounts, categories, subCategories, repetitiveMovements } from '..
 import {
   TYPE_VALUES,
   SENTINEL_ID,
+  createDraftRow,
   createSentinelRow,
   isAddRow,
 } from './constants.js';
@@ -228,6 +229,55 @@ async function initAddMovementsPage(root = document) {
 
   /* ── Wire all events ── */
   wireEvents(state, domRefs, toolbarEl);
+
+  /* ── Apply template from Repetitive Movements page ── */
+  _applyTemplateIfPresent(state, feedbackEl);
+}
+
+/**
+ * Checks sessionStorage for a movement template (set by the Repetitive
+ * Movements page via "Use as Template") and pre-fills the sentinel row.
+ */
+function _applyTemplateIfPresent(state, feedbackEl) {
+  const raw = sessionStorage.getItem('ft-movement-template');
+  if (!raw) return;
+
+  sessionStorage.removeItem('ft-movement-template');
+
+  let template;
+  try {
+    template = JSON.parse(raw);
+  } catch { return; }
+
+  if (!template || !template.movement) return;
+
+  // Switch type if template specifies it
+  if (TYPE_VALUES.includes(template.type) && template.type !== state.draftType) {
+    state.draftType = template.type;
+  }
+
+  // Create a draft row pre-filled with template data
+  const row = createDraftRow(state.draftType);
+  row.movement = template.movement;
+  row.description = template.description || '';
+  row.repetitive_movement_id = template.repetitive_movement_id || null;
+
+  // Add the pre-filled row before the sentinel
+  state.gridApi?.applyTransaction({
+    add: [row],
+    addIndex: state.rows.length,
+  });
+  syncRowsFromGrid(state);
+
+  FeedbackBanner.render(
+    feedbackEl,
+    `Template "<b>${template.movement}</b>" applied — fill in the remaining fields.`,
+    'success',
+  );
+  setTimeout(() => {
+    const current = feedbackEl?.querySelector('.ft-feedback-banner--success');
+    if (current) FeedbackBanner.clear(feedbackEl);
+  }, 5000);
 }
 
 export { initAddMovementsPage };

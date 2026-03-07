@@ -60,7 +60,7 @@ async function initCategoriesPage(root = document) {
     if (!btn) return;
     state.typeFilter = btn.dataset.type;
     typeToggle.querySelectorAll('[data-type]').forEach(b =>
-      b.classList.toggle('ft-categories-type-toggle__btn--active', b === btn),
+      b.classList.toggle('ft-type-toggle__btn--active', b === btn),
     );
     renderFiltered();
   });

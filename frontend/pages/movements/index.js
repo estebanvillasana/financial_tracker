@@ -139,7 +139,7 @@ async function initMovementsPage(root = document) {
     if (!btn) return;
     state.typeFilter = btn.dataset.type;
     typeToggle.querySelectorAll('[data-type]').forEach(b =>
-      b.classList.toggle('ft-movements-type-toggle__btn--active', b === btn),
+      b.classList.toggle('ft-type-toggle__btn--active', b === btn),
     );
     reloadGrid();
   });

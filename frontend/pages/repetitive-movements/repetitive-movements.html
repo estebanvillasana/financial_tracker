@@ -1,0 +1,62 @@
+<div class="ft-page ft-repetitive">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Repetitive Movements</h1>
+        <p class="ft-small ft-text-muted">Recurring transactions, subscriptions &amp; templates</p>
+      </div>
+      <button class="ft-btn ft-btn--primary" id="btn-new-repetitive">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        New
+      </button>
+    </div>
+  </header>
+
+  <!-- Feedback -->
+  <div id="widget-repetitive-feedback"></div>
+
+  <!-- Summary Info Cards -->
+  <section class="ft-section">
+    <div class="ft-stats-row" id="widget-repetitive-stats"></div>
+  </section>
+
+  <!-- Tab Bar -->
+  <div class="ft-rep-tabs" id="repetitive-tabs" role="tablist" aria-label="Repetitive movements views">
+    <button class="ft-rep-tabs__tab ft-rep-tabs__tab--active" role="tab" aria-selected="true" data-tab="all">
+      <span class="material-symbols-outlined ft-rep-tabs__icon" aria-hidden="true">list</span>
+      All Movements
+    </button>
+    <button class="ft-rep-tabs__tab" role="tab" aria-selected="false" data-tab="subscriptions">
+      <span class="material-symbols-outlined ft-rep-tabs__icon" aria-hidden="true">subscriptions</span>
+      Subscriptions
+    </button>
+    <button class="ft-rep-tabs__tab" role="tab" aria-selected="false" data-tab="tax">
+      <span class="material-symbols-outlined ft-rep-tabs__icon" aria-hidden="true">receipt_long</span>
+      Tax Report
+    </button>
+  </div>
+
+  <!-- Toolbar (context-sensitive per tab) -->
+  <div class="ft-toolbar" id="widget-repetitive-toolbar">
+    <div class="ft-repetitive-type-toggle" id="repetitive-type-toggle">
+      <button class="ft-repetitive-type-toggle__btn ft-repetitive-type-toggle__btn--active" data-type="">All</button>
+      <button class="ft-repetitive-type-toggle__btn" data-type="Income">Income</button>
+      <button class="ft-repetitive-type-toggle__btn" data-type="Expense">Expense</button>
+    </div>
+
+    <label class="ft-repetitive-toolbar__toggle">
+      <input type="checkbox" id="repetitive-show-deleted" />
+      <span class="ft-small ft-text-muted">Show deleted</span>
+    </label>
+  </div>
+
+  <!-- Grid -->
+  <section class="ft-section">
+    <div class="ft-table-wrapper" id="widget-repetitive-grid">
+      <div class="ft-empty">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">event_repeat</span>
+        <p class="ft-small">Loading repetitive movements&#8230;</p>
+      </div>
+    </div>
+  </section>
+</div>

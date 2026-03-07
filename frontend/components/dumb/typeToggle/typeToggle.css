@@ -1,0 +1,44 @@
+/* ============================================================
+   Type Toggle Component (All / Expense / Income)
+   ============================================================ */
+
+.ft-type-toggle {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.ft-type-toggle__btn {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 14px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ft-type-toggle__btn:hover:not(.ft-type-toggle__btn--active) {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-type-toggle__btn--active.ft-type-toggle__btn--all {
+  background: var(--ft-color-accent-10);
+  color: var(--ft-color-accent);
+}
+
+.ft-type-toggle__btn--active.ft-type-toggle__btn--expense {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
+.ft-type-toggle__btn--active.ft-type-toggle__btn--income {
+  background: var(--ft-color-success-15);
+  color: var(--ft-color-success);
+}

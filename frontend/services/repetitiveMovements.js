@@ -30,6 +30,10 @@ const repetitiveMovements = {
   softDelete(id) {
     return request(`/repetitive-movements/${id}/soft-delete`, { method: 'PATCH' });
   },
+
+  restore(id) {
+    return request(`/repetitive-movements/${id}/restore`, { method: 'PATCH' });
+  },
 };
 
 export { repetitiveMovements };

@@ -231,3 +231,28 @@ def soft_delete_repetitive_movement(*, id: int) -> dict | None:
         )
 
     return deleted
+
+
+def restore_repetitive_movement(*, id: int) -> dict | None:
+    """
+    Restores a soft-deleted repetitive movement by setting active = 1.
+
+    Returns None if the repetitive movement id does not exist.
+    """
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE repetitive_movements SET active = 1 WHERE id = ?;", (id,)
+        )
+
+        if cursor.rowcount == 0:
+            return None
+
+    restored = get_repetitive_movement_by_id(id=id)
+    if restored is None:
+        raise RuntimeError(
+            "Repetitive movement was restored but could not be retrieved"
+        )
+
+    return restored
