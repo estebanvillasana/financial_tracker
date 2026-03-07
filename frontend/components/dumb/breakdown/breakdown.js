@@ -108,7 +108,8 @@ const Breakdown = (() => {
     // Pass full item as second arg so callers can use per-item metadata (e.g. currency).
     // Callers that only need the value can safely ignore the extra argument.
     const formattedValue = formatValue(item.value, item);
-    const barColor = isOthers ? OTHERS_COLOR : color;
+    // item._color allows callers to set a per-item bar color (e.g. green/red for account balances).
+    const barColor = isOthers ? OTHERS_COLOR : (item._color ?? color);
 
     return `
       <div class="ft-cat-item${modClass}">
