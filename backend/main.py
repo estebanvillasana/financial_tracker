@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from database import initialize_database
+from database import (
+    initialize_database, load_users, get_all_db_paths, _request_db_path,
+)
 from routes.bank_accounts import router as bank_accounts_router
 from routes.categories import router as categories_router
 from routes.movements import router as movements_router
@@ -11,30 +14,35 @@ from routes.sub_categories import router as sub_categories_router
 from routes.fx_rates import router as fx_rates_router
 from routes.app_config import router as app_config_router
 from scripts.exchange_rates import main as update_exchange_rates
-from scripts.backup_db import backup_database, should_backup
+from scripts.backup_db import backup_all_databases
+
+
+# ─────────────────────────────────────────────
+# USERS
+# ─────────────────────────────────────────────
+
+# Load the API-key → DB-path mapping from users.json.
+# This is read once at import time; restart the server to pick up changes.
+USERS = load_users()
 
 
 # ─────────────────────────────────────────────
 # LIFESPAN
 # ─────────────────────────────────────────────
 
-# FastAPI has a specific way to run code on startup and shutdown.
-# It's called "lifespan" and it uses a special kind of function
-# called an async context manager.
-#
-# Think of it like the `with` statement you already know —
-# the code BEFORE `yield` runs on startup,
-# the code AFTER `yield` runs on shutdown.
-#
-# Why not just call initialize_database() at the top of the file?
-# Because FastAPI needs to control WHEN startup code runs,
-# not just when the file is imported. This is the correct, official way.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── STARTUP ──
     # Everything here runs once when the app starts
     print("[APP] Starting up...")
-    initialize_database()
+
+    # Initialize every user’s database (creates schema if the file is missing).
+    if USERS:
+        for info in USERS.values():
+            initialize_database(info["db"])
+    else:
+        # No users.json → single-user / local-dev mode.
+        initialize_database()
 
     print("[APP] Updating USD exchange rates...")
     try:
@@ -53,13 +61,7 @@ async def lifespan(app: FastAPI):
     # Everything here runs once when the app stops (Ctrl+C)
     print("[APP] Shutting down...")
 
-    if should_backup():
-        try:
-            backup_database()
-        except Exception as e:
-            print(f"[APP] Backup error: {e}")
-    else:
-        print("[APP] Backup skipped: last backup is recent enough.")
+    backup_all_databases(USERS)
 
 
 # ─────────────────────────────────────────────
@@ -90,6 +92,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ─────────────────────────────────────────────
+# API-KEY MIDDLEWARE
+# ─────────────────────────────────────────────
+
+@app.middleware("http")
+async def db_selector_middleware(request: Request, call_next):
+    """
+    Reads the X-API-Key header, looks it up in USERS,
+    and sets the per-request DB path so get_connection()
+    automatically opens the right database.
+
+    If users.json is empty (local-dev), all requests are
+    allowed and use the default DB_PATH from .env.
+    """
+    # CORS preflight requests (OPTIONS) don't carry the API key —
+    # they only ask whether the browser is allowed to send it.
+    # Let them pass through so the CORSMiddleware can respond correctly.
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    if USERS:
+        api_key = request.headers.get("X-API-Key", "")
+        user = USERS.get(api_key)
+        if not user:
+            return JSONResponse(
+                {"message": "Invalid or missing API key"},
+                status_code=401,
+            )
+        token = _request_db_path.set(user["db"])
+        try:
+            response = await call_next(request)
+        finally:
+            _request_db_path.reset(token)
+        return response
+
+    # No users configured → pass through (single-user / local dev).
+    return await call_next(request)
 
 
 # ─────────────────────────────────────────────

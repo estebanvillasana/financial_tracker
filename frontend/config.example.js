@@ -4,4 +4,8 @@ export const appConfig = {
 
     // Main currency of the app.
     currency: 'usd',
+
+    // API key for multi-user mode.
+    // Must match a key in backend/users.json.
+    apiKey: '',
   }

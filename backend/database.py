@@ -1,5 +1,7 @@
 import sqlite3
+import json
 import os
+from contextvars import ContextVar
 
 # ─────────────────────────────────────────────
 # PATHS
@@ -39,6 +41,52 @@ _raw_db_path = (
     or os.path.join("data", "app.db")
 )
 DB_PATH = _raw_db_path if os.path.isabs(_raw_db_path) else os.path.join(BASE_DIR, _raw_db_path)
+
+# ─────────────────────────────────────────────
+# MULTI-USER SUPPORT
+# ─────────────────────────────────────────────
+
+# Per-request database path, set by the API-key middleware in main.py.
+# When set, get_connection() uses this instead of the global DB_PATH.
+_request_db_path: ContextVar[str | None] = ContextVar("request_db_path", default=None)
+
+USERS_PATH = os.path.join(BASE_DIR, "users.json")
+
+
+def load_users() -> dict[str, dict]:
+    """Load the api-key → user mapping from users.json.
+
+    Returns a dict like:
+        { "abc123": { "name": "you", "db": "<absolute path>" }, ... }
+
+    If users.json is missing the app still works with the global DB_PATH
+    (single-user / local-dev mode).
+    """
+    if not os.path.exists(USERS_PATH):
+        return {}
+
+    with open(USERS_PATH, "r", encoding="utf-8") as f:
+        raw: dict = json.load(f)
+
+    users: dict[str, dict] = {}
+    for api_key, info in raw.items():
+        db_raw = info["db"]
+        db_abs = db_raw if os.path.isabs(db_raw) else os.path.join(BASE_DIR, db_raw)
+        users[api_key] = {"name": info["name"], "db": db_abs}
+    return users
+
+
+def get_all_db_paths(users: dict[str, dict]) -> list[str]:
+    """Return a deduplicated list of absolute DB paths from users map."""
+    seen: set[str] = set()
+    paths: list[str] = []
+    for info in users.values():
+        p = info["db"]
+        if p not in seen:
+            seen.add(p)
+            paths.append(p)
+    return paths
+
 
 # Single schema entry file.
 # It may include other files using sqlite-shell style `.read path/to/file.sql` lines.
@@ -85,7 +133,7 @@ def _load_schema_sql(file_path, visited=None):
 # INITIALIZATION
 # ─────────────────────────────────────────────
 
-def initialize_database():
+def initialize_database(db_path: str | None = None):
     """
     Called once when the app starts (from main.py).
     
@@ -93,19 +141,26 @@ def initialize_database():
     1. Checks if the database file already exists
     2. If not → creates it and runs schema files in data/schema to build the schema
     3. If yes → does nothing (safe to call every time the app starts)
+
+    Args:
+        db_path: Optional explicit path. Falls back to the global DB_PATH.
     """
+    path = db_path or DB_PATH
+
+    # Ensure the parent directory exists (e.g. data/database/)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
     # os.path.exists() returns True if the file is already there.
     # If the db already exists, we skip initialization entirely.
-    if os.path.exists(DB_PATH):
-        print(f"[DB] Database already exists at {DB_PATH}. Skipping initialization.")
+    if os.path.exists(path):
+        print(f"[DB] Database already exists at {path}. Skipping initialization.")
         return
 
-    print(f"[DB] No database found. Creating new database at {DB_PATH}...")
+    print(f"[DB] No database found. Creating new database at {path}...")
 
     # Connect to SQLite. Since the file doesn't exist yet, SQLite creates it automatically.
     # We execute the single schema entry file and resolve `.read` includes.
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(path) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         schema_sql = _load_schema_sql(SCHEMA_PATH)
         conn.executescript(schema_sql)
@@ -122,6 +177,12 @@ def get_connection():
     Returns an open connection to the database.
     Called by model functions whenever they need to query the database.
 
+    The database path is determined by:
+    1. The per-request ContextVar (_request_db_path), set by the API-key
+       middleware — so each user hits their own database.
+    2. Falls back to the global DB_PATH (from .env / env var) for
+       local development or CLI scripts.
+
     Two important settings we apply to every connection:
 
     1. row_factory = sqlite3.Row
@@ -135,7 +196,8 @@ def get_connection():
        with an account_id that doesn't exist and SQLite wouldn't complain.
     """
 
-    conn = sqlite3.connect(DB_PATH)
+    path = _request_db_path.get() or DB_PATH
+    conn = sqlite3.connect(path)
 
     # Enable dictionary-style row access
     conn.row_factory = sqlite3.Row

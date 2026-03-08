@@ -10,6 +10,7 @@ backend/data/database/*
 backend/data/backups/*
 __pycache__
 backend/.env
+backend/users.json
 
 
 # Frontend

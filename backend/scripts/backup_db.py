@@ -15,12 +15,12 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 BACKUP_INTERVAL_DAYS = 7
 
 
-def _get_backup_prefix():
-    db_stem = os.path.splitext(os.path.basename(DB_PATH))[0]
+def _get_backup_prefix(db_path: str = DB_PATH):
+    db_stem = os.path.splitext(os.path.basename(db_path))[0]
     return f"{db_stem}_backup_"
 
 
-def get_latest_backup_time():
+def get_latest_backup_time(db_path: str = DB_PATH):
     """
     Returns the modification time of the most recent backup file,
     or None if no backups exist.
@@ -28,7 +28,7 @@ def get_latest_backup_time():
     if not os.path.exists(BACKUP_DIR):
         return None
 
-    backup_prefix = _get_backup_prefix()
+    backup_prefix = _get_backup_prefix(db_path)
     backup_files = [
         f for f in os.listdir(BACKUP_DIR)
         if f.startswith(backup_prefix) and f.endswith(".db")
@@ -45,13 +45,13 @@ def get_latest_backup_time():
     return os.path.getmtime(latest_path)
 
 
-def should_backup():
+def should_backup_db(db_path: str = DB_PATH):
     """
     Returns True if no backup exists or if the last backup
     is older than BACKUP_INTERVAL_DAYS (default 7 days).
     Returns False if a recent backup exists.
     """
-    latest_backup_time = get_latest_backup_time()
+    latest_backup_time = get_latest_backup_time(db_path)
 
     if latest_backup_time is None:
         return True
@@ -62,22 +62,52 @@ def should_backup():
     return age_days >= BACKUP_INTERVAL_DAYS
 
 
-def backup_database():
+def backup_database(db_path: str = DB_PATH):
     """
-    Creates a timestamped backup of app.db in data/backups.
+    Creates a timestamped backup of the given database in data/backups.
     """
-    if not os.path.exists(DB_PATH):
-        print(f"[ERROR] Database file not found: {DB_PATH}")
+    if not os.path.exists(db_path):
+        print(f"[ERROR] Database file not found: {db_path}")
         return
 
-    backup_prefix = _get_backup_prefix()
+    backup_prefix = _get_backup_prefix(db_path)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     backup_filename = f"{backup_prefix}{timestamp}.db"
     backup_path = os.path.join(BACKUP_DIR, backup_filename)
 
-    shutil.copy2(DB_PATH, backup_path)
+    shutil.copy2(db_path, backup_path)
     print(f"[BACKUP] Database backed up to {backup_path}")
 
 
-if __name__ == "__main__":
-    backup_database()
+def backup_all_databases(users: dict[str, dict]):
+    """
+    Back up every user database that is due for a backup.
+    Called from main.py lifespan shutdown.
+
+    If users is empty (single-user / local-dev) it falls back
+    to backing up the default DB_PATH.
+    """
+    if not users:
+        if should_backup_db():
+            try:
+                backup_database()
+            except Exception as e:
+                print(f"[APP] Backup error: {e}")
+        else:
+            print("[APP] Backup skipped: last backup is recent enough.")
+        return
+
+    # Deduplicate paths (two keys could map to the same db).
+    seen: set[str] = set()
+    for info in users.values():
+        db = info["db"]
+        if db in seen:
+            continue
+        seen.add(db)
+        if should_backup_db(db):
+            try:
+                backup_database(db)
+            except Exception as e:
+                print(f"[APP] Backup error for {db}: {e}")
+        else:
+            print(f"[APP] Backup skipped for {db}: last backup is recent enough.")

@@ -6,6 +6,9 @@ export const defaultsAppConfig = {
 
 	// Main currency of the app.
 	currency: 'usd',
+
+	// API key for multi-user mode (leave empty for local dev without users.json).
+	apiKey: '',
 };
 
 export const finalAppConfig = await (async () => {

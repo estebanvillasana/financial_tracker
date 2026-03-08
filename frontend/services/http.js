@@ -75,6 +75,12 @@ async function request(path, { method = 'GET', query, body, headers } = {}) {
     ...headers,
   };
 
+  // Send API key when configured (multi-user mode).
+  const apiKey = finalAppConfig.apiKey;
+  if (apiKey) {
+    requestHeaders['X-API-Key'] = apiKey;
+  }
+
   const options = { method, headers: requestHeaders };
 
   if (body !== undefined) {

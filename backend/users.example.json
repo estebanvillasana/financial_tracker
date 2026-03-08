@@ -1,0 +1,14 @@
+{
+  "your-secret-api-key": {
+    "name": "you",
+    "db": "data/database/you.db"
+  },
+  "alice-secret-api-key": {
+    "name": "alice",
+    "db": "data/database/alice.db"
+  },
+  "bob-secret-api-key": {
+    "name": "bob",
+    "db": "data/database/bob.db"
+  }
+}
