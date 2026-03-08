@@ -1,16 +1,23 @@
 import os
+import sys
 import shutil
 import datetime
 
-# Paths
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "data", "app.db")
+# Allow importing from the backend root when run as a standalone script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from database import DB_PATH, BASE_DIR
+
 BACKUP_DIR = os.path.join(BASE_DIR, "data", "backups")
 
 # Ensure backup directory exists
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 BACKUP_INTERVAL_DAYS = 7
+
+
+def _get_backup_prefix():
+    db_stem = os.path.splitext(os.path.basename(DB_PATH))[0]
+    return f"{db_stem}_backup_"
 
 
 def get_latest_backup_time():
@@ -21,9 +28,10 @@ def get_latest_backup_time():
     if not os.path.exists(BACKUP_DIR):
         return None
 
+    backup_prefix = _get_backup_prefix()
     backup_files = [
         f for f in os.listdir(BACKUP_DIR)
-        if f.startswith("app_backup_") and f.endswith(".db")
+        if f.startswith(backup_prefix) and f.endswith(".db")
     ]
 
     if not backup_files:
@@ -62,8 +70,9 @@ def backup_database():
         print(f"[ERROR] Database file not found: {DB_PATH}")
         return
 
+    backup_prefix = _get_backup_prefix()
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_filename = f"app_backup_{timestamp}.db"
+    backup_filename = f"{backup_prefix}{timestamp}.db"
     backup_path = os.path.join(BACKUP_DIR, backup_filename)
 
     shutil.copy2(DB_PATH, backup_path)

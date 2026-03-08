@@ -35,7 +35,9 @@ from pathlib import Path
 # ─────────────────────────────────────────────
 
 BACKEND_DIR = Path(__file__).parent.parent
-DB_PATH = BACKEND_DIR / "data" / "app.db"
+sys.path.insert(0, str(BACKEND_DIR))
+from database import DB_PATH as _DB_PATH_STR
+DB_PATH = Path(_DB_PATH_STR)
 SCHEMA_PATH = BACKEND_DIR / "data" / "schema.sql"
 BACKUPS_DIR = BACKEND_DIR / "data" / "backups"
 INTERNAL_TRANSFERS_TRIGGER_PATH = (

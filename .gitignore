@@ -6,9 +6,11 @@ log/
 TODO.md
 
 # Backend
-backend/data/app.db
+backend/data/database/*
 backend/data/backups/*
 __pycache__
+backend/.env
+
 
 # Frontend
 frontend/config.js

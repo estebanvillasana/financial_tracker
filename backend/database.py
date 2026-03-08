@@ -8,9 +8,37 @@ import os
 # Directory where this file lives (backend/)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Path to the SQLite database file.
-# This file is created automatically on first run.
-DB_PATH = os.path.join(BASE_DIR, "data", "app.db")
+
+def _load_env() -> dict:
+    """Load key=value pairs from backend/.env if present."""
+    env: dict = {}
+    env_path = os.path.join(BASE_DIR, ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                env[key.strip()] = value.strip()
+    return env
+
+
+_env = _load_env()
+
+# DB_PATH resolution order:
+#   1. DB_PATH environment variable (highest priority)
+#   2. DB_PATH key in backend/.env
+#   3. Default: data/app.db (relative to backend/)
+# Relative paths are resolved from BASE_DIR (backend/).
+_raw_db_path = (
+    os.environ.get("DB_PATH")
+    or _env.get("DB_PATH")
+    or os.path.join("data", "app.db")
+)
+DB_PATH = _raw_db_path if os.path.isabs(_raw_db_path) else os.path.join(BASE_DIR, _raw_db_path)
 
 # Single schema entry file.
 # It may include other files using sqlite-shell style `.read path/to/file.sql` lines.
