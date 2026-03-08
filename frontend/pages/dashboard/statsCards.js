@@ -21,6 +21,21 @@
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
 import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
 
+function isTransfer(mov) {
+  return typeof mov?.movement_code === 'string' && mov.movement_code.startsWith('MT');
+}
+
+function toMainCurrency(rawCents, srcCurrency, mainCurrency, rates) {
+  const src = normalizeCurrency(srcCurrency);
+  if (!src || src === mainCurrency) return rawCents;
+
+  const srcRate = rates[src];
+  const tgtRate = rates[mainCurrency] ?? 1;
+
+  if (!srcRate) return rawCents;
+  return Math.round(rawCents * tgtRate / srcRate);
+}
+
 /**
  * Renders loading skeletons into both stats containers.
  *
@@ -88,9 +103,12 @@ export function renderStatsCards(primaryContainer, secondaryContainer, { account
   let prevExpenseCents = 0;
 
   for (const mov of prevMonthMovements) {
+    if (isTransfer(mov)) continue;
+
     const abs = Math.abs(Number(mov.value ?? 0));
-    if (mov.type === 'Income') prevIncomeCents  += abs;
-    else                       prevExpenseCents += abs;
+    const converted = toMainCurrency(abs, mov.currency, tgt, rates);
+    if (mov.type === 'Income') prevIncomeCents  += converted;
+    else                       prevExpenseCents += converted;
   }
 
   const netFlowCents  = prevIncomeCents - prevExpenseCents;
@@ -142,8 +160,9 @@ export function renderStatsCards(primaryContainer, secondaryContainer, { account
   ];
 
   // ── 4. Secondary cards (previous month activity) ──────────────────────────
-  const incomeCount  = prevMonthMovements.filter(m => m.type === 'Income').length;
-  const expenseCount = prevMonthMovements.length - incomeCount;
+  const nonTransferMovements = prevMonthMovements.filter(m => !isTransfer(m));
+  const incomeCount = nonTransferMovements.filter(m => m.type === 'Income').length;
+  const expenseCount = nonTransferMovements.length - incomeCount;
 
   const secondaryCards = [
     {

@@ -53,7 +53,7 @@ def route_get_all(
     tax_report: int | None = Query(default=None, description="Filter by tax report flag: 1 = yes, 0 = no"),
     active_subscription: int | None = Query(default=None, description="Filter by active subscription flag: 1 = yes, 0 = no"),
     movement_contains: str | None = Query(default=None, description="Filter by movement name (contains text)"),
-    limit: int = Query(default=100, ge=1, le=500, description="Max rows returned"),
+    limit: int = Query(default=500, ge=1, le=500, description="Max rows returned"),
     offset: int = Query(default=0, ge=0, description="Rows to skip for pagination"),
 ):
     """

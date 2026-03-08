@@ -135,7 +135,7 @@ def route_get_all(
     movement_code: str | None = Query(default=None, description="Filter by exact movement code"),
     date_from: date | None = Query(default=None, description="Filter by date >= YYYY-MM-DD"),
     date_to: date | None = Query(default=None, description="Filter by date <= YYYY-MM-DD"),
-    limit: int = Query(default=100, ge=1, le=500, description="Max rows returned"),
+    limit: int = Query(default=500, ge=1, le=500, description="Max rows returned"),
     offset: int = Query(default=0, ge=0, description="Rows to skip for pagination"),
 ):
     """

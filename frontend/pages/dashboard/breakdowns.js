@@ -15,6 +15,21 @@
 import { Breakdown } from '../../components/dumb/breakdown/breakdown.js';
 import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.js';
 
+function isTransfer(mov) {
+  return typeof mov?.movement_code === 'string' && mov.movement_code.startsWith('MT');
+}
+
+function toMainCurrency(rawCents, srcCurrency, mainCurrency, rates) {
+  const src = normalizeCurrency(srcCurrency);
+  if (!src || src === mainCurrency) return rawCents;
+
+  const srcRate = rates[src];
+  const tgtRate = rates[mainCurrency] ?? 1;
+
+  if (!srcRate) return rawCents;
+  return Math.round(rawCents * tgtRate / srcRate);
+}
+
 /**
  * Renders all three breakdown cards.
  *
@@ -29,8 +44,8 @@ import { normalizeCurrency, formatMoneyFromCents } from '../../utils/formatters.
  * @param {string}      data.mainCurrency       — user's main currency code
  */
 export function renderBreakdowns(containers, { prevMonthMovements, accounts, rates, mainCurrency }) {
-  _renderCategoryBreakdown(containers.categories, { prevMonthMovements, mainCurrency });
-  _renderBiggestExpenses(containers.expenses, { prevMonthMovements, mainCurrency });
+  _renderCategoryBreakdown(containers.categories, { prevMonthMovements, mainCurrency, rates });
+  _renderBiggestExpenses(containers.expenses, { prevMonthMovements, mainCurrency, rates });
   _renderAccountBreakdown(containers.accounts, { accounts, rates, mainCurrency });
 }
 
@@ -39,14 +54,17 @@ export function renderBreakdowns(containers, { prevMonthMovements, accounts, rat
 /**
  * Spending by Category — groups the previous month's expenses by category.
  */
-function _renderCategoryBreakdown(container, { prevMonthMovements, mainCurrency }) {
+function _renderCategoryBreakdown(container, { prevMonthMovements, mainCurrency, rates }) {
   if (!container) return;
+
+  const target = normalizeCurrency(mainCurrency);
 
   const grouped = {};
   for (const mov of prevMonthMovements) {
-    if (mov.type === 'Income') continue;
+    if (mov.type === 'Income' || isTransfer(mov)) continue;
     const key = mov.category || 'Uncategorized';
-    grouped[key] = (grouped[key] ?? 0) + Math.abs(Number(mov.value ?? 0));
+    const rawCents = Math.abs(Number(mov.value ?? 0));
+    grouped[key] = (grouped[key] ?? 0) + toMainCurrency(rawCents, mov.currency, target, rates);
   }
 
   const items = Object.entries(grouped).map(([name, value]) => ({ name, value }));
@@ -69,14 +87,16 @@ function _renderCategoryBreakdown(container, { prevMonthMovements, mainCurrency 
  * Biggest Expenses — the previous month's top individual expense transactions
  * sorted by amount descending, all bars shown in danger (red) tones.
  */
-function _renderBiggestExpenses(container, { prevMonthMovements, mainCurrency }) {
+function _renderBiggestExpenses(container, { prevMonthMovements, mainCurrency, rates }) {
   if (!container) return;
 
+  const target = normalizeCurrency(mainCurrency);
+
   const items = prevMonthMovements
-    .filter(m => m.type !== 'Income')
+    .filter(m => m.type !== 'Income' && !isTransfer(m))
     .map(m => ({
       name:  m.movement || m.description || 'Unknown',
-      value: Math.abs(Number(m.value ?? 0)),
+      value: toMainCurrency(Math.abs(Number(m.value ?? 0)), m.currency, target, rates),
     }))
     .filter(i => i.value > 0);
 

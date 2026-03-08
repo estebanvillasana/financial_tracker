@@ -8,6 +8,32 @@
 
 import { bankAccounts, movements, fxRates } from '../../services/api.js';
 
+const DASHBOARD_MOVEMENTS_PAGE_SIZE = 500;
+const DASHBOARD_MOVEMENTS_MAX_PAGES = 20;
+
+async function fetchAllMovementsForRange({ active = 1, dateFrom, dateTo }) {
+  const all = [];
+
+  for (let page = 0; page < DASHBOARD_MOVEMENTS_MAX_PAGES; page++) {
+    const offset = page * DASHBOARD_MOVEMENTS_PAGE_SIZE;
+    const chunk = await movements.getAll({
+      active,
+      date_from: dateFrom,
+      date_to: dateTo,
+      limit: DASHBOARD_MOVEMENTS_PAGE_SIZE,
+      offset,
+    });
+
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+
+    all.push(...chunk);
+
+    if (chunk.length < DASHBOARD_MOVEMENTS_PAGE_SIZE) break;
+  }
+
+  return all;
+}
+
 /**
  * Returns the ISO date boundaries (YYYY-MM-DD) for the current calendar month.
  *
@@ -68,8 +94,8 @@ export async function fetchDashboardData() {
 
   const [accts, monthMov, prevMov, recentMov, fxData] = await Promise.all([
     bankAccounts.getAll({ active: 1 }).catch(() => []),
-    movements.getAll({ active: 1, date_from: dateFrom, date_to: dateTo }).catch(() => []),
-    movements.getAll({ active: 1, date_from: prevFrom, date_to: prevTo }).catch(() => []),
+    fetchAllMovementsForRange({ active: 1, dateFrom, dateTo }).catch(() => []),
+    fetchAllMovementsForRange({ active: 1, dateFrom: prevFrom, dateTo: prevTo }).catch(() => []),
     movements.getAll({ active: 1, limit: 15 }).catch(() => []),
     fxRates.getAllRatesLatest().catch(() => null),
   ]);
