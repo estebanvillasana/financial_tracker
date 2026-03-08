@@ -13,6 +13,7 @@ _TEMPLATE = (
     'export const appConfig = {{\n'
     '  apiBaseUrl: "http://127.0.0.1:8000",\n'
     '  currency: \'{currency}\',\n'
+    '  apiKey: \'{api_key}\',\n'
     '}}\n'
 )
 
@@ -24,6 +25,13 @@ def _read_currency() -> str:
     return match.group(1) if match else "usd"
 
 
+def _read_api_key() -> str:
+    if not _CONFIG_JS.exists():
+        return ""
+    match = re.search(r"apiKey\s*:\s*['\"]([^'\"]*)['\"]", _CONFIG_JS.read_text(encoding="utf-8"))
+    return match.group(1) if match else ""
+
+
 def _write_currency(currency: str) -> None:
     if _CONFIG_JS.exists():
         updated = re.sub(
@@ -33,7 +41,10 @@ def _write_currency(currency: str) -> None:
         )
         _CONFIG_JS.write_text(updated, encoding="utf-8")
     else:
-        _CONFIG_JS.write_text(_TEMPLATE.format(currency=currency), encoding="utf-8")
+        _CONFIG_JS.write_text(
+            _TEMPLATE.format(currency=currency, api_key=""),
+            encoding="utf-8",
+        )
 
 
 # ── Models ────────────────────────────────────────────────────

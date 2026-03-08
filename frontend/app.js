@@ -2,6 +2,7 @@
 
 import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
 import { finalAppConfig } from './defaults.js';
+import { request } from './services/http.js';
 
 const ROUTES = {
   dashboard:        'pages/dashboard/dashboard.html',
@@ -78,11 +79,7 @@ function bootstrap() {
   SideBarMenu.init({
     currentCurrency: finalAppConfig.currency,
     onCurrencyChange: async (code) => {
-      await fetch(`${finalAppConfig.apiBaseUrl}/app-config`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currency: code }),
-      });
+      await request('/app-config', { method: 'PATCH', body: { currency: code } });
       window.location.reload();
     },
   });

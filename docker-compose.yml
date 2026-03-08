@@ -1,0 +1,14 @@
+services:
+  backend:
+    build: ./backend
+    container_name: financial-tracker-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # Persistent data — lives on the host, survives container rebuilds
+      - ./data/database:/app/data/database
+      - ./data/backups:/app/data/backups
+      - ./data/usd_exchange_rates:/app/data/usd_exchange_rates
+      # users.json is gitignored — you manage it directly on the server
+      - ./backend/users.json:/app/users.json:ro
