@@ -6,11 +6,9 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      # Persistent data — lives on the host, survives container rebuilds
-      - ./data/database:/app/data/database
-      - ./data/backups:/app/data/backups
-      # Exchange rates are inside the image (from the repo clone) but we
-      # mount a host dir so new days fetched at runtime are also persisted.
-      - ./data/usd_exchange_rates:/app/data/usd_exchange_rates
+      # Persistent data — same directories used by local dev (backend/data/)
+      - ./backend/data/database:/app/data/database
+      - ./backend/data/backups:/app/data/backups
+      - ./backend/data/usd_exchange_rates:/app/data/usd_exchange_rates
       # users.json is gitignored — you manage it directly on the server
       - ./backend/users.json:/app/users.json:ro

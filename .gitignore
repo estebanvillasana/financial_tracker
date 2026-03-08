@@ -19,6 +19,10 @@ frontend/test-api.js
 frontend/tests.html
 frontend/components/dumb/accountSummaryCard/test_js.html
 
+# Deploy (per-domain configs contain API keys)
+deploy/configs/*.config.js
+.htpasswd
+
 # CLI
 cli/.env
 cli/screens/test_inputs.py
