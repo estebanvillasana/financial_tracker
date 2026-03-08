@@ -136,8 +136,9 @@ export function convertedAmountRenderer(valueField, currencyField, rates, target
  */
 export function balanceCellRenderer(currencyField) {
   return params => {
-    const balance = params.data?.balance_at_date;
-    const cur = params.data?.[currencyField] ?? '';
+    if (!params.data) return '';
+    const balance = params.data.balance_at_date;
+    const cur = params.data[currencyField] ?? '';
     if (balance == null) return '<span class="ft-grid-amount ft-grid-amount--balance-na">—</span>';
     return `<span class="ft-grid-amount ft-grid-amount--balance">${formatMoneyFromCents(balance, cur)}</span>`;
   };

@@ -63,6 +63,7 @@ async function initMovementsPage(root = document) {
     subCategoryFilter: '',
     noRepetitiveFilter: false,
     hasRepetitiveFilter: false,
+    moneyTransfersFilter: '',
   };
 
   /* ── Load AG Grid ─────────────────────────────────────────── */
@@ -188,6 +189,17 @@ async function initMovementsPage(root = document) {
           ],
           value: state.noRepetitiveFilter ? 'none' : state.hasRepetitiveFilter ? 'has' : '',
         },
+        {
+          id: 'moneyTransfers',
+          label: 'Money transfers',
+          type: 'select',
+          options: [
+            { value: '',          label: 'Include transfers' },
+            { value: 'exclude',   label: 'Exclude transfers' },
+            { value: 'only',      label: 'Only transfers' },
+          ],
+          value: state.moneyTransfersFilter,
+        },
       ],
       actions: [
         { id: 'download', label: 'Export CSV', icon: 'download', variant: 'ghost' },
@@ -229,6 +241,11 @@ async function initMovementsPage(root = document) {
     if (changedId === 'repetitive') {
       state.noRepetitiveFilter  = values.repetitive === 'none';
       state.hasRepetitiveFilter = values.repetitive === 'has';
+      applyExternalFilter(state);
+      return;
+    }
+    if (changedId === 'moneyTransfers') {
+      state.moneyTransfersFilter = values.moneyTransfers;
       applyExternalFilter(state);
     }
   }
@@ -354,7 +371,7 @@ async function initMovementsPage(root = document) {
 
       refreshGridData(state, fresh);
       if (state.nameFilter) state.gridApi?.setGridOption('quickFilterText', state.nameFilter);
-      if (state.codeFilter) applyExternalFilter(state);
+      applyExternalFilter(state);
     } catch (e) {
       FeedbackBanner.render(feedbackEl, e?.message || 'Failed to reload movements.');
     }

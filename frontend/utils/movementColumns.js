@@ -11,11 +11,33 @@ import {
   moneyCentsCellRenderer,
   accountCellRenderer,
   typeBadgeRenderer,
-  convertedAmountRenderer,
   styledCategoryCellRenderer,
   styledSubCategoryCellRenderer,
   balanceCellRenderer,
 } from './gridRenderers.js';
+import { formatMoneyFromCents, normalizeCurrency } from './formatters.js';
+
+/**
+ * Converts a cents value from its source currency into target currency cents.
+ * Returns null when conversion is not possible (missing/invalid FX rate).
+ */
+export function getConvertedCents(cents, sourceCurrency, rates, targetCurrency) {
+  const amount = Number(cents);
+  if (!Number.isFinite(amount)) return null;
+
+  const src = normalizeCurrency(sourceCurrency || '');
+  const tgt = normalizeCurrency(targetCurrency || '');
+  if (!src || !tgt) return null;
+  if (src === tgt) return Math.round(amount);
+
+  const srcRate = Number(rates?.[src]);
+  const tgtRate = Number(rates?.[tgt] ?? 1);
+  if (!Number.isFinite(srcRate) || srcRate <= 0 || !Number.isFinite(tgtRate) || tgtRate <= 0) {
+    return null;
+  }
+
+  return Math.round(amount * tgtRate / srcRate);
+}
 
 /**
  * Builds the standard 9-column movements table column definitions.
@@ -27,11 +49,18 @@ import {
  * @returns {Array} AG Grid columnDefs
  */
 export function buildMovementColumnDefs(rates, targetCurrency) {
+  const targetCur = normalizeCurrency(targetCurrency);
+
   return [
     {
       headerName: 'Date',
       field: 'date',
-      cellRenderer: dateCellRenderer,
+      cellRenderer: params => {
+        if (params.node.footer) {
+          return '<span class="ft-grid-total-label">Grand Total</span>';
+        }
+        return dateCellRenderer(params);
+      },
       width: 115,
       sort: 'desc',
     },
@@ -64,9 +93,33 @@ export function buildMovementColumnDefs(rates, targetCurrency) {
     },
     {
       headerName: 'Converted',
-      field: 'value',
+      field: 'converted_cents',
       colId: 'converted',
-      cellRenderer: convertedAmountRenderer('value', 'currency', rates, targetCurrency),
+      // Return signed cents so aggFunc:'sum' computes the correct net balance.
+      // Expenses are negative, income is positive.
+      valueGetter: params => {
+        const cents = getConvertedCents(
+          params.data?.value,
+          params.data?.currency,
+          rates,
+          targetCur,
+        );
+        if (cents == null) return null;
+        return params.data?.type === 'Expense' ? -cents : cents;
+      },
+      cellRenderer: params => {
+        const val = params.value;
+        if (params.node.footer) {
+          // Grand total row — show signed net balance (income − expenses).
+          if (val == null) return '<span class="ft-grid-amount ft-grid-amount--converted">—</span>';
+          return `<span class="ft-grid-amount ft-grid-amount--converted">${formatMoneyFromCents(val, targetCur)}</span>`;
+        }
+        // Regular row — show absolute value; the Type badge conveys direction.
+        if (val == null) return '<span class="ft-grid-amount ft-grid-amount--converted">—</span>';
+        return `<span class="ft-grid-amount ft-grid-amount--converted">${formatMoneyFromCents(Math.abs(val), targetCur)}</span>`;
+      },
+      aggFunc: 'sum',
+      allowedAggFuncs: ['sum', 'avg', 'min', 'max'],
       width: 145,
       headerClass: 'ft-ag-header-right',
       cellStyle: { textAlign: 'right' },
@@ -99,8 +152,8 @@ export function buildMovementColumnDefs(rates, targetCurrency) {
       field: 'repetitive_movement',
       flex: 1,
       minWidth: 120,
-      valueFormatter: p => p.value ?? '—',
-      cellStyle: p => p.value ? {} : { color: 'var(--ft-color-text-muted)' },
+      valueFormatter: p => p.node?.footer ? '' : (p.value ?? '—'),
+      cellStyle: p => (!p.node?.footer && !p.value) ? { color: 'var(--ft-color-text-muted)' } : {},
     },
   ];
 }

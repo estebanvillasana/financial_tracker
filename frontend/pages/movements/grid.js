@@ -3,7 +3,54 @@
  * balance column, and external code filter support.
  */
 import { buildGridOptions } from '../../utils/gridHelper.js';
-import { buildMovementColumnDefs } from '../../utils/movementColumns.js';
+import { buildMovementColumnDefs, getConvertedCents } from '../../utils/movementColumns.js';
+import { formatMoneyFromCents, normalizeCurrency } from '../../utils/formatters.js';
+
+function createConvertedSumStatusPanel(rates, targetCurrency) {
+  const targetCur = normalizeCurrency(targetCurrency);
+
+  return class ConvertedSumStatusPanel {
+    init(params) {
+      this.params = params;
+      this.eGui = document.createElement('div');
+      this.eGui.className = 'ag-status-name-value ag-status-panel';
+      this.eGui.innerHTML =
+        '<span data-ref="eLabel">Converted Sum</span> :&nbsp;<span class="ag-status-name-value-value" data-ref="eValue">—</span>';
+      this.eValue = this.eGui.querySelector('[data-ref="eValue"]');
+
+      this.onModelUpdated = () => {
+        let total = 0;
+        let hasAny = false;
+
+        this.params.api.forEachNodeAfterFilter(node => {
+          const row = node.data;
+          if (!row) return;
+
+          const converted = getConvertedCents(row.value, row.currency, rates, targetCur);
+          if (converted == null) return;
+
+          hasAny = true;
+          total += row.type === 'Expense' ? -converted : converted;
+        });
+
+        this.eValue.textContent = hasAny
+          ? formatMoneyFromCents(total, targetCur)
+          : '—';
+      };
+
+      this.params.api.addEventListener('modelUpdated', this.onModelUpdated);
+      this.onModelUpdated();
+    }
+
+    getGui() {
+      return this.eGui;
+    }
+
+    destroy() {
+      this.params?.api?.removeEventListener('modelUpdated', this.onModelUpdated);
+    }
+  };
+}
 
 /* ── Mount ────────────────────────────────────────────────── */
 
@@ -21,7 +68,12 @@ import { buildMovementColumnDefs } from '../../utils/movementColumns.js';
  * @param {Function}    opts.onShowGroup     — called with movement_code string
  */
 export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDelete, onRestore, onBulkRestore, onShowGroup }) {
+  const ConvertedSumStatusPanel = createConvertedSumStatusPanel(rates, targetCurrency);
+
   const gridOptions = buildGridOptions({
+    components: {
+      convertedSumStatusPanel: ConvertedSumStatusPanel,
+    },
     columnDefs: buildMovementColumnDefs(rates, targetCurrency),
     rowData: state.movements,
     getRowId: p => String(p.data.id),
@@ -30,11 +82,33 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
-    isExternalFilterPresent: () => !!state.codeFilter || state.noRepetitiveFilter || state.hasRepetitiveFilter,
+    statusBar: {
+      statusPanels: [
+        {
+          statusPanel: 'agTotalAndFilteredRowCountComponent',
+          align: 'left',
+        },
+        {
+          statusPanel: 'convertedSumStatusPanel',
+          align: 'right',
+        },
+      ],
+    },
+    isExternalFilterPresent: () => (
+      !!state.codeFilter ||
+      state.noRepetitiveFilter ||
+      state.hasRepetitiveFilter ||
+      !!state.moneyTransfersFilter
+    ),
     doesExternalFilterPass: node => {
+      const code = String(node.data?.movement_code ?? '').toUpperCase();
+      const isMoneyTransfer = code.startsWith('MT');
+
       if (state.codeFilter && node.data.movement_code !== state.codeFilter) return false;
       if (state.noRepetitiveFilter && node.data.repetitive_movement_id != null) return false;
       if (state.hasRepetitiveFilter && node.data.repetitive_movement_id == null) return false;
+      if (state.moneyTransfersFilter === 'exclude' && isMoneyTransfer) return false;
+      if (state.moneyTransfersFilter === 'only' && !isMoneyTransfer) return false;
       return true;
     },
     getRowClass: params => params.data?.active === 0 ? 'ft-row-inactive' : '',
