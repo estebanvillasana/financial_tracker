@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -31,6 +32,20 @@ USERS = load_users()
 # LIFESPAN
 # ─────────────────────────────────────────────
 
+async def _exchange_rate_scheduler():
+    """Runs in the background, updating exchange rates every 24 hours."""
+    while True:
+        await asyncio.sleep(24 * 60 * 60)
+        print("[APP] Scheduled exchange rate update starting...")
+        try:
+            update_exchange_rates()
+            print("[APP] Scheduled exchange rate update finished.")
+        except SystemExit:
+            print("[APP] Scheduled exchange rate update failed.")
+        except Exception as e:
+            print(f"[APP] Scheduled exchange rate update error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── STARTUP ──
@@ -54,6 +69,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[APP] Exchange rates update error: {e}")
 
+    asyncio.create_task(_exchange_rate_scheduler())
+    print("[APP] Exchange rate scheduler started (runs every 24 h).")
     print("[APP] Ready.")
 
     yield  # The app runs here, handling requests
