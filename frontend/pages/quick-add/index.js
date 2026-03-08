@@ -9,7 +9,7 @@
  * - Session tally tracking
  */
 
-import { bankAccounts, categories, subCategories } from '../../services/api.js';
+import { bankAccounts, categories, subCategories, repetitiveMovements, movements } from '../../services/api.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { escapeHtml } from '../../utils/formHelpers.js';
@@ -35,12 +35,16 @@ async function initQuickAddPage(root = document) {
   let accountList = [];
   let categoryList = [];
   let subCategoryList = [];
+  let repMovList = [];
+  let recentMovements = [];
 
   try {
-    [accountList, categoryList, subCategoryList] = await Promise.all([
+    [accountList, categoryList, subCategoryList, repMovList, recentMovements] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
+      repetitiveMovements.getAll({ active: 1 }),
+      movements.getAll({ active: 1, limit: 500 }),
     ]);
   } catch (error) {
     FeedbackBanner.render(feedbackEl, error?.message || 'Failed to load data.');
@@ -53,11 +57,28 @@ async function initQuickAddPage(root = document) {
     return;
   }
 
+  /* ── Build category usage maps from recent movements ── */
+  const categoryUsage = {};
+  const subCategoryUsage = {};
+  for (const m of (Array.isArray(recentMovements) ? recentMovements : [])) {
+    if (m.category_id) {
+      const k = `${m.type}_${m.category_id}`;
+      categoryUsage[k] = (categoryUsage[k] || 0) + 1;
+    }
+    if (m.sub_category_id) {
+      const k = String(m.sub_category_id);
+      subCategoryUsage[k] = (subCategoryUsage[k] || 0) + 1;
+    }
+  }
+
   /* ── State ── */
   const state = {
     accounts: accountList,
     categories: categoryList,
     subCategories: subCategoryList,
+    repetitiveMovements: repMovList,
+    categoryUsage,
+    subCategoryUsage,
     selectedAccountId: Number(accountList[0].id),
     accountLocked: false,
   };
@@ -169,6 +190,20 @@ async function initQuickAddPage(root = document) {
     }
 
     if (phase === 'idle') return;
+
+    /* ── Ctrl+B: go back to the previous step ── */
+    if (e.ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      if (phase === 'input' || phase === 'review') {
+        const didGoBack = flow.back();
+        if (didGoBack) {
+          phase = 'input';
+          FeedbackBanner.clear(feedbackEl);
+          refresh();
+        }
+      }
+      return;
+    }
 
     /* ── Success phase ── */
     if (phase === 'success') {
@@ -291,35 +326,6 @@ async function initQuickAddPage(root = document) {
       return;
     }
 
-    /* Invoice toggle: Y/N keys, arrows */
-    if (step.inputType === 'yn-toggle') {
-      if (e.key === 'y' || e.key === 'Y') {
-        e.preventDefault();
-        _selectInvoiceToggle(flowEl, '1');
-        _advanceStep('1');
-        return;
-      }
-      if (e.key === 'n' || e.key === 'N' || e.key === 'Enter') {
-        e.preventDefault();
-        const active = flowEl.querySelector('.ft-qa-invoice-toggle__btn--active');
-        _advanceStep(active?.dataset.value || '0');
-        return;
-      }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const active = flowEl.querySelector('.ft-qa-invoice-toggle__btn--active');
-        const next = active?.dataset.value === '0' ? '1' : '0';
-        _selectInvoiceToggle(flowEl, next);
-        return;
-      }
-      if (e.key === 'Escape' && !step.required) {
-        e.preventDefault();
-        _advanceStep('0');
-        return;
-      }
-      return;
-    }
-
     /* Filtered select */
     if (step.inputType === 'filtered-select') {
       const input = flowEl.querySelector('[data-select-input]');
@@ -387,12 +393,6 @@ async function initQuickAddPage(root = document) {
     });
   }
 
-  function _selectInvoiceToggle(container, value) {
-    container.querySelectorAll('.ft-qa-invoice-toggle__btn').forEach(btn => {
-      btn.classList.toggle('ft-qa-invoice-toggle__btn--active', btn.dataset.value === value);
-    });
-  }
-
   function _moveHighlight(dropdown, dir) {
     const options = [...dropdown.querySelectorAll('.ft-qa-select-option:not(.ft-qa-select-option--empty)')];
     if (options.length === 0) return;
@@ -431,17 +431,6 @@ async function initQuickAddPage(root = document) {
       if (step?.inputType === 'type-toggle') {
         _selectTypeToggle(flowEl, typeBtn.dataset.value);
         _advanceStep(typeBtn.dataset.value);
-        return;
-      }
-    }
-
-    /* Invoice toggle buttons */
-    const invoiceBtn = e.target.closest('.ft-qa-invoice-toggle__btn');
-    if (invoiceBtn && phase === 'input') {
-      const step = flow.currentStep();
-      if (step?.inputType === 'yn-toggle') {
-        _selectInvoiceToggle(flowEl, invoiceBtn.dataset.value);
-        _advanceStep(invoiceBtn.dataset.value);
         return;
       }
     }

@@ -196,22 +196,6 @@ function _renderActiveStep(step, state, values) {
       </div>`;
   }
 
-  if (step.inputType === 'yn-toggle') {
-    return `
-      <div class="ft-qa-prompt" data-step="${step.key}">
-        <span class="ft-qa-prompt__label">${step.label}</span>
-        <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
-        <div class="ft-qa-invoice-toggle" id="qa-invoice-toggle">
-          <button class="ft-qa-invoice-toggle__btn ft-qa-invoice-toggle__btn--active" data-value="0" tabindex="0">
-            <kbd>N</kbd> No
-          </button>
-          <button class="ft-qa-invoice-toggle__btn" data-value="1" tabindex="0">
-            <kbd>Y</kbd> Yes
-          </button>
-        </div>
-      </div>`;
-  }
-
   if (step.inputType === 'filtered-select') {
     const options = step.optionsFn ? step.optionsFn(state, values) : [];
     const optionsHtml = options.length === 0
@@ -301,6 +285,9 @@ function _renderReview(flowEl, flow, state) {
   const subLabel = values.sub_category_id
     ? subCategoryLabelById(state.subCategories, values.sub_category_id)
     : '—';
+  const repLabel = values.repetitive_movement_id
+    ? (state.repetitiveMovements || []).find(rm => Number(rm.id) === Number(values.repetitive_movement_id))?.movement || '—'
+    : '—';
 
   flowEl.innerHTML = `
     <div class="ft-qa-review">
@@ -320,8 +307,8 @@ function _renderReview(flowEl, flow, state) {
         <span class="ft-qa-review__value">${escapeHtml(subLabel)}</span>
         <span class="ft-qa-review__label">Description</span>
         <span class="ft-qa-review__value">${escapeHtml(values.description || '—')}</span>
-        <span class="ft-qa-review__label">Invoice</span>
-        <span class="ft-qa-review__value">${values.invoice ? 'Yes' : 'No'}</span>
+        <span class="ft-qa-review__label">Repetitive</span>
+        <span class="ft-qa-review__value">${escapeHtml(repLabel)}</span>
       </div>
       <p class="ft-qa-review__hint">Press <kbd>Enter</kbd> to save · <kbd>Esc</kbd> to start over</p>
     </div>`;
@@ -373,7 +360,10 @@ function _formatDisplayValue(step, value, state) {
   if (step.key === 'date') return _formatSmartDate(value);
   if (step.key === 'category_id') return categoryLabelById(state.categories, value) || '—';
   if (step.key === 'sub_category_id') return subCategoryLabelById(state.subCategories, value) || '—';
-  if (step.key === 'invoice') return value ? 'Yes' : 'No';
+  if (step.key === 'repetitive_movement_id') {
+    if (!value) return '(skipped)';
+    return (state.repetitiveMovements || []).find(rm => Number(rm.id) === Number(value))?.movement || '—';
+  }
   if (step.key === 'amount') {
     const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
     const currency = normalizeCurrency(account?.currency);

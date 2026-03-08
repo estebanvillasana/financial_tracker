@@ -51,8 +51,12 @@ const FIELD_STEPS = [
     inputType: 'filtered-select',
     required: false,
     optionsFn: (state, values) => {
-      const cats = getCategoriesByType(state.categories, values.type || 'Expense');
-      return cats.map(c => ({ id: c.id, label: c.category }));
+      const type = values.type || 'Expense';
+      const cats = getCategoriesByType(state.categories, type);
+      return cats
+        .map(c => ({ id: c.id, label: c.category, _u: state.categoryUsage?.[`${type}_${c.id}`] || 0 }))
+        .sort((a, b) => b._u - a._u || a.label.localeCompare(b.label))
+        .map(({ id, label }) => ({ id, label }));
     },
     validate: () => null,
   },
@@ -68,7 +72,10 @@ const FIELD_STEPS = [
         values.type || 'Expense',
         values.category_id,
       );
-      return subs.map(s => ({ id: s.id, label: s.sub_category }));
+      return subs
+        .map(s => ({ id: s.id, label: s.sub_category, _u: state.subCategoryUsage?.[String(s.id)] || 0 }))
+        .sort((a, b) => b._u - a._u || a.label.localeCompare(b.label))
+        .map(({ id, label }) => ({ id, label }));
     },
     shouldSkip: (_state, values) => !values.category_id,
     validate: () => null,
@@ -82,11 +89,16 @@ const FIELD_STEPS = [
     validate: () => null,
   },
   {
-    key: 'invoice',
-    label: 'Invoice',
-    inputType: 'yn-toggle',
+    key: 'repetitive_movement_id',
+    label: 'Repetitive',
+    inputType: 'filtered-select',
     required: false,
-    defaultFn: () => 0,
+    optionsFn: (state, values) => {
+      const rms = (state.repetitiveMovements || []).filter(
+        rm => !values.type || rm.type === values.type,
+      );
+      return rms.map(rm => ({ id: rm.id, label: rm.movement }));
+    },
     validate: () => null,
   },
 ];
@@ -98,6 +110,7 @@ const FIELD_STEPS = [
 function createFlow() {
   let stepIndex = 0;
   const values = {};
+  const visitedSteps = []; // history stack for back()
 
   function currentStep() {
     return FIELD_STEPS[stepIndex] || null;
@@ -138,13 +151,14 @@ function createFlow() {
     const error = step.validate(strVal);
     if (error) return { ok: false, error };
 
+    // Save snapshot for back() before mutating state
+    visitedSteps.push({ stepIndex, values: { ...values } });
+
     // Store typed value
     if (step.inputType === 'filtered-select') {
       values[step.key] = strVal ? Number(strVal) : null;
     } else if (step.inputType === 'number') {
       values[step.key] = parseFloat(strVal.replace(/[^0-9.\-]/g, ''));
-    } else if (step.inputType === 'yn-toggle') {
-      values[step.key] = (strVal === '1' || strVal.toLowerCase() === 'y') ? 1 : 0;
     } else {
       values[step.key] = strVal || (step.required ? '' : null);
     }
@@ -169,8 +183,18 @@ function createFlow() {
     }
   }
 
+  function back() {
+    if (visitedSteps.length === 0) return false;
+    const prev = visitedSteps.pop();
+    stepIndex = prev.stepIndex;
+    Object.keys(values).forEach(k => delete values[k]);
+    Object.assign(values, prev.values);
+    return true;
+  }
+
   function reset() {
     stepIndex = 0;
+    visitedSteps.length = 0;
     Object.keys(values).forEach(k => delete values[k]);
   }
 
@@ -190,13 +214,13 @@ function createFlow() {
       date: values.date || new Date().toISOString().slice(0, 10),
       category_id: values.category_id || null,
       sub_category_id: values.sub_category_id || null,
-      repetitive_movement_id: null,
-      invoice: values.invoice || 0,
+      repetitive_movement_id: values.repetitive_movement_id || null,
+      invoice: 0,
       active: 1,
     };
   }
 
-  return { currentStep, currentIndex, allSteps, getValues, isComplete, advance, reset, buildPayload };
+  return { currentStep, currentIndex, allSteps, getValues, isComplete, advance, back, reset, buildPayload };
 }
 
 export { FIELD_STEPS, createFlow };
