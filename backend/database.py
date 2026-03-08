@@ -154,18 +154,31 @@ def initialize_database(db_path: str | None = None):
     # If the db already exists, we skip initialization entirely.
     if os.path.exists(path):
         print(f"[DB] Database already exists at {path}. Skipping initialization.")
-        return
+    else:
+        print(f"[DB] No database found. Creating new database at {path}...")
 
-    print(f"[DB] No database found. Creating new database at {path}...")
+        # Connect to SQLite. Since the file doesn't exist yet, SQLite creates it automatically.
+        # We execute the single schema entry file and resolve `.read` includes.
+        with sqlite3.connect(path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            schema_sql = _load_schema_sql(SCHEMA_PATH)
+            conn.executescript(schema_sql)
 
-    # Connect to SQLite. Since the file doesn't exist yet, SQLite creates it automatically.
-    # We execute the single schema entry file and resolve `.read` includes.
+        print(f"[DB] Database initialized successfully.")
+
+    # Always run migrations -- safe on both new and existing databases.
+    _run_migrations(path)
+
+
+def _run_migrations(path: str) -> None:
+    """Apply incremental schema changes that are safe to re-run (IF NOT EXISTS)."""
     with sqlite3.connect(path) as conn:
-        conn.execute("PRAGMA foreign_keys = ON")
-        schema_sql = _load_schema_sql(SCHEMA_PATH)
-        conn.executescript(schema_sql)
-
-    print(f"[DB] Database initialized successfully.")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
 
 
 # ─────────────────────────────────────────────

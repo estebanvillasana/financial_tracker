@@ -43,7 +43,13 @@ class ApiError extends Error {
 function buildUrl(path, query) {
   const baseUrl = finalAppConfig.apiBaseUrl.replace(/\/+$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = new URL(`${baseUrl}${normalizedPath}`);
+
+  // Support relative apiBaseUrl (e.g. '/api') by resolving against current origin
+  const absoluteBase = baseUrl.match(/^https?:\/\//)
+    ? baseUrl
+    : `${window.location.origin}${baseUrl.startsWith('/') ? '' : '/'}${baseUrl}`;
+
+  const url = new URL(`${absoluteBase}${normalizedPath}`);
 
   if (query && typeof query === 'object') {
     Object.entries(query).forEach(([key, value]) => {

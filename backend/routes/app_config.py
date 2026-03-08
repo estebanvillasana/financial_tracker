@@ -1,49 +1,27 @@
-import re
-from pathlib import Path
-
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from database import get_connection
+
 router = APIRouter(prefix="/app-config", tags=["App Config"])
-
-# frontend/config.js sits two levels above backend/routes/
-_CONFIG_JS = Path(__file__).parent.parent.parent / "frontend" / "config.js"
-
-_TEMPLATE = (
-    'export const appConfig = {{\n'
-    '  apiBaseUrl: "http://127.0.0.1:8000",\n'
-    '  currency: \'{currency}\',\n'
-    '  apiKey: \'{api_key}\',\n'
-    '}}\n'
-)
 
 
 def _read_currency() -> str:
-    if not _CONFIG_JS.exists():
-        return "usd"
-    match = re.search(r"currency\s*:\s*['\"]([^'\"]+)['\"]", _CONFIG_JS.read_text(encoding="utf-8"))
-    return match.group(1) if match else "usd"
-
-
-def _read_api_key() -> str:
-    if not _CONFIG_JS.exists():
-        return ""
-    match = re.search(r"apiKey\s*:\s*['\"]([^'\"]*)['\"]", _CONFIG_JS.read_text(encoding="utf-8"))
-    return match.group(1) if match else ""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = 'currency'"
+        ).fetchone()
+        return row[0] if row else "usd"
 
 
 def _write_currency(currency: str) -> None:
-    if _CONFIG_JS.exists():
-        updated = re.sub(
-            r"(currency\s*:\s*)['\"][^'\"]+['\"]",
-            f"\\1'{currency}'",
-            _CONFIG_JS.read_text(encoding="utf-8"),
-        )
-        _CONFIG_JS.write_text(updated, encoding="utf-8")
-    else:
-        _CONFIG_JS.write_text(
-            _TEMPLATE.format(currency=currency, api_key=""),
-            encoding="utf-8",
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO settings (key, value) VALUES ('currency', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            (currency,),
         )
 
 

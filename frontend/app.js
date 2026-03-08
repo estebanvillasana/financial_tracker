@@ -78,10 +78,15 @@ window.addEventListener('hashchange', () => loadPage(getPage()));
 // Module with top-level-await dependency (defaults.js) may evaluate after
 // DOMContentLoaded has already fired, so check readyState instead.
 async function bootstrap() {
-  const [userName] = await Promise.all([fetchCurrentUserName()]);
+  const [userName, configData] = await Promise.all([
+    fetchCurrentUserName(),
+    request('/app-config').catch(() => null),
+  ]);
+
+  const currentCurrency = configData?.currency || finalAppConfig.currency;
 
   SideBarMenu.init({
-    currentCurrency: finalAppConfig.currency,
+    currentCurrency,
     userName,
     onCurrencyChange: async (code) => {
       await request('/app-config', { method: 'PATCH', body: { currency: code } });
