@@ -11,6 +11,7 @@ const ROUTES = {
   'quick-add':      'pages/quick-add/quick-add.html',
   transfers:        'pages/transfers/transfers.html',
   categories:       'pages/categories/categories.html',
+  'bank-accounts':  'pages/bank-accounts/bank-accounts.html',
   repetitive:       'pages/repetitive-movements/repetitive-movements.html',
   'monthly-report': 'pages/monthly-report/monthly-report.html',
 };
@@ -24,6 +25,7 @@ const PAGE_INITIALIZERS = {
   movements: async () => (await import('./pages/movements/index.js')).initMovementsPage,
   transfers: async () => (await import('./pages/transfers/index.js')).initTransfersPage,
   categories: async () => (await import('./pages/categories/index.js')).initCategoriesPage,
+  'bank-accounts': async () => (await import('./pages/bank-accounts/index.js')).initBankAccountsPage,
   repetitive: async () => (await import('./pages/repetitive-movements/index.js')).initRepetitiveMovementsPage,
   'monthly-report': async () => (await import('./pages/monthly-report/index.js')).initMonthlyReportPage,
 };

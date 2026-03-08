@@ -7,6 +7,7 @@ const SideBarMenu = (() => {
     { page: 'add-movements',  icon: 'post_add',      label: 'Add Movements' },
     { page: 'quick-add',      icon: 'bolt',          label: 'Quick Add'     },
     { page: 'transfers',      icon: 'sync_alt',      label: 'Transfers'     },
+    { page: 'bank-accounts',  icon: 'account_balance', label: 'Accounts'   },
     { page: 'categories',     icon: 'sell',          label: 'Categories'    },
     { page: 'repetitive',     icon: 'event_repeat',  label: 'Repetitive'    },
     { page: 'monthly-report', icon: 'summarize',     label: 'Monthly Report' },

@@ -535,7 +535,136 @@ const BankAccountModal = (() => {
     _closeModal();
   }
 
-  return { buildHTML, open, openById, close };
+  // ─── Create mode ─────────────────────────────────────────────────────────────
+
+  /**
+   * Builds a simplified modal HTML for creating a new bank account.
+   * Omits stats header, ID chip, and delete button since they don't apply.
+   *
+   * @param {object} [options={}]
+   * @returns {string}
+   */
+  function buildNewHTML(options = {}) {
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+
+    return `
+      <div class="ft-modal-backdrop ft-bank-account-modal-backdrop" data-modal-close>
+        <section class="ft-bank-account-modal" role="dialog" aria-modal="true" aria-label="Create bank account">
+          <header class="ft-bank-account-modal__header">
+            <div class="ft-bank-account-modal__header-main">
+              <div class="ft-bank-account-modal__title-wrap">
+                <h2 class="ft-h3 ft-bank-account-modal__title">New Account</h2>
+              </div>
+              <button type="button" class="ft-bank-account-modal__close-btn" data-modal-close aria-label="Close modal">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          </header>
+
+          <div class="ft-bank-account-modal__body">
+            <form class="ft-bank-account-modal__form" id="ft-bank-account-form" data-bank-account-form>
+              <div class="ft-bank-account-modal__form-grid">
+                <label class="ft-bank-account-modal__field">
+                  <span>Name</span>
+                  <input type="text" name="account" value="" required />
+                </label>
+                <label class="ft-bank-account-modal__field">
+                  <span>Owner</span>
+                  <input type="text" name="owner" value="" required />
+                </label>
+                <label class="ft-bank-account-modal__field">
+                  <span>Type</span>
+                  <select name="type">${_buildTypeOptions('Bank Account')}</select>
+                </label>
+                <label class="ft-bank-account-modal__field">
+                  <span>Currency</span>
+                  <input type="text" name="currency" value="${_escapeHtml(defaultCurrency)}" maxlength="3" required />
+                </label>
+                <label class="ft-bank-account-modal__field ft-bank-account-modal__field--wide">
+                  <span>Description</span>
+                  <textarea name="description" rows="3"></textarea>
+                </label>
+                <label class="ft-bank-account-modal__field">
+                  <span>Initial Balance (cents)</span>
+                  <input type="number" name="initial_balance" value="0" />
+                </label>
+              </div>
+            </form>
+          </div>
+
+          <footer class="ft-bank-account-modal__footer">
+            <div></div>
+            <div class="ft-bank-account-modal__message" data-bank-account-message aria-live="polite"></div>
+            <div class="ft-bank-account-modal__actions">
+              <button type="button" class="ft-btn ft-btn--ghost" data-modal-close>Cancel</button>
+              <button type="submit" class="ft-btn ft-btn--primary" form="ft-bank-account-form" data-save-account>Create</button>
+            </div>
+          </footer>
+        </section>
+      </div>`;
+  }
+
+  /**
+   * Opens the bank account modal in "create" mode with an empty form.
+   *
+   * @param {object} [options={}]
+   * @param {Function} [options.onSave]   — called with (payload) on submit
+   * @param {Function} [options.onClose]  — called when modal is dismissed
+   * @returns {Promise<HTMLElement|null>}
+   */
+  async function openNew(options = {}) {
+    _closeModal();
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = buildNewHTML(options).trim();
+
+    const modalRoot = wrapper.firstElementChild;
+    if (!modalRoot) return null;
+
+    document.body.appendChild(modalRoot);
+    document.body.style.overflow = 'hidden';
+    activeModal = modalRoot;
+
+    const onSave = typeof options.onSave === 'function' ? options.onSave : null;
+    const onClose = typeof options.onClose === 'function' ? options.onClose : null;
+
+    // Close handlers
+    modalRoot.addEventListener('click', event => {
+      const closeTarget = event.target.closest('[data-modal-close]');
+      if (closeTarget && event.target === modalRoot) { onClose?.(); _closeModal(); return; }
+      if (closeTarget && closeTarget !== modalRoot) { onClose?.(); _closeModal(); return; }
+    });
+
+    // Submit handler
+    modalRoot.addEventListener('submit', async event => {
+      if (!event.target.closest('[data-bank-account-form]')) return;
+      event.preventDefault();
+
+      const payload = _collectFormData(modalRoot);
+
+      if (!onSave) return;
+
+      try {
+        _setMessage(modalRoot, 'Creating account...');
+        await onSave(payload);
+        _setMessage(modalRoot, 'Account created.');
+        setTimeout(() => _closeModal(), 600);
+      } catch (error) {
+        _setMessage(modalRoot, error?.message || 'Failed to create account.', 'error');
+      }
+    });
+
+    // Escape key
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !activeModal) return;
+      onClose?.();
+      _closeModal();
+    }, { once: true });
+
+    return modalRoot;
+  }
+
+  return { buildHTML, buildNewHTML, open, openNew, openById, close };
 })();
 
 export { BankAccountModal };

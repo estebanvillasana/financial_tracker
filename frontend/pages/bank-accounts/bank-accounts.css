@@ -1,0 +1,189 @@
+/* ── Bank Accounts Page ──────────────────────────────── */
+
+.ft-bank-accounts-toolbar__deleted-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* ── Grid ────────────────────────────────────────────── */
+
+.ft-bank-accounts-grid {
+  display: grid;
+  gap: calc(var(--ft-spacing) * 2);
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+/* ── Account Card ────────────────────────────────────── */
+
+.ft-ba-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  transition: border-color 120ms ease, opacity 150ms ease;
+  cursor: pointer;
+}
+
+.ft-ba-card:hover {
+  border-color: var(--ft-color-border-strong);
+}
+
+.ft-ba-card--inactive {
+  opacity: 0.55;
+}
+
+.ft-ba-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ft-spacing);
+  padding: calc(var(--ft-spacing) * 2);
+  padding-bottom: 0;
+}
+
+.ft-ba-card__icon-wrap {
+  align-items: center;
+  background: var(--ft-color-surface-alt);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-shrink: 0;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.ft-ba-card__icon {
+  font-size: 20px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+}
+
+.ft-ba-card__title-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.ft-ba-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-ba-card__badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ft-ba-card__type-tag {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+  background: var(--ft-color-accent-10);
+  border: 1px solid var(--ft-color-accent-15);
+  color: var(--ft-color-accent);
+}
+
+.ft-ba-card__currency-tag {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+  background: var(--ft-color-surface-alt);
+  border: 1px solid var(--ft-color-border);
+  color: var(--ft-color-text-muted);
+}
+
+.ft-ba-card__status--inactive {
+  background: var(--ft-color-warning-15);
+  border: 1px solid var(--ft-color-warning-30);
+  border-radius: 999px;
+  color: var(--ft-color-warning);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+
+/* ── Body ────────────────────────────────────────────── */
+
+.ft-ba-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.25);
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+}
+
+.ft-ba-card__description {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-ba-card__meta {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--ft-spacing) * 2);
+}
+
+.ft-ba-card__meta > span {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ft-ba-card__meta-icon {
+  font-size: 14px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+}
+
+/* ── Footer (balance) ────────────────────────────────── */
+
+.ft-ba-card__footer {
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--ft-spacing) * 1.25) calc(var(--ft-spacing) * 2);
+}
+
+.ft-ba-card__balance-main {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ft-ba-card__balance-main--negative {
+  color: var(--ft-color-danger);
+}
+
+.ft-ba-card__balance-converted {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+}
+
+/* ── Stats overrides ─────────────────────────────────── */
+
+.ft-bank-accounts .ft-stats-row {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ── Type toggle icon sizing inside toolbar ──────────── */
+
+.ft-bank-accounts .ft-type-toggle__btn .material-symbols-outlined {
+  font-size: 16px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+}

@@ -1,0 +1,64 @@
+<div class="ft-page ft-bank-accounts">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Bank Accounts</h1>
+        <p class="ft-small ft-text-muted">Manage your accounts, balances, and details</p>
+      </div>
+      <button class="ft-btn ft-btn--primary" id="btn-new-account">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        New Account
+      </button>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="ft-toolbar" id="widget-accounts-toolbar">
+    <div class="ft-type-toggle" id="accounts-type-toggle">
+      <button class="ft-type-toggle__btn ft-type-toggle__btn--active" data-type="">All</button>
+      <button class="ft-type-toggle__btn" data-type="Bank Account">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+        Bank
+      </button>
+      <button class="ft-type-toggle__btn" data-type="Credit Card">
+        <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
+        Credit
+      </button>
+      <button class="ft-type-toggle__btn" data-type="Savings">
+        <span class="material-symbols-outlined" aria-hidden="true">savings</span>
+        Savings
+      </button>
+      <button class="ft-type-toggle__btn" data-type="Crypto Wallet">
+        <span class="material-symbols-outlined" aria-hidden="true">currency_bitcoin</span>
+        Crypto
+      </button>
+      <button class="ft-type-toggle__btn" data-type="Money Bag">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance_wallet</span>
+        Cash
+      </button>
+    </div>
+
+    <label class="ft-bank-accounts-toolbar__deleted-toggle">
+      <input type="checkbox" id="accounts-show-deleted" />
+      <span class="ft-small ft-text-muted">Show deleted</span>
+    </label>
+  </div>
+
+  <!-- Summary Stats -->
+  <section class="ft-section" aria-live="polite">
+    <div class="ft-stats-row" id="widget-accounts-stats"></div>
+  </section>
+
+  <!-- Feedback -->
+  <div id="widget-accounts-feedback"></div>
+
+  <!-- Accounts Grid -->
+  <section class="ft-section" id="widget-accounts-grid">
+    <div class="ft-bank-accounts-grid">
+      <div class="ft-empty" style="grid-column: 1 / -1;">
+        <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+        <p class="ft-small">Loading accounts&#8230;</p>
+      </div>
+    </div>
+  </section>
+</div>
