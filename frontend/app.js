@@ -2,7 +2,7 @@
 
 import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
 import { finalAppConfig } from './defaults.js';
-import { request } from './services/http.js';
+import { request, fetchCurrentUserName } from './services/http.js';
 
 const ROUTES = {
   dashboard:        'pages/dashboard/dashboard.html',
@@ -77,9 +77,12 @@ window.addEventListener('hashchange', () => loadPage(getPage()));
 
 // Module with top-level-await dependency (defaults.js) may evaluate after
 // DOMContentLoaded has already fired, so check readyState instead.
-function bootstrap() {
+async function bootstrap() {
+  const [userName] = await Promise.all([fetchCurrentUserName()]);
+
   SideBarMenu.init({
     currentCurrency: finalAppConfig.currency,
+    userName,
     onCurrencyChange: async (code) => {
       await request('/app-config', { method: 'PATCH', body: { currency: code } });
       window.location.reload();

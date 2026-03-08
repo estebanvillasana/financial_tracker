@@ -1,16 +1,16 @@
-// sideBarMenu.js — Dumb sidebar navigation component
+﻿// sideBarMenu.js — Dumb sidebar navigation component
 
 const SideBarMenu = (() => {
   const NAV_ITEMS = [
-    { page: 'dashboard',      icon: 'home',          label: 'Dashboard'     },
-    { page: 'movements',      icon: 'receipt_long',  label: 'Movements'     },
-    { page: 'add-movements',  icon: 'post_add',      label: 'Add Movements' },
-    { page: 'quick-add',      icon: 'bolt',          label: 'Quick Add'     },
-    { page: 'transfers',      icon: 'sync_alt',      label: 'Transfers'     },
-    { page: 'bank-accounts',  icon: 'account_balance', label: 'Accounts'   },
-    { page: 'categories',     icon: 'sell',          label: 'Categories'    },
-    { page: 'repetitive',     icon: 'event_repeat',  label: 'Repetitive'    },
-    { page: 'monthly-report', icon: 'summarize',     label: 'Monthly Report' },
+    { page: 'dashboard',      icon: 'home',            label: 'Dashboard'     },
+    { page: 'movements',      icon: 'receipt_long',    label: 'Movements'     },
+    { page: 'add-movements',  icon: 'post_add',        label: 'Add Movements' },
+    { page: 'quick-add',      icon: 'bolt',            label: 'Quick Add'     },
+    { page: 'transfers',      icon: 'sync_alt',        label: 'Transfers'     },
+    { page: 'bank-accounts',  icon: 'account_balance', label: 'Accounts'      },
+    { page: 'categories',     icon: 'sell',            label: 'Categories'    },
+    { page: 'repetitive',     icon: 'event_repeat',    label: 'Repetitive'    },
+    { page: 'monthly-report', icon: 'summarize',       label: 'Monthly Report'},
   ];
 
   /* Start fetching active currencies immediately so data is ready by init(). */
@@ -25,7 +25,11 @@ const SideBarMenu = (() => {
       { code: 'gel', codePlusSymbol: '₾ GEL' },
     ]);
 
-  function _buildHTML(currencies, currentCurrency) {
+  function _escapeAttr(value) {
+    return String(value ?? '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function _buildHTML(currencies, currentCurrency, userName) {
     const current = (currentCurrency || 'usd').toLowerCase();
 
     const items = NAV_ITEMS.map(({ page, icon, label }) => `
@@ -40,6 +44,14 @@ const SideBarMenu = (() => {
       `<option value="${c.code}"${c.code === current ? ' selected' : ''}>${c.codePlusSymbol}</option>`
     ).join('');
 
+    const safeUserName = _escapeAttr(userName || '');
+    const userTag = userName
+      ? `<div class="ft-nav__user" data-tooltip="${safeUserName}" aria-label="Signed in as ${safeUserName}">
+           <span class="ft-nav__user-icon material-symbols-outlined" aria-hidden="true">account_circle</span>
+           <span class="ft-nav__user-name">${safeUserName}</span>
+         </div>`
+      : '';
+
     return `
       <nav class="ft-nav" id="ft-nav" aria-label="Main navigation">
         <div class="ft-nav__brand">
@@ -49,15 +61,19 @@ const SideBarMenu = (() => {
 
         <ul class="ft-nav__menu" role="list">
           ${items}
+          <li class="ft-nav__menu-divider" role="separator"></li>
+          <li class="ft-nav__item ft-nav__item--currency" data-tooltip="Main currency">
+            <div class="ft-nav__currency">
+              <span class="ft-nav__currency-icon material-symbols-outlined" aria-hidden="true">currency_exchange</span>
+              <select class="ft-nav__currency-select" id="ft-nav-currency-select" aria-label="Main currency">
+                ${options}
+              </select>
+            </div>
+          </li>
         </ul>
 
         <div class="ft-nav__footer">
-          <div class="ft-nav__currency" data-tooltip="Main currency">
-            <span class="ft-nav__currency-icon material-symbols-outlined" aria-hidden="true">currency_exchange</span>
-            <select class="ft-nav__currency-select" id="ft-nav-currency-select" aria-label="Main currency">
-              ${options}
-            </select>
-          </div>
+          ${userTag}
           <button
             class="ft-nav__collapse-btn"
             id="ft-nav-collapse-btn"
@@ -84,14 +100,15 @@ const SideBarMenu = (() => {
   /**
    * @param {object} opts
    * @param {string}   opts.currentCurrency  — active currency code from finalAppConfig
+   * @param {string}   [opts.userName]       — display name shown in the sidebar footer
    * @param {Function} opts.onCurrencyChange — async (code: string) => void
    */
-  async function init({ currentCurrency = 'usd', onCurrencyChange } = {}) {
+  async function init({ currentCurrency = 'usd', userName = null, onCurrencyChange } = {}) {
     const container = document.getElementById('app-nav');
     if (!container) return;
 
     const currencies = await _currenciesPromise;
-    container.innerHTML = _buildHTML(currencies, currentCurrency);
+    container.innerHTML = _buildHTML(currencies, currentCurrency, userName);
 
     document.getElementById('ft-nav-collapse-btn')?.addEventListener('click', _toggleCollapse);
     _restoreState();

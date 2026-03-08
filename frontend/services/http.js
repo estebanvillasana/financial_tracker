@@ -1,6 +1,28 @@
 import { finalAppConfig } from '../defaults.js';
 
 /**
+ * Fetches the current user's name from the backend.
+ * Uses displayName from config.js if set; otherwise calls GET /me.
+ * Returns null in local-dev mode (no API key configured).
+ *
+ * @returns {Promise<string|null>}
+ */
+async function fetchCurrentUserName() {
+  if (finalAppConfig.displayName) {
+    return String(finalAppConfig.displayName).trim();
+  }
+  if (!finalAppConfig.apiKey) {
+    return null;
+  }
+  try {
+    const data = await request('/me');
+    return data?.name ? String(data.name).trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Custom error class for API-related failures
  */
 class ApiError extends Error {
@@ -112,4 +134,4 @@ async function request(path, { method = 'GET', query, body, headers } = {}) {
   return data;
 }
 
-export { ApiError, request, buildUrl };
+export { ApiError, request, buildUrl, fetchCurrentUserName };

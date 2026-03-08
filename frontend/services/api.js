@@ -6,7 +6,7 @@
  * import { movements, bankAccounts } from './services/api.js';
  */
 
-export { ApiError, request, buildUrl } from './http.js';
+export { ApiError, request, buildUrl, fetchCurrentUserName } from './http.js';
 export { bankAccounts } from './bankAccounts.js';
 export { categories } from './categories.js';
 export { movements } from './movements.js';
