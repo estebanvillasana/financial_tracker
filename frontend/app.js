@@ -85,6 +85,9 @@ async function bootstrap() {
 
   const currentCurrency = configData?.currency || finalAppConfig.currency;
 
+  // Keep finalAppConfig in sync so all pages that import it get the right currency.
+  finalAppConfig.currency = currentCurrency;
+
   SideBarMenu.init({
     currentCurrency,
     userName,
