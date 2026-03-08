@@ -11,3 +11,5 @@ demos/
 docs/
 *.md
 docker-compose.yml
+# Exchange rates are kept in the image (already downloaded in the repo)
+# DO NOT ignore: backend/data/usd_exchange_rates/
