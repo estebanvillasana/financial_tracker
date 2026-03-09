@@ -88,6 +88,10 @@ async function bootstrap() {
   // Keep finalAppConfig in sync so all pages that import it get the right currency.
   finalAppConfig.currency = currentCurrency;
 
+  if (userName) {
+    document.title = `${userName} - Financial Tracker`;
+  }
+
   SideBarMenu.init({
     currentCurrency,
     userName,
