@@ -78,23 +78,29 @@ async function initMovementsPage(root = document) {
   /* ── Load data in parallel ────────────────────────────────── */
 
   try {
-    const [accs, catList, subList, repList, movs, fxData] = await Promise.all([
+    const [accs, catList, subList, movs, fxData] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
-      repetitiveMovements.getAll({ active: 1 }),
       fetchMovements({ limit: DEFAULT_LIMIT, active: 1 }),
       fxRates.getAllRatesLatest(),
     ]);
     state.accounts  = Array.isArray(accs)    ? accs    : [];
     state.cats      = Array.isArray(catList)  ? catList  : [];
     state.subs      = Array.isArray(subList)  ? subList  : [];
-    state.reps      = Array.isArray(repList)  ? repList  : [];
     state.movements = Array.isArray(movs)     ? movs     : [];
     state.rates     = fxData?.rates || {};
   } catch (e) {
     return FeedbackBanner.render(feedbackEl, e?.message || 'Failed to load data.');
   }
+
+  /* Load repetitive movements independently — a failure here only means the
+     selector in the edit modal stays empty; it must not break the whole page. */
+  const repList = await repetitiveMovements.getAll({ active: 1 }).catch(err => {
+    console.error('[movements] Failed to load repetitive movements:', err);
+    return [];
+  });
+  state.reps = Array.isArray(repList) ? repList : [];
 
   /* ── Populate account select ──────────────────────────────── */
 

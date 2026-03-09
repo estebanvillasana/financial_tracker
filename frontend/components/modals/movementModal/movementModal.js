@@ -45,12 +45,39 @@ const MovementModal = (() => {
 
   /* ── Private helpers ────────────────────────────────────── */
 
-  function _repOpts(reps, selectedId, typeFilter = null) {
+  function _repOpts(reps, selectedId, movementType = '') {
     const opts = ['<option value="">\u2014 None \u2014</option>'];
-    const list = typeFilter ? reps.filter(r => r.type === typeFilter) : reps;
-    for (const r of list) {
-      const sel = r.id === selectedId ? ' selected' : '';
-      opts.push(`<option value="${r.id}"${sel}>${_esc(r.movement)}</option>`);
+    const normalizedType = String(movementType || '').trim();
+
+    if (normalizedType) {
+      const filtered = reps.filter(r => r.type === normalizedType);
+      for (const r of filtered) {
+        const sel = r.id === selectedId ? ' selected' : '';
+        opts.push(`<option value="${r.id}"${sel}>${_esc(r.movement)}</option>`);
+      }
+      return opts.join('');
+    }
+
+    const filtered = reps;
+
+    const income = filtered.filter(r => r.type === 'Income');
+    const expense = filtered.filter(r => r.type === 'Expense');
+
+    if (expense.length) {
+      opts.push('<optgroup label="Expense">');
+      for (const r of expense) {
+        const sel = r.id === selectedId ? ' selected' : '';
+        opts.push(`<option value="${r.id}"${sel}>${_esc(r.movement)}</option>`);
+      }
+      opts.push('</optgroup>');
+    }
+    if (income.length) {
+      opts.push('<optgroup label="Income">');
+      for (const r of income) {
+        const sel = r.id === selectedId ? ' selected' : '';
+        opts.push(`<option value="${r.id}"${sel}>${_esc(r.movement)}</option>`);
+      }
+      opts.push('</optgroup>');
     }
     return opts.join('');
   }
