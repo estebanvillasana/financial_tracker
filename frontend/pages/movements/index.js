@@ -4,7 +4,7 @@
  * Orchestrates: toolbar, grid with checkbox selection, movement modal,
  * code-group banner, FX rates for currency conversion, and bulk actions.
  */
-import { bankAccounts, categories, subCategories, fxRates } from '../../services/api.js';
+import { bankAccounts, categories, subCategories, fxRates, repetitiveMovements } from '../../services/api.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
@@ -50,6 +50,7 @@ async function initMovementsPage(root = document) {
     accounts: [],
     cats: [],
     subs: [],
+    reps: [],
     movements: [],
     gridApi: null,
     codeFilter: null,
@@ -77,16 +78,18 @@ async function initMovementsPage(root = document) {
   /* ── Load data in parallel ────────────────────────────────── */
 
   try {
-    const [accs, catList, subList, movs, fxData] = await Promise.all([
+    const [accs, catList, subList, repList, movs, fxData] = await Promise.all([
       bankAccounts.getAll({ active: 1 }),
       categories.getAll({ active: 1 }),
       subCategories.getAll({ active: 1 }),
+      repetitiveMovements.getAll({ active: 1 }),
       fetchMovements({ limit: DEFAULT_LIMIT, active: 1 }),
       fxRates.getAllRatesLatest(),
     ]);
     state.accounts  = Array.isArray(accs)    ? accs    : [];
     state.cats      = Array.isArray(catList)  ? catList  : [];
     state.subs      = Array.isArray(subList)  ? subList  : [];
+    state.reps      = Array.isArray(repList)  ? repList  : [];
     state.movements = Array.isArray(movs)     ? movs     : [];
     state.rates     = fxData?.rates || {};
   } catch (e) {
@@ -384,6 +387,7 @@ async function initMovementsPage(root = document) {
       accounts: state.accounts,
       categories: state.cats,
       subCategories: state.subs,
+      repetitiveMovements: state.reps,
     }, {
       onSave: async (id, payload) => {
         await updateMovement(id, payload);

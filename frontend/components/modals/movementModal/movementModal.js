@@ -41,8 +41,19 @@ import {
 const MovementModal = (() => {
 
   let activeModal = null;
+  let _activePickerCleanup = null;
 
   /* ── Private helpers ────────────────────────────────────── */
+
+  function _repOpts(reps, selectedId, typeFilter = null) {
+    const opts = ['<option value="">\u2014 None \u2014</option>'];
+    const list = typeFilter ? reps.filter(r => r.type === typeFilter) : reps;
+    for (const r of list) {
+      const sel = r.id === selectedId ? ' selected' : '';
+      opts.push(`<option value="${r.id}"${sel}>${_esc(r.movement)}</option>`);
+    }
+    return opts.join('');
+  }
 
   /**
    * Builds account options without the blank placeholder option.
@@ -55,7 +66,7 @@ const MovementModal = (() => {
   /* ── Build HTML ─────────────────────────────────────────── */
 
   function buildHTML(movement, config = {}) {
-    const { accounts = [], categories = [], subCategories = [] } = config;
+    const { accounts = [], categories = [], subCategories = [], repetitiveMovements = [] } = config;
     const m = movement || {};
     const acc = _findAccount(accounts, m.account_id);
     const amountDisplay = _formatDisplay(String((m.value || 0) / 100), acc?.currency);
@@ -112,11 +123,15 @@ const MovementModal = (() => {
                   <span>Sub-category</span>
                   <select name="sub_category_id">${_subCategoryOpts(subCategories, m.type, m.category_id, m.sub_category_id)}</select>
                 </label>
-                <div class="ft-movement-modal__field ft-movement-modal__field--date">
+                <div class="ft-movement-modal__field">
                   <span>Date</span>
                   <div class="ft-movement-modal__date-host" id="mm-date-host"></div>
                   <input type="hidden" name="date" value="${_esc(m.date)}" id="mm-date-hidden" />
                 </div>
+                <label class="ft-movement-modal__field">
+                  <span>Repetitive Movement</span>
+                  <select name="repetitive_movement_id">${_repOpts(repetitiveMovements, m.repetitive_movement_id, m.type)}</select>
+                </label>
                 <label class="ft-movement-modal__field ft-movement-modal__field--checkbox">
                   <input type="checkbox" name="invoice" value="1"${m.invoice === 1 ? ' checked' : ''}>
                   <span>Has Invoice</span>
@@ -156,33 +171,37 @@ const MovementModal = (() => {
   function _mountDatePicker(modalRoot) {
     const host = modalRoot.querySelector('#mm-date-host');
     const hidden = modalRoot.querySelector('#mm-date-hidden');
-    if (!host || !hidden) return;
+    if (!host || !hidden) return null;
 
-    const pickerEl = DatePicker.createElement(
-      { value: hidden.value || new Date().toISOString().slice(0, 10) },
-      { onChange: isoDate => { hidden.value = isoDate; } },
+    const pickerField = DatePicker.createPickerField(
+      'Date',
+      hidden.value || new Date().toISOString().slice(0, 10),
+      isoDate => { hidden.value = isoDate; },
     );
-    host.appendChild(pickerEl);
+    host.appendChild(pickerField);
+    return pickerField._cleanup ?? null;
   }
 
   /* ── Cascading selects + amount formatting ──────────────── */
 
   function _wireDynamicFields(modalRoot, config) {
-    const { accounts = [], categories = [], subCategories = [] } = config;
+    const { accounts = [], categories = [], subCategories = [], repetitiveMovements = [] } = config;
     const form = modalRoot.querySelector('[data-movement-form]');
     if (!form) return;
 
     const typeSelect = form.querySelector('[name="type"]');
     const catSelect = form.querySelector('[name="category_id"]');
     const subSelect = form.querySelector('[name="sub_category_id"]');
+    const repSelect = form.querySelector('[name="repetitive_movement_id"]');
     const accSelect = form.querySelector('[name="account_id"]');
     const amtInput = form.querySelector('[name="amount"]');
     const amtLabel = modalRoot.querySelector('#mm-amount-label');
 
-    /* Type → re-populate categories, clear subcategory */
+    /* Type → re-populate categories, clear subcategory, filter repetitive movements */
     typeSelect?.addEventListener('change', () => {
       catSelect.innerHTML = _categoryOpts(categories, typeSelect.value, '');
-      subSelect.innerHTML = '<option value="">—</option>';
+      subSelect.innerHTML = '<option value="">\u2014</option>';
+      if (repSelect) repSelect.innerHTML = _repOpts(repetitiveMovements, null, typeSelect.value);
     });
 
     /* Category → re-populate subcategories */
@@ -234,6 +253,7 @@ const MovementModal = (() => {
       date: String(data.get('date') || ''),
       category_id: Number(data.get('category_id')) || null,
       sub_category_id: Number(data.get('sub_category_id')) || null,
+      repetitive_movement_id: Number(data.get('repetitive_movement_id')) || null,
       invoice: data.get('invoice') !== null ? 1 : 0,
     };
   }
@@ -260,6 +280,8 @@ const MovementModal = (() => {
   /* ── Close ──────────────────────────────────────────────── */
 
   function _closeModal() {
+    _activePickerCleanup?.();
+    _activePickerCleanup = null;
     if (!activeModal) return;
     activeModal.remove();
     activeModal = null;
@@ -356,7 +378,7 @@ const MovementModal = (() => {
     document.body.style.overflow = 'hidden';
     activeModal = modalRoot;
 
-    _mountDatePicker(modalRoot);
+    _activePickerCleanup = _mountDatePicker(modalRoot);
     _wireDynamicFields(modalRoot, config);
     _wireEvents(modalRoot, movement, config, options);
 

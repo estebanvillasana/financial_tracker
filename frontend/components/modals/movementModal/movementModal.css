@@ -168,16 +168,14 @@
   width: 16px;
 }
 
-/* ── Date picker host ──────────────────────────────────────── */
+/* ── Date picker (popup trigger) within form ─────────────────── */
 
-.ft-movement-modal__field--date {
-  grid-column: 1 / -1;
-  align-items: flex-start;
+.ft-movement-modal__date-host .ft-date-popup {
+  width: 100%;
 }
 
-.ft-movement-modal__date-host {
-  /* Let the DatePicker component set its own width */
-  max-width: 100%;
+.ft-movement-modal__date-host .ft-date-popup__trigger {
+  flex: 1;
 }
 
 /* ── Footer ────────────────────────────────────────────────── */
