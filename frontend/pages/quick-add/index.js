@@ -160,6 +160,28 @@ async function initQuickAddPage(root = document) {
     return Math.min(day, _daysInMonth(year, month));
   }
 
+  function _clearSmartDatePending(el) {
+    delete el.dataset.pendingSegment;
+    delete el.dataset.pendingValue;
+  }
+
+  function _renderSmartDate(el) {
+    const { year, month, day, segment } = _smartDateValues(el);
+    const pendingSegment = Number.parseInt(el.dataset.pendingSegment ?? '', 10);
+    const pendingValue = el.dataset.pendingValue || '';
+    const segs = el.querySelectorAll('.ft-qa-smart-date__seg');
+
+    segs[0].textContent = String(day).padStart(2, '0');
+    segs[1].textContent = MONTH_NAMES[month - 1];
+    segs[2].textContent = String(year);
+
+    if (pendingValue && pendingSegment >= 0 && pendingSegment < segs.length) {
+      segs[pendingSegment].textContent = pendingValue;
+    }
+
+    segs.forEach((s, i) => s.classList.toggle('ft-qa-smart-date__seg--active', i === segment));
+  }
+
   function _updateSmartDate(el, year, month, day, segment) {
     month = ((month - 1 + 12) % 12) + 1; // clamp 1–12
     day = _clampDay(year, month, day);
@@ -167,18 +189,126 @@ async function initQuickAddPage(root = document) {
     el.dataset.month = month;
     el.dataset.day = day;
     el.dataset.segment = segment;
-
-    const segs = el.querySelectorAll('.ft-qa-smart-date__seg');
-    segs[0].textContent = String(day).padStart(2, '0');
-    segs[1].textContent = MONTH_NAMES[month - 1];
-    segs[2].textContent = String(year);
-
-    segs.forEach((s, i) => s.classList.toggle('ft-qa-smart-date__seg--active', i === segment));
+    _clearSmartDatePending(el);
+    _renderSmartDate(el);
   }
 
   function _smartDateIso(el) {
     const { year, month, day } = _smartDateValues(el);
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  const smartDateTyping = {
+    segment: null,
+    buffer: '',
+    timer: null,
+  };
+
+  function _resetSmartDateTyping(dateEl) {
+    smartDateTyping.segment = null;
+    smartDateTyping.buffer = '';
+    if (smartDateTyping.timer) {
+      clearTimeout(smartDateTyping.timer);
+      smartDateTyping.timer = null;
+    }
+    if (dateEl) {
+      _clearSmartDatePending(dateEl);
+      _renderSmartDate(dateEl);
+    }
+  }
+
+  function _scheduleSmartDateTypingReset(dateEl) {
+    if (smartDateTyping.timer) clearTimeout(smartDateTyping.timer);
+    smartDateTyping.timer = setTimeout(() => _resetSmartDateTyping(dateEl), 1400);
+  }
+
+  function _setSmartDatePending(dateEl, segment, value) {
+    if (!value) {
+      _clearSmartDatePending(dateEl);
+    } else {
+      dateEl.dataset.pendingSegment = String(segment);
+      dateEl.dataset.pendingValue = value;
+    }
+    _renderSmartDate(dateEl);
+  }
+
+  function _applySmartDateTypedKey(dateEl, key) {
+    const { year, month, day, segment } = _smartDateValues(dateEl);
+    const isNewSequence = smartDateTyping.segment !== segment;
+
+    if (segment === 0) {
+      if (!/^\d$/.test(key)) return false;
+
+      const nextBuffer = `${isNewSequence ? '' : smartDateTyping.buffer}${key}`.slice(0, 2);
+      const maxDay = _daysInMonth(year, month);
+
+      smartDateTyping.segment = segment;
+      smartDateTyping.buffer = nextBuffer;
+
+      if (nextBuffer.length === 2) {
+        const parsed = Number.parseInt(nextBuffer, 10);
+        if (parsed >= 1 && parsed <= maxDay) {
+          _updateSmartDate(dateEl, year, month, parsed, segment);
+          _resetSmartDateTyping(dateEl);
+          return true;
+        }
+      }
+
+      const parsed = Number.parseInt(nextBuffer, 10);
+      if (nextBuffer !== '0' && Number.isFinite(parsed) && parsed >= 1 && parsed <= maxDay && (parsed * 10 > maxDay || nextBuffer.length === 2)) {
+        _updateSmartDate(dateEl, year, month, parsed, segment);
+        _resetSmartDateTyping(dateEl);
+        return true;
+      }
+
+      _setSmartDatePending(dateEl, segment, nextBuffer);
+      _scheduleSmartDateTypingReset(dateEl);
+      return true;
+    }
+
+    if (segment === 1) {
+      if (!/^[a-zA-Z]$/.test(key)) return false;
+
+      const nextBuffer = `${isNewSequence ? '' : smartDateTyping.buffer}${key.toLowerCase()}`.slice(0, 9);
+      const matches = MONTH_NAMES
+        .map((name, index) => ({ name, monthNumber: index + 1 }))
+        .filter(item => item.name.toLowerCase().startsWith(nextBuffer));
+
+      if (matches.length === 0) return false;
+
+      smartDateTyping.segment = segment;
+      smartDateTyping.buffer = nextBuffer;
+
+      if (matches.length === 1) {
+        _updateSmartDate(dateEl, year, matches[0].monthNumber, day, segment);
+        _setSmartDatePending(dateEl, segment, matches[0].name);
+      } else {
+        _setSmartDatePending(dateEl, segment, nextBuffer.charAt(0).toUpperCase() + nextBuffer.slice(1));
+      }
+
+      _scheduleSmartDateTypingReset(dateEl);
+      return true;
+    }
+
+    if (segment === 2) {
+      if (!/^\d$/.test(key)) return false;
+
+      const nextBuffer = `${isNewSequence ? '' : smartDateTyping.buffer}${key}`.slice(0, 4);
+      smartDateTyping.segment = segment;
+      smartDateTyping.buffer = nextBuffer;
+
+      if (nextBuffer.length === 4) {
+        _updateSmartDate(dateEl, Number.parseInt(nextBuffer, 10), month, day, segment);
+        _resetSmartDateTyping(dateEl);
+        return true;
+      }
+
+      _setSmartDatePending(dateEl, segment, nextBuffer);
+      _scheduleSmartDateTypingReset(dateEl);
+      return true;
+    }
+
+    return false;
   }
 
   /* ── Global keyboard handler ── */
@@ -266,16 +396,19 @@ async function initQuickAddPage(root = document) {
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        _resetSmartDateTyping(dateEl);
         _updateSmartDate(dateEl, year, month, day, Math.max(0, segment - 1));
         return;
       }
       if (e.key === 'ArrowRight') {
         e.preventDefault();
+        _resetSmartDateTyping(dateEl);
         _updateSmartDate(dateEl, year, month, day, Math.min(2, segment + 1));
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
+        _resetSmartDateTyping(dateEl);
         if (segment === 0) _updateSmartDate(dateEl, year, month, Math.min(_daysInMonth(year, month), day + 1), segment);
         else if (segment === 1) _updateSmartDate(dateEl, year, month + 1, day, segment);
         else _updateSmartDate(dateEl, year + 1, month, day, segment);
@@ -283,14 +416,50 @@ async function initQuickAddPage(root = document) {
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        _resetSmartDateTyping(dateEl);
         if (segment === 0) _updateSmartDate(dateEl, year, month, Math.max(1, day - 1), segment);
         else if (segment === 1) _updateSmartDate(dateEl, year, month - 1, day, segment);
         else _updateSmartDate(dateEl, year - 1, month, day, segment);
         return;
       }
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (!smartDateTyping.buffer || smartDateTyping.segment !== segment) {
+          _resetSmartDateTyping(dateEl);
+          return;
+        }
+
+        smartDateTyping.buffer = smartDateTyping.buffer.slice(0, -1);
+        if (!smartDateTyping.buffer) {
+          _resetSmartDateTyping(dateEl);
+          return;
+        }
+
+        if (segment === 1) {
+          const matches = MONTH_NAMES
+            .map((name, index) => ({ name, monthNumber: index + 1 }))
+            .filter(item => item.name.toLowerCase().startsWith(smartDateTyping.buffer));
+          if (matches.length === 1) {
+            _updateSmartDate(dateEl, year, matches[0].monthNumber, day, segment);
+            _setSmartDatePending(dateEl, segment, matches[0].name);
+          } else {
+            _setSmartDatePending(dateEl, segment, smartDateTyping.buffer.charAt(0).toUpperCase() + smartDateTyping.buffer.slice(1));
+          }
+        } else {
+          _setSmartDatePending(dateEl, segment, smartDateTyping.buffer);
+        }
+
+        _scheduleSmartDateTypingReset(dateEl);
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
+        _resetSmartDateTyping(dateEl);
         _advanceStep(_smartDateIso(dateEl));
+        return;
+      }
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && _applySmartDateTypedKey(dateEl, e.key)) {
+        e.preventDefault();
         return;
       }
       return;

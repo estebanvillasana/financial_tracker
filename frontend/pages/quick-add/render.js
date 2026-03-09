@@ -231,7 +231,7 @@ function _renderActiveStep(step, state, values) {
           <span class="ft-qa-smart-date__seg" data-seg="2">${y}</span>
         </div>
         <span class="ft-qa-smart-date-hint ft-small ft-text-muted">
-          <kbd>←</kbd><kbd>→</kbd> segment · <kbd>↑</kbd><kbd>↓</kbd> change · <kbd>Enter</kbd> confirm
+          <kbd>←</kbd><kbd>→</kbd> segment · <kbd>↑</kbd><kbd>↓</kbd> change · type <kbd>04</kbd> or <kbd>February</kbd> · <kbd>Enter</kbd> confirm
         </span>
       </div>`;
   }
