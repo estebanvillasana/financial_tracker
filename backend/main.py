@@ -46,6 +46,17 @@ async def _exchange_rate_scheduler():
             print(f"[APP] Scheduled exchange rate update error: {e}")
 
 
+async def _backup_scheduler():
+    """Checks every 24 hours whether a backup is due (threshold: 7 days)."""
+    while True:
+        await asyncio.sleep(24 * 60 * 60)
+        print("[APP] Scheduled backup check starting...")
+        try:
+            backup_all_databases(USERS)
+        except Exception as e:
+            print(f"[APP] Scheduled backup error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── STARTUP ──
@@ -69,8 +80,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[APP] Exchange rates update error: {e}")
 
+    print("[APP] Running startup backup check...")
+    try:
+        backup_all_databases(USERS)
+    except Exception as e:
+        print(f"[APP] Startup backup error: {e}")
+
     asyncio.create_task(_exchange_rate_scheduler())
+    asyncio.create_task(_backup_scheduler())
     print("[APP] Exchange rate scheduler started (runs every 24 h).")
+    print("[APP] Backup scheduler started (checks every 24 h, backs up if 7+ days old).")
     print("[APP] Ready.")
 
     yield  # The app runs here, handling requests
