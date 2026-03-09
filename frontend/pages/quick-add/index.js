@@ -11,6 +11,7 @@
 
 import { bankAccounts, categories, subCategories, repetitiveMovements, movements } from '../../services/api.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { escapeHtml } from '../../utils/formHelpers.js';
 import { createFlow } from './flow.js';
@@ -143,6 +144,10 @@ async function initQuickAddPage(root = document) {
     return flowEl.querySelector('.ft-qa-smart-date');
   }
 
+  function _getSmartDatePopupEl() {
+    return flowEl.querySelector('.ft-qa-smart-date-popup');
+  }
+
   function _smartDateValues(el) {
     return {
       year: parseInt(el.dataset.year, 10),
@@ -196,6 +201,72 @@ async function initQuickAddPage(root = document) {
   function _smartDateIso(el) {
     const { year, month, day } = _smartDateValues(el);
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  function _parseIsoDate(iso) {
+    const [year, month, day] = String(iso || '').split('-').map(Number);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+      return null;
+    }
+    return { year, month, day };
+  }
+
+  function _positionSmartDatePopup(dateEl, popupEl) {
+    if (!dateEl || !popupEl) return;
+
+    const rect = dateEl.getBoundingClientRect();
+    const popupWidth = 280;
+    const popupHeight = 340;
+    const margin = 8;
+
+    let left = rect.left;
+    if (left + popupWidth > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - popupWidth - margin);
+    }
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    let top;
+    if (spaceBelow >= popupHeight || spaceBelow >= rect.top) {
+      top = Math.min(rect.bottom + 6, window.innerHeight - popupHeight - margin);
+    } else {
+      top = Math.max(margin, rect.top - popupHeight - 6);
+    }
+
+    popupEl.style.left = `${Math.round(left)}px`;
+    popupEl.style.top = `${Math.round(top)}px`;
+  }
+
+  function _closeSmartDatePopup() {
+    const popup = _getSmartDatePopupEl();
+    if (!popup) return;
+    popup.remove();
+  }
+
+  function _openSmartDatePopup(dateEl) {
+    if (!dateEl) return;
+
+    _closeSmartDatePopup();
+
+    const popup = document.createElement('div');
+    popup.className = 'ft-date-popup__calendar ft-qa-smart-date-popup';
+    popup.hidden = false;
+
+    const picker = DatePicker.createElement(
+      { value: _smartDateIso(dateEl) },
+      {
+        onChange: iso => {
+          const parsed = _parseIsoDate(iso);
+          if (!parsed) return;
+          _updateSmartDate(dateEl, parsed.year, parsed.month, parsed.day, _smartDateValues(dateEl).segment);
+          _closeSmartDatePopup();
+          dateEl.focus();
+        },
+      },
+    );
+
+    popup.appendChild(picker);
+    flowEl.appendChild(popup);
+    _positionSmartDatePopup(dateEl, popup);
   }
 
   const smartDateTyping = {
@@ -390,6 +461,16 @@ async function initQuickAddPage(root = document) {
 
     /* Smart date: segment-based arrow key navigation */
     if (step.inputType === 'smart-date') {
+      const popupEl = _getSmartDatePopupEl();
+      if (popupEl && popupEl.contains(e.target)) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          _closeSmartDatePopup();
+          _getSmartDateEl()?.focus();
+        }
+        return;
+      }
+
       const dateEl = _getSmartDateEl();
       if (!dateEl) return;
       const { year, month, day, segment } = _smartDateValues(dateEl);
@@ -593,6 +674,21 @@ async function initQuickAddPage(root = document) {
 
   /* ── Wire click on type/invoice toggle and select options ── */
   flowEl.addEventListener('click', e => {
+    const smartDate = e.target.closest('.ft-qa-smart-date');
+    if (smartDate && phase === 'input') {
+      const step = flow.currentStep();
+      if (step?.inputType === 'smart-date') {
+        const seg = e.target.closest('.ft-qa-smart-date__seg');
+        if (seg) {
+          const segIndex = Number.parseInt(seg.dataset.seg || '0', 10);
+          const { year, month, day } = _smartDateValues(smartDate);
+          _updateSmartDate(smartDate, year, month, day, Number.isFinite(segIndex) ? segIndex : 0);
+        }
+        _openSmartDatePopup(smartDate);
+        return;
+      }
+    }
+
     /* Type toggle buttons */
     const typeBtn = e.target.closest('.ft-qa-type-toggle__btn');
     if (typeBtn && phase === 'input') {
@@ -611,7 +707,22 @@ async function initQuickAddPage(root = document) {
     }
   });
 
+  const outsideClickHandler = e => {
+    if (!root.querySelector('.ft-quick-add-page')) {
+      document.removeEventListener('click', outsideClickHandler);
+      return;
+    }
+
+    const popup = _getSmartDatePopupEl();
+    if (!popup) return;
+
+    const smartDate = _getSmartDateEl();
+    if (popup.contains(e.target) || smartDate?.contains(e.target)) return;
+    _closeSmartDatePopup();
+  };
+
   document.addEventListener('keydown', keyHandler);
+  document.addEventListener('click', outsideClickHandler);
 
   /* ── Initial render ── */
   refresh();

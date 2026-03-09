@@ -497,7 +497,7 @@
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-md, 6px);
   background: var(--ft-color-elevated);
-  cursor: default;
+  cursor: pointer;
   outline: none;
   transition: border-color 0.15s;
   user-select: none;
