@@ -317,7 +317,26 @@ function buildGridOptions(state, domRefs, handlers) {
 
     getContextMenuItems: params => {
       if (!params.node?.data || isAddRow(params.node.data)) return [];
+      const currentType = params.node.data.type || 'Expense';
+      const targetType = currentType === 'Expense' ? 'Income' : 'Expense';
       return [
+        {
+          name: `Change to ${targetType}`,
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">swap_vert</span>',
+          action: () => {
+            const updatedData = {
+              ...params.node.data,
+              type: targetType,
+              category_id: null,
+              sub_category_id: null,
+              repetitive_movement_id: null,
+            };
+            params.api.applyTransaction({ update: [updatedData] });
+            handlers.refreshSummaryState(state, domRefs);
+            handlers.renderFeedback(domRefs.feedbackEl, '');
+            requestAnimationFrame(() => applyRowTypeAttributes(params.api));
+          },
+        },
         {
           name: 'Remove row',
           icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">delete</span>',
