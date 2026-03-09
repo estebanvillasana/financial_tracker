@@ -97,7 +97,10 @@ const FIELD_STEPS = [
       const rms = (state.repetitiveMovements || []).filter(
         rm => !values.type || rm.type === values.type,
       );
-      return rms.map(rm => ({ id: rm.id, label: rm.movement }));
+      return [
+        { id: '', label: '\u2014 None \u2014' },
+        ...rms.map(rm => ({ id: rm.id, label: rm.movement })),
+      ];
     },
     validate: () => null,
   },
