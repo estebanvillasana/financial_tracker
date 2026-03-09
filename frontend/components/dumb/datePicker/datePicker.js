@@ -203,6 +203,15 @@ const DatePicker = (() => {
       root.innerHTML = _buildCalendarHTML(viewYear, viewMonth, selectedIso);
     }
 
+    function _selectDate(isoDate) {
+      selectedIso = isoDate;
+      const parsed = _parseIso(selectedIso);
+      viewYear = parsed.year;
+      viewMonth = parsed.month;
+      _refresh();
+      if (typeof options.onChange === 'function') options.onChange(selectedIso);
+    }
+
     /* ── Event delegation ── */
     root.addEventListener('click', event => {
       const navBtn = event.target.closest('.ft-date-picker__nav-btn');
@@ -223,32 +232,31 @@ const DatePicker = (() => {
       const dayBtn = event.target.closest('.ft-date-picker__day');
       if (dayBtn && dayBtn.dataset.date) {
         event.stopPropagation();
-        selectedIso = dayBtn.dataset.date;
-        /* Navigate to the selected month if it's an outside day */
-        const parsed = _parseIso(selectedIso);
-        viewYear = parsed.year;
-        viewMonth = parsed.month;
-        _refresh();
-        if (typeof options.onChange === 'function') options.onChange(selectedIso);
+        _selectDate(dayBtn.dataset.date);
         return;
       }
 
       const todayBtn = event.target.closest('.ft-date-picker__today-btn');
       if (todayBtn) {
         event.stopPropagation();
-        selectedIso = _todayIso();
-        const parsed = _parseIso(selectedIso);
-        viewYear = parsed.year;
-        viewMonth = parsed.month;
-        _refresh();
-        if (typeof options.onChange === 'function') options.onChange(selectedIso);
+        _selectDate(_todayIso());
       }
     });
 
     /* Keyboard nav: arrow keys move between days, Enter/Space selects */
     root.addEventListener('keydown', event => {
+      if (['Enter', ' '].includes(event.key)) {
+        const focused = event.target.closest('.ft-date-picker__day') || root.querySelector('.ft-date-picker__day:focus');
+        if (!focused?.dataset.date) return;
+        event.preventDefault();
+        event.stopPropagation();
+        _selectDate(focused.dataset.date);
+        return;
+      }
+
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
       event.preventDefault();
+      event.stopPropagation();
 
       const focused = root.querySelector('.ft-date-picker__day:focus');
       if (!focused) {
@@ -318,13 +326,32 @@ const DatePicker = (() => {
         this._value = params.value || _todayIso();
         this._params = params;
 
+        this._restoreGridFocus = () => {
+          requestAnimationFrame(() => {
+            if (params.data?._isAddRow) return;
+
+            const colId = typeof params.column?.getColId === 'function'
+              ? params.column.getColId()
+              : params.colDef?.field;
+
+            if (params.eGridCell instanceof HTMLElement) {
+              params.eGridCell.focus({ preventScroll: true });
+            }
+
+            if (colId != null && Number.isInteger(params.rowIndex)) {
+              params.api.setFocusedCell(params.rowIndex, colId);
+            }
+          });
+        };
+
         this._el = createElement(
           { value: this._value },
           {
             onChange: (isoDate) => {
               this._value = isoDate;
-              /* Close the editor after selection */
-              setTimeout(() => params.api.stopEditing(), 0);
+              if (typeof params.stopEditing === 'function') params.stopEditing();
+              else params.api.stopEditing();
+              this._restoreGridFocus();
             },
           }
         );

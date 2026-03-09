@@ -31,6 +31,14 @@ import { dateCellRenderer } from '../../utils/gridRenderers.js';
 
 const ERROR_CELL_CLASS = 'ft-add-cell--error';
 
+function isEditingPopupTarget(target) {
+  return target instanceof Element && Boolean(target.closest('.ag-popup, .ag-popup-editor'));
+}
+
+function isPopupEditorOpen() {
+  return Boolean(document.querySelector('.ag-popup-editor'));
+}
+
 /* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
 
 function commitSentinelRow(state) {
@@ -362,7 +370,7 @@ function buildGridOptions(state, domRefs, handlers) {
     onCellFocused: params => {
       const node = params.rowIndex != null ? params.api.getDisplayedRowAtIndex(params.rowIndex) : null;
       const isNowSentinel = isAddRow(node?.data);
-      if (state.lastFocusWasSentinel && !isNowSentinel) {
+      if (state.lastFocusWasSentinel && !isNowSentinel && !isPopupEditorOpen()) {
         commitSentinelRow(state);
         handlers.refreshSummaryState(state, domRefs);
       }
@@ -377,6 +385,7 @@ function buildGridOptions(state, domRefs, handlers) {
         return;
       }
       if (!isAddRow(params.data) || params.event.key !== 'Enter') return;
+      if (isPopupEditorOpen()) return;
       params.api.stopEditing();
       commitSentinelRow(state);
       handlers.refreshSummaryState(state, domRefs);
@@ -395,6 +404,10 @@ function mountGrid(gridHost, state, domRefs, handlers) {
   state.gridApi = window.agGrid.createGrid(gridHost, gridOptions);
 
   gridHost.addEventListener('focusout', event => {
+    if (state.lastFocusWasSentinel && (isEditingPopupTarget(event.relatedTarget) || isPopupEditorOpen())) {
+      return;
+    }
+
     if (state.lastFocusWasSentinel && !gridHost.contains(event.relatedTarget)) {
       commitSentinelRow(state);
       state.lastFocusWasSentinel = false;
