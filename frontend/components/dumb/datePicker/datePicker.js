@@ -325,6 +325,7 @@ const DatePicker = (() => {
       init(params) {
         this._value = params.value || _todayIso();
         this._params = params;
+        this._isClosing = false;
 
         this._restoreGridFocus = () => {
           requestAnimationFrame(() => {
@@ -344,14 +345,23 @@ const DatePicker = (() => {
           });
         };
 
+        this._closeEditor = () => {
+          if (this._isClosing) return;
+          this._isClosing = true;
+
+          setTimeout(() => {
+            if (typeof params.stopEditing === 'function') params.stopEditing();
+            else params.api.stopEditing();
+            this._restoreGridFocus();
+          }, 0);
+        };
+
         this._el = createElement(
           { value: this._value },
           {
             onChange: (isoDate) => {
               this._value = isoDate;
-              if (typeof params.stopEditing === 'function') params.stopEditing();
-              else params.api.stopEditing();
-              this._restoreGridFocus();
+              this._closeEditor();
             },
           }
         );

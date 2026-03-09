@@ -39,6 +39,12 @@ function isPopupEditorOpen() {
   return Boolean(document.querySelector('.ag-popup-editor'));
 }
 
+function isInlineEditorTarget(target) {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('.ag-popup, .ag-popup-editor')) return false;
+  return Boolean(target.closest('input, textarea, [contenteditable="true"], .ag-cell-inline-editing'));
+}
+
 /* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
 
 function commitSentinelRow(state) {
@@ -386,6 +392,18 @@ function buildGridOptions(state, domRefs, handlers) {
       }
       if (!isAddRow(params.data) || params.event.key !== 'Enter') return;
       if (isPopupEditorOpen()) return;
+
+      const editingCells = typeof params.api.getEditingCells === 'function'
+        ? params.api.getEditingCells()
+        : [];
+
+      const isInlineEditing = isInlineEditorTarget(params.event.target) ||
+        (Array.isArray(editingCells) && editingCells.length > 0);
+
+      if (!isInlineEditing) {
+        return;
+      }
+
       params.api.stopEditing();
       commitSentinelRow(state);
       handlers.refreshSummaryState(state, domRefs);
