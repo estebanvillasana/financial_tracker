@@ -34,10 +34,64 @@ function getSelectedAccount(state) {
   return state.accounts.find(account => Number(account.id) === Number(state.selectedAccountId)) || null;
 }
 
+/* ── Date Parsing ─────────────────────────────────────────────────────────── */
+
+const MONTH_MAP = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+function expandTwoDigitYear(y) {
+  return y < 100 ? (y < 50 ? 2000 + y : 1900 + y) : y;
+}
+
+function toIsoOrNull(year, month0, day) {
+  const d = new Date(Date.UTC(expandTwoDigitYear(year), month0, day));
+  if (d.getUTCMonth() !== month0 || d.getUTCDate() !== day) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Parses common date strings into ISO YYYY-MM-DD.
+ * Accepts: YYYY-MM-DD, DD-Mon-YY(YY), Mon DD YYYY, DD/MM/YY(YY).
+ * Returns null when the input cannot be recognised.
+ */
+function parseDateToIso(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return toIsoOrNull(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
+  }
+
+  let m = s.match(/^(\d{1,2})[\s/\-]([A-Za-z]{3,9})\.?[\s/\-,]*(\d{2,4})$/);
+  if (m) {
+    const mon = MONTH_MAP[m[2].slice(0, 3).toLowerCase()];
+    if (mon !== undefined) return toIsoOrNull(Number(m[3]), mon, Number(m[1]));
+  }
+
+  m = s.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s*(\d{2,4})$/);
+  if (m) {
+    const mon = MONTH_MAP[m[1].slice(0, 3).toLowerCase()];
+    if (mon !== undefined) return toIsoOrNull(Number(m[3]), mon, Number(m[2]));
+  }
+
+  m = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
+  if (m) {
+    return toIsoOrNull(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  }
+
+  return null;
+}
+
 /** Parses clipboard values into typed grid values per column. */
 function parsePastedCellValue(state, columnId, rawValue, rowType, categoryId) {
   const value = String(rawValue ?? '').trim();
   if (!value) return null;
+
+  if (columnId === 'date') {
+    return parseDateToIso(value) ?? value;
+  }
 
   if (columnId === 'amount') {
     const num = Number(value.replace(/,/g, ''));
@@ -76,4 +130,5 @@ export {
   getCategoriesByType,
   getSubCategoriesForRow,
   parsePastedCellValue,
+  parseDateToIso,
 };

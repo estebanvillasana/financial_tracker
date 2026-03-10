@@ -133,6 +133,7 @@
 
 .ft-add-movements-grid {
   height: 100%;
+  position: relative;
   width: 100%;
 }
 
@@ -232,4 +233,31 @@
   background: color-mix(in srgb, var(--ft-color-danger) 12%, transparent) !important;
   outline: 1px solid var(--ft-color-danger) !important;
   outline-offset: -1px;
+}
+
+/* ── Custom Fill Handle ───────────────────────────────────── */
+
+.ft-fill-handle {
+  background: var(--ft-color-accent);
+  border: 1px solid #fff9;
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--ft-color-accent-10);
+  cursor: crosshair;
+  height: 9px;
+  pointer-events: auto;
+  position: absolute;
+  width: 9px;
+  z-index: 5;
+}
+
+.ft-fill-target {
+  background-color: color-mix(in srgb, var(--ft-color-accent) 18%, transparent) !important;
+  outline: 1px dashed var(--ft-color-accent);
+  outline-offset: -1px;
+}
+
+.ft-fill-dragging,
+.ft-fill-dragging * {
+  cursor: crosshair !important;
+  user-select: none;
 }

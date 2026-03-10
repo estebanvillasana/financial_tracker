@@ -24,10 +24,12 @@ import {
   getCategoriesByType,
   getSubCategoriesForRow,
   parsePastedCellValue,
+  parseDateToIso,
 } from './utils.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { formatMoney } from '../../utils/formatters.js';
 import { dateCellRenderer } from '../../utils/gridRenderers.js';
+import { attachFillHandle } from './fillHandle.js';
 
 const ERROR_CELL_CLASS = 'ft-add-cell--error';
 
@@ -160,6 +162,22 @@ function buildGridOptions(state, domRefs, handlers) {
     rowData: [createSentinelRow(state.draftType)],
     cellSelection: true,
     suppressClickEdit: false,
+    processDataFromClipboard: params => {
+      const rows = Array.isArray(params?.data) ? [...params.data] : [];
+
+      // Excel often includes a trailing blank row in clipboard payloads.
+      // If not removed, AG Grid can clear the next row during paste.
+      while (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        const isBlankRow = Array.isArray(lastRow)
+          ? lastRow.every(cell => String(cell ?? '').trim() === '')
+          : true;
+        if (!isBlankRow) break;
+        rows.pop();
+      }
+
+      return rows;
+    },
     getRowId: params => params.data._id,
     getRowClass: params => (isAddRow(params.data) ? 'ag-row-add-phantom' : undefined),
     defaultColDef: {
@@ -207,6 +225,7 @@ function buildGridOptions(state, domRefs, handlers) {
         cellEditor: DateCellEditor,
         cellEditorPopup: true,
         cellRenderer: dateCellRenderer,
+        valueParser: params => parseDateToIso(params.newValue) ?? params.newValue,
       },
 
       /* ── Amount ── */
@@ -439,6 +458,15 @@ function buildGridOptions(state, domRefs, handlers) {
 function mountGrid(gridHost, state, domRefs, handlers) {
   const gridOptions = buildGridOptions(state, domRefs, handlers);
   state.gridApi = window.agGrid.createGrid(gridHost, gridOptions);
+
+  /* ── Custom fill handle (drag to copy cell value) ──────── */
+  const fillHandle = attachFillHandle(gridHost, state, domRefs, handlers);
+  state.gridApi.addEventListener('cellFocused', () => {
+    requestAnimationFrame(() => fillHandle.reposition());
+  });
+  state.gridApi.addEventListener('cellEditingStopped', () => {
+    requestAnimationFrame(() => fillHandle.reposition());
+  });
 
   gridHost.addEventListener('focusout', event => {
     if (state.lastFocusWasSentinel && (isEditingPopupTarget(event.relatedTarget) || isPopupEditorOpen())) {
