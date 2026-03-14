@@ -86,6 +86,10 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
         </div>
       </div>
       <div class="ft-add-movements-toolbar__actions">
+        <button class="ft-btn ft-btn--ghost" id="btn-pdf-import-movements">
+          <span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
+          Import PDF
+        </button>
         <button class="ft-btn ft-btn--ghost" id="btn-bulk-add-movements">
           <span class="material-symbols-outlined" aria-hidden="true">playlist_add</span>
           Bulk Add

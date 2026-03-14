@@ -15,6 +15,7 @@ import { commitSentinelRow, syncRowsFromGrid, applyRowTypeAttributes, clearError
 import { saveDraftsImmediate, clearDrafts } from './drafts.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { BulkAddModal } from '../../components/modals/bulkAddModal/bulkAddModal.js';
+import { PdfImportModal } from '../../components/modals/pdfImportModal/pdfImportModal.js';
 import {
   updateHeaderButtons,
   renderBalanceCards,
@@ -249,4 +250,54 @@ function handleBulkAdd(state, domRefs, refreshSummaryState) {
   );
 }
 
-export { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd };
+/* ── PDF Import ────────────────────────────────────────────────────────────── */
+
+/**
+ * Opens the PDF Import modal and inserts extracted rows into the grid.
+ *
+ * @param {object}   state              - Page state
+ * @param {object}   domRefs            - DOM element references
+ * @param {Function} refreshSummaryState - Summary refresh callback
+ */
+function handlePdfImport(state, domRefs, refreshSummaryState) {
+  PdfImportModal.open(
+    { type: state.draftType },
+    (rowDataList) => {
+      if (!state.gridApi || rowDataList.length === 0) return;
+
+      const newRows = rowDataList.map(data => {
+        const row = createDraftRow(data.type || state.draftType);
+        row.movement = data.movement || '';
+        row.description = data.description || '';
+        row.date = data.date || row.date;
+        row.amount = data.amount || null;
+        row.type = data.type || state.draftType;
+        row.category_id = data.category_id || null;
+        row.sub_category_id = data.sub_category_id || null;
+        row.repetitive_movement_id = data.repetitive_movement_id || null;
+        return row;
+      });
+
+      state.gridApi.applyTransaction({
+        add: newRows,
+        addIndex: state.rows.length,
+      });
+
+      syncRowsFromGrid(state);
+      refreshSummaryState(state, domRefs);
+      requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+
+      FeedbackBanner.render(
+        domRefs.feedbackEl,
+        `Imported ${newRows.length} movement${newRows.length === 1 ? '' : 's'} from PDF.`,
+        'success',
+      );
+      setTimeout(() => {
+        const current = domRefs.feedbackEl?.querySelector('.ft-feedback-banner--success');
+        if (current) FeedbackBanner.clear(domRefs.feedbackEl);
+      }, 5000);
+    },
+  );
+}
+
+export { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handlePdfImport };
