@@ -14,3 +14,4 @@ export { moneyTransfers } from './moneyTransfers.js';
 export { repetitiveMovements } from './repetitiveMovements.js';
 export { subCategories } from './subCategories.js';
 export { fxRates } from './fxRates.js';
+export { parsePdf } from './pdfParser.js';

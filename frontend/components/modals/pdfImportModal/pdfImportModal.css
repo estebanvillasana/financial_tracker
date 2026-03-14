@@ -1,0 +1,350 @@
+/* ============================================================
+   PDF Import Modal — Component Styles
+   Mirrors BulkAddModal structure with upload + mapping steps
+   ============================================================ */
+
+.ft-pdf-import-modal {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-width: 640px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ft-pdf-import-modal--wide {
+  max-width: 960px;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+
+.ft-pdf-import-modal__header {
+  border-bottom: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: calc(var(--ft-spacing) * 1.75) calc(var(--ft-spacing) * 2);
+}
+
+.ft-pdf-import-modal__header-main {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ft-pdf-import-modal__title {
+  margin: 0;
+}
+
+.ft-pdf-import-modal__close-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.ft-pdf-import-modal__close-btn:hover {
+  background: var(--ft-color-elevated);
+  color: var(--ft-color-text);
+}
+
+.ft-pdf-import-modal__file-icon {
+  font-size: 14px;
+  vertical-align: -2px;
+}
+
+/* ── Body ──────────────────────────────────────────────── */
+
+.ft-pdf-import-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+  overflow-y: auto;
+  padding: calc(var(--ft-spacing) * 2);
+}
+
+/* ── Upload Zone ───────────────────────────────────────── */
+
+.ft-pdf-import-modal__upload-zone {
+  align-items: center;
+  border: 2px dashed var(--ft-color-border-strong);
+  border-radius: var(--ft-radius-wrapper);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ft-spacing);
+  justify-content: center;
+  min-height: 200px;
+  padding: calc(var(--ft-spacing) * 4) calc(var(--ft-spacing) * 2);
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ft-pdf-import-modal__upload-zone--dragover {
+  background: color-mix(in srgb, var(--ft-color-accent) 8%, transparent);
+  border-color: var(--ft-color-accent);
+}
+
+.ft-pdf-import-modal__upload-zone--loading {
+  pointer-events: none;
+}
+
+.ft-pdf-import-modal__upload-icon {
+  color: var(--ft-color-text-muted);
+  font-size: 48px;
+}
+
+.ft-pdf-import-modal__upload-icon--spin {
+  animation: ft-pdf-spin 1s linear infinite;
+  color: var(--ft-color-accent);
+}
+
+@keyframes ft-pdf-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.ft-pdf-import-modal__upload-text {
+  color: var(--ft-color-text);
+  margin: 0;
+}
+
+.ft-pdf-import-modal__upload-link {
+  color: var(--ft-color-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ft-pdf-import-modal__upload-link:hover {
+  color: color-mix(in srgb, var(--ft-color-accent) 80%, white);
+}
+
+/* ── Table Selector ────────────────────────────────────── */
+
+.ft-pdf-import-modal__table-selector {
+  align-items: center;
+  display: flex;
+  gap: var(--ft-spacing);
+}
+
+/* (table selector uses __ctrl-select) */
+
+/* ── Config Row (Type Assignment) ──────────────────────── */
+
+.ft-pdf-import-modal__config-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: calc(var(--ft-spacing) * 2);
+}
+
+.ft-pdf-import-modal__config-label {
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.ft-pdf-import-modal__type-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ft-pdf-import-modal__type-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-pdf-import-modal__radio {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 5px;
+}
+
+.ft-pdf-import-modal__radio input[type="radio"] {
+  accent-color: var(--ft-color-accent);
+}
+
+/* ── AG Grid Preview ───────────────────────────────────── */
+
+.ft-pdf-import-modal__grid-wrap {
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  height: 350px;
+  overflow: hidden;
+}
+
+/* ── Grid Header Mapping ─────────────────────────────── */
+
+.ft-pdf-import-modal__grid-wrap .ag-header-cell {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.ft-pdf-import-modal__grid-wrap .ag-header-cell-comp-wrapper {
+  align-items: stretch;
+  width: 100%;
+}
+
+.ft-pdf-import-modal__grid-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 0;
+  width: 100%;
+}
+
+.ft-pdf-import-modal__map-select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  cursor: pointer;
+  display: block;
+  font-size: 11px;
+  height: 30px;
+  outline: none;
+  padding: 2px 6px;
+  width: 100%;
+}
+
+.ft-pdf-import-modal__map-select:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-pdf-import-modal__map-header {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* ── Config Fields ────────────────────────────────────── */
+
+.ft-pdf-import-modal__config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.ft-pdf-import-modal__header-row-ctrl {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.ft-pdf-import-modal__ctrl-input {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  height: 34px;
+  outline: none;
+  padding: 4px 8px;
+  text-align: center;
+  width: 64px;
+}
+
+.ft-pdf-import-modal__ctrl-input:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-pdf-import-modal__ctrl-select {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  height: 34px;
+  max-width: 100%;
+  outline: none;
+  padding: 4px 10px;
+}
+
+.ft-pdf-import-modal__ctrl-select:focus {
+  border-color: var(--ft-color-accent);
+}
+
+.ft-pdf-import-modal__row-number-cell {
+  color: var(--ft-color-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Preview Bar ───────────────────────────────────────── */
+
+.ft-pdf-import-modal__preview {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.ft-pdf-import-modal__preview--ready {
+  color: var(--ft-color-success);
+}
+
+.ft-pdf-import-modal__preview--warning {
+  color: var(--ft-color-warning, var(--ft-color-danger));
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+
+.ft-pdf-import-modal__footer {
+  align-items: center;
+  border-top: 1px solid var(--ft-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  justify-content: space-between;
+  padding: calc(var(--ft-spacing) * 1.5) calc(var(--ft-spacing) * 2);
+}
+
+.ft-pdf-import-modal__message {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.ft-pdf-import-modal__message--error {
+  color: var(--ft-color-danger);
+}
+
+.ft-pdf-import-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ft-spacing);
+  margin-left: auto;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .ft-pdf-import-modal--wide {
+    max-width: 100%;
+  }
+
+  .ft-pdf-import-modal__config-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-pdf-import-modal__type-radios {
+    flex-direction: column;
+  }
+}
