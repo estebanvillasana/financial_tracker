@@ -24,8 +24,13 @@ import {
   updateHeaderButtons,
   renderBalanceCards,
   renderAccountToolbar,
+  syncBalanceCalculator,
+  parseActualBalanceInput,
+  formatActualBalanceInput,
+  getActualBalanceInputValue,
 } from './render.js';
-import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';import { saveDrafts, restoreDrafts } from './drafts.js';
+import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';
+import { saveDrafts, saveDraftsImmediate, restoreDrafts } from './drafts.js';
 import { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handlePdfImport } from './actions.js';
 
 /* ── State Refresh ────────────────────────────────────────────────────────── */
@@ -56,6 +61,7 @@ function refreshSummaryState(state, domRefs) {
  */
 function wireEvents(state, domRefs, toolbarEl) {
   const feedbackEl = domRefs.feedbackEl;
+  const balancesEl = domRefs.balancesEl;
 
   /* ── Account selector change ── */
   toolbarEl.addEventListener('change', event => {
@@ -110,6 +116,46 @@ function wireEvents(state, domRefs, toolbarEl) {
   toolbarEl.addEventListener('click', event => {
     if (!event.target.closest('#btn-pdf-import-movements')) return;
     handlePdfImport(state, domRefs, refreshSummaryState);
+  });
+
+  balancesEl.addEventListener('focusin', event => {
+    if (!event.target.matches('[data-actual-balance-input]')) return;
+    event.target.value = getActualBalanceInputValue(state).replace(/,/g, '');
+    event.target.select();
+  });
+
+  balancesEl.addEventListener('input', event => {
+    if (!event.target.matches('[data-actual-balance-input]')) return;
+
+    const accountId = String(state.selectedAccountId ?? '');
+    const cents = parseActualBalanceInput(event.target.value);
+
+    if (!state.actualBalances) state.actualBalances = {};
+
+    if (cents === null) {
+      delete state.actualBalances[accountId];
+    } else {
+      state.actualBalances[accountId] = cents;
+    }
+
+    syncBalanceCalculator(balancesEl, state, { updateInput: false });
+    saveDrafts(state);
+  });
+
+  balancesEl.addEventListener('focusout', event => {
+    if (!event.target.matches('[data-actual-balance-input]')) return;
+    const cents = parseActualBalanceInput(event.target.value);
+
+    if (!state.actualBalances) state.actualBalances = {};
+    if (cents === null) {
+      delete state.actualBalances[String(state.selectedAccountId ?? '')];
+    } else {
+      state.actualBalances[String(state.selectedAccountId ?? '')] = cents;
+    }
+
+    event.target.value = formatActualBalanceInput(cents);
+    syncBalanceCalculator(balancesEl, state, { updateInput: false });
+    saveDraftsImmediate(state);
   });
 }
 
@@ -188,6 +234,7 @@ async function initAddMovementsPage(root = document) {
     categories: activeCategories,
     subCategories: activeSubCategories,
     repetitiveMovements: activeRepetitiveMovements,
+    actualBalances: {},
     selectedAccountId: Number(accounts[0].id),
     draftType: 'Expense',
     gridApi: null,
@@ -203,6 +250,7 @@ async function initAddMovementsPage(root = document) {
     if (savedAccount) state.selectedAccountId = savedDrafts.accountId;
     if (TYPE_VALUES.includes(savedDrafts.draftType)) state.draftType = savedDrafts.draftType;
     state.rows = savedDrafts.rows;
+    state.actualBalances = savedDrafts.actualBalances || {};
   }
 
   /* ── Render initial toolbar ── */

@@ -1,15 +1,16 @@
 /**
  * Add Movements draft persistence via sessionStorage.
  *
- * Saves draft rows so they survive page reloads / accidental navigation.
- * Data is keyed per-session (not per-account) since drafts are transient
- * work-in-progress that should be cleared after commit.
+ * Saves add-movements working state so it survives page reloads / accidental
+ * navigation. This includes draft rows and any typed "actual balance"
+ * calculator values keyed by account id.
  *
  * Storage shape:
  * {
  *   accountId:  number,       — selected account at time of save
  *   draftType:  string,       — 'Expense' | 'Income'
  *   rows:       DraftRow[],   — draft rows (excluding sentinel)
+ *   actualBalances: object,   — { [accountId]: cents }
  *   savedAt:    number        — Date.now() timestamp for staleness checks
  * }
  */
@@ -30,7 +31,7 @@ const DEBOUNCE_MS = 500;
  * Call this from `refreshSummaryState` so every grid change triggers a save
  * without hammering storage on rapid edits.
  *
- * @param {object} state - Page state containing rows, selectedAccountId, draftType
+ * @param {object} state - Page state containing rows, actualBalances, selectedAccountId, draftType
  */
 function saveDrafts(state) {
   clearTimeout(_saveTimer);
@@ -56,7 +57,7 @@ function saveDraftsImmediate(state) {
  * Returns null if no saved data exists, if it's stale (>24h), or if the
  * shape is invalid. The caller decides how to merge restored data into the grid.
  *
- * @returns {{ accountId: number, draftType: string, rows: object[] } | null}
+ * @returns {{ accountId: number, draftType: string, rows: object[], actualBalances: object } | null}
  */
 function restoreDrafts() {
   try {
@@ -64,7 +65,10 @@ function restoreDrafts() {
     if (!raw) return null;
 
     const data = JSON.parse(raw);
-    if (!data || !Array.isArray(data.rows) || data.rows.length === 0) return null;
+    if (!data || !Array.isArray(data.rows)) return null;
+
+    const actualBalances = _sanitizeActualBalances(data.actualBalances);
+    if (data.rows.length === 0 && Object.keys(actualBalances).length === 0) return null;
 
     /* Discard stale drafts (e.g. left over from yesterday). */
     if (typeof data.savedAt === 'number' && Date.now() - data.savedAt > MAX_AGE_MS) {
@@ -76,6 +80,7 @@ function restoreDrafts() {
       accountId: Number(data.accountId) || null,
       draftType: data.draftType || 'Expense',
       rows: data.rows,
+      actualBalances,
     };
   } catch {
     clearDrafts();
@@ -98,7 +103,10 @@ function clearDrafts() {
 
 /** Writes current state to sessionStorage (synchronous). */
 function _writeDrafts(state) {
-  if (!state.rows || state.rows.length === 0) {
+  const rows = Array.isArray(state.rows) ? state.rows : [];
+  const actualBalances = _sanitizeActualBalances(state.actualBalances);
+
+  if (rows.length === 0 && Object.keys(actualBalances).length === 0) {
     clearDrafts();
     return;
   }
@@ -107,11 +115,20 @@ function _writeDrafts(state) {
     const payload = {
       accountId: state.selectedAccountId,
       draftType: state.draftType,
-      rows: state.rows,
+      rows,
+      actualBalances,
       savedAt: Date.now(),
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch { /* quota exceeded or storage unavailable — non-critical */ }
+}
+
+function _sanitizeActualBalances(value) {
+  if (!value || typeof value !== 'object') return {};
+
+  return Object.fromEntries(
+    Object.entries(value).filter(([, cents]) => Number.isFinite(cents))
+  );
 }
 
 export { saveDrafts, saveDraftsImmediate, restoreDrafts, clearDrafts };
