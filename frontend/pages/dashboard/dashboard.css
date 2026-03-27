@@ -64,6 +64,95 @@
   height: 340px;
 }
 
+/* ── Currency Summary ────────────────────────────────── */
+
+.ft-currency-summary {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 2);
+}
+
+.ft-currency-summary__header {
+  align-items: baseline;
+  display: flex;
+  gap: calc(var(--ft-spacing) * 1.5);
+  justify-content: space-between;
+}
+
+.ft-currency-summary__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ft-currency-summary__count {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ft-currency-summary__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--ft-spacing) * 0.75);
+}
+
+.ft-currency-summary__tab {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--ft-color-border);
+  border-radius: 20px;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0;
+  padding: 5px 14px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.ft-currency-summary__tab:hover {
+  background: var(--ft-color-elevated);
+  border-color: var(--ft-color-border-strong);
+  color: var(--ft-color-text);
+}
+
+.ft-currency-summary__tab--active {
+  background: var(--ft-color-accent-10);
+  border-color: var(--ft-color-accent);
+  color: var(--ft-color-accent);
+}
+
+.ft-currency-summary__tab--active:hover {
+  background: var(--ft-color-accent-15);
+}
+
+/* Loading skeleton */
+
+@keyframes ft-currency-summary-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.ft-currency-summary__skeleton {
+  animation: ft-currency-summary-shimmer 1.4s ease infinite;
+  background: linear-gradient(
+    90deg,
+    var(--ft-color-elevated) 25%,
+    var(--ft-color-surface)  50%,
+    var(--ft-color-elevated) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+}
+
+.ft-currency-summary__skeleton--title { height: 18px; width: 140px; }
+.ft-currency-summary__skeleton--count { height: 14px; width: 70px; }
+.ft-currency-summary__skeleton--tabs  { border-radius: 20px; height: 28px; width: 220px; }
+.ft-currency-summary__skeleton--cards { border-radius: var(--ft-radius-card); height: 110px; width: 100%; }
+
 /* ── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 640px) {
