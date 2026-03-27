@@ -11,7 +11,8 @@
 
 import { finalAppConfig } from '../../defaults.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
-import { AccountsSummary } from '../../components/smart/accountsSummary/accountsSummary.js';
+import { AccountsSummary }   from '../../components/smart/accountsSummary/accountsSummary.js';
+import { CurrencySummary }   from '../../components/smart/currencySummary/currencySummary.js';
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
 
 import { fetchDashboardData } from './actions.js';
@@ -24,6 +25,7 @@ const SEL = {
   statsSecondary:            '#dashboard-stats-secondary',
   statsSecondaryPeriod:      '#dashboard-stats-secondary-period',
   accountsSummary:           '#widget-accounts-summary',
+  currencySummary:           '#widget-currency-summary',
   breakdownCategories:       '#dashboard-breakdown-categories',
   breakdownExpenses:         '#dashboard-breakdown-expenses',
   breakdownAccounts:         '#dashboard-breakdown-accounts',
@@ -81,7 +83,10 @@ async function initDashboardPage(root = document) {
     title: 'Accounts Summary',
   });
 
-  // Row 3: breakdowns (synchronous, runs immediately with pre-fetched data)
+  // Row 3: currency summary (synchronous, uses pre-fetched accounts + rates)
+  CurrencySummary.render(els.currencySummary, { accounts, rates, mainCurrency });
+
+  // Row 4: breakdowns (synchronous, runs immediately with pre-fetched data)
   renderBreakdowns(
     {
       categories: els.breakdownCategories,
