@@ -78,6 +78,8 @@ function renderAccountPanel(panelEl, state) {
 
   const balance = Number(account.total_balance ?? 0);
   const currency = normalizeCurrency(account.currency);
+  const actualBalance = _getActualBalanceCents(state, account.id);
+  const difference = actualBalance === null ? null : actualBalance - balance;
 
   panelEl.appendChild(
     InfoCard.createElement(
@@ -91,6 +93,73 @@ function renderAccountPanel(panelEl, state) {
       { variant: 'default' },
     ),
   );
+
+  panelEl.appendChild(_createReconcileCard(currency, actualBalance, difference));
+}
+
+function syncAccountPanel(panelEl, state, options = {}) {
+  if (!panelEl) return;
+
+  const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+  if (!account) return;
+
+  const balance = Number(account.total_balance ?? 0);
+  const currency = normalizeCurrency(account.currency);
+  const actualBalance = _getActualBalanceCents(state, account.id);
+  const difference = actualBalance === null ? null : actualBalance - balance;
+
+  const inputEl = panelEl.querySelector('[data-qa-actual-balance-input]');
+  if (inputEl && options.updateInput !== false) {
+    inputEl.value = actualBalance === null ? '' : _formatEditableAmount(actualBalance);
+  }
+
+  const reconcileCard = panelEl.querySelector('[data-qa-reconcile-card]');
+  const diffValueEl = panelEl.querySelector('[data-qa-difference-value]');
+  const diffSubValueEl = panelEl.querySelector('[data-qa-difference-sub-value]');
+  const diffNoteEl = panelEl.querySelector('[data-qa-difference-note]');
+  const currencyEl = panelEl.querySelector('[data-qa-actual-balance-currency]');
+
+  if (reconcileCard) reconcileCard.dataset.variant = _getDifferenceVariant(difference);
+  if (currencyEl) currencyEl.textContent = currency;
+  if (diffValueEl) {
+    diffValueEl.textContent = difference === null
+      ? '—'
+      : `${difference > 0 ? '+' : ''}${formatMoneyFromCents(difference, currency)}`;
+  }
+  if (diffSubValueEl) {
+    diffSubValueEl.textContent = difference === null
+      ? 'Actual balance not entered'
+      : 'Actual balance minus current balance';
+  }
+  if (diffNoteEl) {
+    diffNoteEl.textContent = difference === null
+      ? 'Enter the balance from your bank app to compare.'
+      : difference === 0
+        ? 'Matches your bank app.'
+        : 'Non-zero means there are movements still missing or mismatched.';
+  }
+}
+
+function parseActualBalanceInput(value) {
+  const cleaned = String(value ?? '')
+    .trim()
+    .replace(/,/g, '')
+    .replace(/[^0-9.\-]/g, '');
+
+  if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') return null;
+
+  const amount = Number.parseFloat(cleaned);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+
+function formatActualBalanceInput(cents) {
+  return cents === null ? '' : _formatEditableAmount(cents);
+}
+
+function getActualBalanceInputValue(state) {
+  const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
+  if (!account) return '';
+  return formatActualBalanceInput(_getActualBalanceCents(state, account.id));
 }
 
 /* ── Session Tally ────────────────────────────────────────── */
@@ -372,4 +441,80 @@ function _formatDisplayValue(step, value, state) {
   return String(value);
 }
 
-export { renderAccountToolbar, renderAccountPanel, renderTally, renderFlow, renderHistory, MONTH_NAMES };
+function _createReconcileCard(currency, actualBalance, difference) {
+  const card = document.createElement('article');
+  card.className = 'ft-info-card ft-quick-add-reconcile-card';
+  card.dataset.variant = _getDifferenceVariant(difference);
+  card.dataset.qaReconcileCard = '';
+  card.innerHTML = `
+    <header class="ft-info-card__header">
+      <div class="ft-info-card__icon-wrap" aria-hidden="true">
+        <span class="ft-info-card__icon material-symbols-outlined">edit_square</span>
+      </div>
+      <span class="ft-info-card__label">Reconcile</span>
+    </header>
+    <div class="ft-info-card__body">
+      <label class="ft-quick-add-reconcile-input" for="qa-actual-balance-input">
+        <input
+          class="ft-quick-add-reconcile-input__field"
+          id="qa-actual-balance-input"
+          data-qa-actual-balance-input
+          type="text"
+          inputmode="decimal"
+          placeholder="0.00"
+          aria-label="Actual balance"
+          value="${actualBalance === null ? '' : _formatEditableAmount(actualBalance)}"
+        >
+        <span class="ft-quick-add-reconcile-input__currency" data-qa-actual-balance-currency>${currency}</span>
+      </label>
+      <div class="ft-quick-add-reconcile-result">
+        <span class="ft-quick-add-reconcile-result__label">Difference</span>
+        <span class="ft-quick-add-reconcile-result__value" data-qa-difference-value>${difference === null
+          ? '—'
+          : `${difference > 0 ? '+' : ''}${formatMoneyFromCents(difference, currency)}`}</span>
+      </div>
+      <p class="ft-info-card__sub-value" data-qa-difference-sub-value>${difference === null
+        ? 'Actual balance not entered'
+        : 'Actual balance minus current balance'}</p>
+    </div>
+    <footer class="ft-info-card__footer">
+      <span class="ft-info-card__note" data-qa-difference-note>${difference === null
+        ? 'Enter the balance from your bank app to compare.'
+        : difference === 0
+          ? 'Matches your bank app.'
+          : 'Non-zero means there are movements still missing or mismatched.'}</span>
+    </footer>
+  `;
+  return card;
+}
+
+function _getDifferenceVariant(difference) {
+  if (difference === null) return 'default';
+  return difference === 0 ? 'success' : 'warning';
+}
+
+function _formatEditableAmount(cents) {
+  return ((Number(cents) || 0) / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function _getActualBalanceCents(state, accountId) {
+  const key = String(accountId ?? '');
+  const value = state.actualBalances?.[key];
+  return Number.isFinite(value) ? value : null;
+}
+
+export {
+  renderAccountToolbar,
+  renderAccountPanel,
+  syncAccountPanel,
+  parseActualBalanceInput,
+  formatActualBalanceInput,
+  getActualBalanceInputValue,
+  renderTally,
+  renderFlow,
+  renderHistory,
+  MONTH_NAMES,
+};

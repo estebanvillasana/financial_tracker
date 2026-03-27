@@ -95,10 +95,12 @@
   align-items: center;
   color: var(--ft-color-text-muted);
   display: flex;
+  flex-wrap: wrap;
   font-size: 13px;
   gap: 16px;
   min-height: 20px;
   padding: 4px 0;
+  row-gap: 6px;
 }
 
 .ft-quick-add-tally__stat {
@@ -127,7 +129,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-width: 600px;
+  max-width: 720px;
+  min-width: 0;
 }
 
 /* ── Prompt Line ──────────────────────────────────────── */
@@ -382,22 +385,29 @@
 /* ── History Section ──────────────────────────────────── */
 
 .ft-quick-add-history-section {
-  max-height: 180px;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .ft-qa-history-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .ft-qa-history-item {
   align-items: center;
   border-radius: var(--ft-radius-widget);
-  display: flex;
+  display: grid;
   font-size: 12px;
-  gap: 12px;
+  gap: 2px 12px;
+  grid-template-areas:
+    "type name amount"
+    ". date amount";
+  grid-template-columns: auto minmax(0, 1fr) auto;
   padding: 4px 8px;
 }
 
@@ -407,7 +417,7 @@
 
 .ft-qa-history-item__name {
   color: var(--ft-color-text);
-  flex: 1;
+  grid-area: name;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -416,24 +426,25 @@
 
 .ft-qa-history-item__date {
   color: var(--ft-color-text-muted);
-  flex-shrink: 0;
+  grid-area: date;
   font-variant-numeric: tabular-nums;
 }
 
 .ft-qa-history-item__amount {
+  align-self: center;
   color: var(--ft-color-text);
-  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
+  grid-area: amount;
   min-width: 80px;
   text-align: right;
 }
 
 .ft-qa-history-item__type {
   border-radius: 999px;
-  flex-shrink: 0;
   font-size: 10px;
   font-weight: 600;
+  grid-area: type;
   padding: 1px 8px;
   text-transform: uppercase;
 }
@@ -470,9 +481,9 @@
 /* ── Account Info Panel ──────────────────────────────────── */
 
 .ft-quick-add-account-panel {
-  display: flex;
+  display: grid;
   gap: 16px;
-  flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .ft-quick-add-account-panel:empty {
@@ -480,8 +491,96 @@
 }
 
 .ft-quick-add-account-panel .ft-info-card {
-  flex: 1 1 260px;
-  max-width: 360px;
+  max-width: none;
+  min-width: 0;
+}
+
+.ft-quick-add-reconcile-card {
+  min-width: 0;
+}
+
+.ft-quick-add-reconcile-input {
+  align-items: center;
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  display: flex;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px 0 12px;
+}
+
+.ft-quick-add-reconcile-input:focus-within {
+  border-color: var(--ft-color-accent);
+  box-shadow: 0 0 0 2px var(--ft-color-accent-10);
+}
+
+.ft-quick-add-reconcile-input__field {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text);
+  flex: 1;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+}
+
+.ft-quick-add-reconcile-input__field::placeholder {
+  color: var(--ft-color-text-muted-30);
+}
+
+.ft-quick-add-reconcile-input__currency {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ft-quick-add-reconcile-result {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ft-quick-add-reconcile-result__label {
+  color: var(--ft-color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ft-quick-add-reconcile-result__value {
+  color: var(--ft-color-text);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ft-info-card[data-variant="success"] .ft-quick-add-reconcile-result__value {
+  color: var(--ft-color-success);
+}
+
+.ft-info-card[data-variant="warning"] .ft-quick-add-reconcile-result__value {
+  color: var(--ft-color-warning);
+}
+
+@media (max-width: 640px) {
+  .ft-qa-history-item {
+    grid-template-areas:
+      "type name"
+      "date amount";
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ft-qa-history-item__amount {
+    min-width: 0;
+  }
 }
 
 /* ── Smart Date Selector ──────────────────────────────────── */

@@ -15,7 +15,18 @@ import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { escapeHtml } from '../../utils/formHelpers.js';
 import { createFlow } from './flow.js';
-import { renderAccountToolbar, renderAccountPanel, renderTally, renderFlow, renderHistory, MONTH_NAMES } from './render.js';
+import {
+  renderAccountToolbar,
+  renderAccountPanel,
+  syncAccountPanel,
+  parseActualBalanceInput,
+  formatActualBalanceInput,
+  getActualBalanceInputValue,
+  renderTally,
+  renderFlow,
+  renderHistory,
+  MONTH_NAMES,
+} from './render.js';
 import { saveMovement } from './actions.js';
 
 /* ── Phases: 'idle' | 'input' | 'review' | 'success' | 'saving' ── */
@@ -80,6 +91,7 @@ async function initQuickAddPage(root = document) {
     repetitiveMovements: repMovList,
     categoryUsage,
     subCategoryUsage,
+    actualBalances: {},
     selectedAccountId: Number(accountList[0].id),
     accountLocked: false,
   };
@@ -127,6 +139,45 @@ async function initQuickAddPage(root = document) {
       flow.reset();
       refresh();
     }
+  });
+
+  accountPanelEl.addEventListener('focusin', e => {
+    if (!e.target.matches('[data-qa-actual-balance-input]')) return;
+    e.target.value = getActualBalanceInputValue(state).replace(/,/g, '');
+    e.target.select();
+  });
+
+  accountPanelEl.addEventListener('input', e => {
+    if (!e.target.matches('[data-qa-actual-balance-input]')) return;
+
+    const accountId = String(state.selectedAccountId ?? '');
+    const cents = parseActualBalanceInput(e.target.value);
+
+    if (!state.actualBalances) state.actualBalances = {};
+
+    if (cents === null) {
+      delete state.actualBalances[accountId];
+    } else {
+      state.actualBalances[accountId] = cents;
+    }
+
+    syncAccountPanel(accountPanelEl, state, { updateInput: false });
+  });
+
+  accountPanelEl.addEventListener('focusout', e => {
+    if (!e.target.matches('[data-qa-actual-balance-input]')) return;
+
+    const cents = parseActualBalanceInput(e.target.value);
+    if (!state.actualBalances) state.actualBalances = {};
+
+    if (cents === null) {
+      delete state.actualBalances[String(state.selectedAccountId ?? '')];
+    } else {
+      state.actualBalances[String(state.selectedAccountId ?? '')] = cents;
+    }
+
+    e.target.value = formatActualBalanceInput(cents);
+    syncAccountPanel(accountPanelEl, state, { updateInput: false });
   });
 
   /* ── Refresh account data (updates balance after save) ── */
