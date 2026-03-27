@@ -28,3 +28,4 @@ cli/.env
 cli/screens/test_inputs.py
 demos/
 .claude/
+updater/

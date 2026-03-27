@@ -18,8 +18,9 @@
  *   mainCurrency: string    — user's main currency code (e.g. 'USD')
  *
  * ── Tab behaviour ─────────────────────────────────────────────────────────────
- *   One tab is shown per currency that has at least one account.
- *   Tabs with a zero total balance are still shown (the account exists but is empty).
+ *   One tab is shown per currency whose aggregated values are not all zero.
+ *   Currencies whose balances, savings, available funds, and debts all resolve
+ *   to 0 are hidden from the widget.
  *   Currencies with no accounts at all are not shown.
  *   Clicking a tab synchronously swaps the 4 stat cards below it.
  *   The default active tab is the main currency if present; otherwise the first.
@@ -70,7 +71,7 @@ const CurrencySummary = (() => {
 
   /**
    * Groups accounts by currency and computes per-currency balance totals.
-   * Returns one entry per currency that has at least one account.
+   * Returns one entry per currency whose aggregated values are not all zero.
    *
    * @param {object[]} accounts
    * @returns {object[]}  Sorted: main-currency first, rest alphabetically.
@@ -122,7 +123,12 @@ const CurrencySummary = (() => {
       }
     }
 
-    const entries = [...map.values()];
+    const entries = [...map.values()].filter(entry =>
+      entry.total !== 0
+      || entry.available !== 0
+      || entry.savings !== 0
+      || entry.debts !== 0
+    );
 
     // Sort: main currency tab first, then alphabetically.
     entries.sort((a, b) => {
@@ -160,11 +166,11 @@ const CurrencySummary = (() => {
       </div>`;
   }
 
-  function _buildEmptyHTML() {
+  function _buildEmptyHTML(hasAccounts) {
     return `
       <div class="ft-empty">
         <span class="ft-empty__icon material-symbols-outlined" aria-hidden="true">currency_exchange</span>
-        <span>No accounts found.</span>
+        <span>${hasAccounts ? 'No non-zero currency balances to summarize yet.' : 'No accounts found.'}</span>
       </div>`;
   }
 
@@ -281,7 +287,7 @@ const CurrencySummary = (() => {
     const entries = _aggregateByCurrency(accounts, tgt);
 
     if (entries.length === 0) {
-      container.innerHTML = _buildEmptyHTML();
+      container.innerHTML = _buildEmptyHTML(accounts.length > 0);
       return null;
     }
 
