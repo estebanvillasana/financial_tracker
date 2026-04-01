@@ -219,3 +219,8 @@ def get_connection():
     conn.execute("PRAGMA foreign_keys = ON")
 
     return conn
+
+
+def get_current_db_path() -> str:
+    """Return the active database path for the current request/context."""
+    return _request_db_path.get() or DB_PATH
