@@ -1,7 +1,7 @@
 // app.js — Hash-based SPA router
 
 import { SideBarMenu } from './components/dumb/sideBarMenu/sideBarMenu.js';
-import { finalAppConfig } from './defaults.js';
+import { applyAppSettings, getMainCurrency } from './appSettings.js';
 import { request, fetchCurrentUserName } from './services/http.js';
 
 const ROUTES = {
@@ -106,10 +106,8 @@ async function bootstrap() {
     request('/app-config').catch(() => null),
   ]);
 
-  const currentCurrency = configData?.currency || finalAppConfig.currency;
-
-  // Keep finalAppConfig in sync so all pages that import it get the right currency.
-  finalAppConfig.currency = currentCurrency;
+  applyAppSettings(configData);
+  const currentCurrency = getMainCurrency();
 
   if (userName) {
     document.title = `${userName} - Financial Tracker`;
@@ -120,6 +118,7 @@ async function bootstrap() {
     userName,
     onCurrencyChange: async (code) => {
       await request('/app-config', { method: 'PATCH', body: { currency: code } });
+      applyAppSettings({ currency: code });
       window.location.reload();
     },
     onOpenSettings: () => openSettingsDialog(),

@@ -27,7 +27,7 @@
  *   'bank-account-modal:soft-delete' — detail: { id, account }
  */
 
-import { finalAppConfig } from '../../../defaults.js';
+import { getMainCurrency } from '../../../appSettings.js';
 import { bankAccounts, fxRates } from '../../../services/api.js';
 import { normalizeCurrency as _normalizeCurrency, formatMoneyFromCents as _formatMoney } from '../../../utils/formatters.js';
 
@@ -172,7 +172,7 @@ const BankAccountModal = (() => {
    * Builds the complete modal HTML string for a bank account.
    *
    * The function is intentionally side-effect-free (pure except for reading
-   * `finalAppConfig`) so it can be unit-tested independently of the DOM.
+   * the runtime app settings) so it can be unit-tested independently of the DOM.
    *
    * The converted total column is only rendered when:
    *   - `options.convertedTotalCents` is a non-null value, AND
@@ -185,7 +185,7 @@ const BankAccountModal = (() => {
    * @returns {string}  Full modal HTML (backdrop + dialog).
    */
   function buildHTML(account, options = {}) {
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
     const accountCurrency = _normalizeCurrency(account?.currency || defaultCurrency);
     const convertedTotal = options.convertedTotalCents;
 
@@ -485,7 +485,7 @@ const BankAccountModal = (() => {
    */
   async function open(accountData, options = {}) {
     const account = accountData || {};
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
 
     // Fetch FX conversion before rendering so the header shows up-to-date totals.
     const convertedTotalCents = await _getLatestConvertedTotalCents(account, defaultCurrency);
@@ -545,7 +545,7 @@ const BankAccountModal = (() => {
    * @returns {string}
    */
   function buildNewHTML(options = {}) {
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
 
     return `
       <div class="ft-modal-backdrop ft-bank-account-modal-backdrop" data-modal-close>

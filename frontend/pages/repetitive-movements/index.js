@@ -11,8 +11,8 @@ import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
 import { TypeToggle } from '../../components/dumb/typeToggle/typeToggle.js';
 import { RepetitiveMovementModal } from '../../components/modals/repetitiveMovementModal/repetitiveMovementModal.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
+import { getMainCurrency } from '../../appSettings.js';
 import { normalizeCurrency, formatMoney } from '../../utils/formatters.js';
-import { finalAppConfig } from '../../defaults.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
 import {
   fetchRepetitiveMovements,
@@ -38,7 +38,7 @@ async function initRepetitiveMovementsPage(root = document) {
 
   if (!gridWrapper) return;
 
-  const mainCurrency = normalizeCurrency(finalAppConfig.currency);
+  const mainCurrency = normalizeCurrency(getMainCurrency());
 
   const state = {
     repetitiveMovements: [],

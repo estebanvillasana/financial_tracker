@@ -10,8 +10,8 @@ import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBan
 import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
 import { MovementModal } from '../../components/modals/movementModal/movementModal.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
+import { getMainCurrency } from '../../appSettings.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
-import { finalAppConfig } from '../../defaults.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
 import { fetchMovements, updateMovement, softDeleteMovement, restoreMovement } from './actions.js';
 
@@ -135,7 +135,7 @@ async function initMovementsPage(root = document) {
 
   mountGrid(gridHost, state, {
     rates: state.rates,
-    targetCurrency: normalizeCurrency(finalAppConfig.currency),
+    targetCurrency: normalizeCurrency(getMainCurrency()),
     onEdit: handleEdit,
     onDelete: rowOrRows => handleBulkDelete(Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows]),
     onRestore: handleRestore,

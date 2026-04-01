@@ -1,6 +1,6 @@
 // accountSummaryCard.js — Dumb account summary card component
 
-import { finalAppConfig } from '../../../defaults.js';
+import { getMainCurrency } from '../../../appSettings.js';
 import { fxRates } from '../../../services/fxRates.js';
 import {
   formatMoneyFromCents,
@@ -29,7 +29,7 @@ const AccountSummaryCard = (() => {
   function buildHTML(account, options = {}) {
     if (!account) return '';
 
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
     const currencyCode = _normalizeCurrency(account.currency || defaultCurrency);
     const type = String(account.type || 'Bank Account');
     const icon = TYPE_ICON[type] || TYPE_ICON['Bank Account'];
@@ -89,7 +89,7 @@ const AccountSummaryCard = (() => {
   async function getLatestConvertedTotalCents(account, options = {}) {
     if (!account) return null;
 
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
     const accountCurrency = _normalizeCurrency(account.currency || defaultCurrency);
     const totalBalanceCents = Number(account.total_balance ?? 0);
 
@@ -133,7 +133,7 @@ const AccountSummaryCard = (() => {
   }
 
   async function buildHTMLWithLatestConversion(account, options = {}) {
-    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || finalAppConfig.currency);
+    const defaultCurrency = _normalizeCurrency(options.defaultCurrency || getMainCurrency());
     const convertedTotalCents = await getLatestConvertedTotalCents(account, { defaultCurrency });
 
     return buildHTML(account, {

@@ -22,7 +22,7 @@
  *   pageSize:        number  — cards per page (default: 5)
  *   columns:         1 | 2   — grid column count (default: 2)
  *   defaultCurrency: string  — ISO 4217 code used as target for FX conversion labels
- *                              (falls back to finalAppConfig.currency)
+ *                              (falls back to the runtime app setting)
  *   title:           string  — widget header label (default: 'Active Accounts')
  *
  * ── Filters (client-side, derived from fetched data) ────────────────────────
@@ -51,7 +51,7 @@
  *   to the DOM. Stale renders are silently discarded.
  */
 
-import { finalAppConfig } from '../../../defaults.js';
+import { getMainCurrency } from '../../../appSettings.js';
 import { bankAccounts }   from '../../../services/api.js';
 import { AccountSummaryCard } from '../../dumb/accountSummaryCard/accountSummaryCard.js';
 import { FilterBar }          from '../../dumb/filterBar/filterBar.js';
@@ -347,7 +347,7 @@ const AccountsSummary = (() => {
 
     const pageSize        = Math.max(1, Number(options.pageSize) || DEFAULT_PAGE_SIZE);
     const columns         = Math.max(1, Math.floor(Number(options.columns) || 2));
-    const defaultCurrency = String(options.defaultCurrency || finalAppConfig.currency || '');
+    const defaultCurrency = String(options.defaultCurrency || getMainCurrency() || '');
 
     // ── Per-instance closure state ────────────────────────────────────────────────
     let allAccounts      = [];

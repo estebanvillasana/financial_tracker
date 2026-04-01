@@ -14,6 +14,7 @@ from routes.repetitive_movements import router as repetitive_movements_router
 from routes.sub_categories import router as sub_categories_router
 from routes.fx_rates import router as fx_rates_router
 from routes.app_config import router as app_config_router
+from routes.database_exports import router as database_exports_router
 from routes.me import router as me_router
 from routes.pdf_parser import router as pdf_parser_router
 from scripts.exchange_rates import main as update_exchange_rates
@@ -187,5 +188,6 @@ app.include_router(repetitive_movements_router)
 app.include_router(sub_categories_router)
 app.include_router(fx_rates_router)
 app.include_router(app_config_router)
+app.include_router(database_exports_router)
 app.include_router(me_router)
 app.include_router(pdf_parser_router)

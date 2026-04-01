@@ -1,4 +1,5 @@
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
+import { applyAppSettings } from '../../appSettings.js';
 import { finalAppConfig } from '../../defaults.js';
 import { fetchSettings, saveSettings, downloadDatabaseSnapshot, exportDatabaseWorkbook } from './actions.js';
 
@@ -310,7 +311,7 @@ async function hydrateSettingsModal(modalRoot) {
     try {
       const updated = await saveSettings({ currency: currencySelect.value });
       state.settings = updated;
-      finalAppConfig.currency = updated.currency;
+      applyAppSettings(updated);
       renderSettings();
       const sidebarCurrencySelect = document.getElementById('ft-nav-currency-select');
       if (sidebarCurrencySelect) {

@@ -36,7 +36,7 @@
  *   (omitted when the tab currency equals the main currency).
  */
 
-import { finalAppConfig } from '../../../defaults.js';
+import { getMainCurrency } from '../../../appSettings.js';
 import { InfoCard } from '../../dumb/infoCard/infoCard.js';
 import { normalizeCurrency, formatMoneyFromCents } from '../../../utils/formatters.js';
 
@@ -281,7 +281,7 @@ const CurrencySummary = (() => {
     const container = typeof target === 'string' ? document.querySelector(target) : target;
     if (!container) return null;
 
-    const tgt = normalizeCurrency(mainCurrency || finalAppConfig.currency);
+    const tgt = normalizeCurrency(mainCurrency || getMainCurrency());
 
     // ── 1. Aggregate ──────────────────────────────────────────────────────────
     const entries = _aggregateByCurrency(accounts, tgt);

@@ -6,12 +6,12 @@
  */
 
 import { escapeHtml } from '../../utils/formHelpers.js';
+import { getMainCurrency } from '../../appSettings.js';
 import {
   formatMoneyFromCents,
   getCurrencySymbol,
   normalizeCurrency,
 } from '../../utils/formatters.js';
-import { finalAppConfig } from '../../defaults.js';
 import { fxRates } from '../../services/api.js';
 
 /* ── Constants ────────────────────────────────────────── */
@@ -92,7 +92,7 @@ export function renderAccountCards(container, accounts, callbacks) {
     return;
   }
 
-  const defaultCurrency = normalizeCurrency(finalAppConfig.currency);
+  const defaultCurrency = normalizeCurrency(getMainCurrency());
   const cards = accounts.map(acc => _buildAccountCard(acc, defaultCurrency)).join('');
   container.innerHTML = `<div class="ft-bank-accounts-grid">${cards}</div>`;
 
@@ -113,7 +113,7 @@ export function renderStats(container, accounts) {
 
   const active = accounts.filter(a => Number(a.active) === 1);
   const inactive = accounts.filter(a => Number(a.active) === 0);
-  const defaultCurrency = normalizeCurrency(finalAppConfig.currency);
+  const defaultCurrency = normalizeCurrency(getMainCurrency());
 
   // Group by type
   const byType = {};

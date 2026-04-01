@@ -2,7 +2,13 @@ import { finalAppConfig } from '../../defaults.js';
 import { ApiError, buildUrl, request } from '../../services/http.js';
 
 export function fetchSettings() {
-  return request('/app-config');
+  return Promise.all([
+    request('/app-config'),
+    request('/app-config/database'),
+  ]).then(([settings, database]) => ({
+    ...settings,
+    database,
+  }));
 }
 
 export function saveSettings(body) {

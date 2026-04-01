@@ -10,7 +10,7 @@
  *  - Invoice tracker grid (movements linked to taxable items + invoice checkbox)
  */
 
-import { finalAppConfig } from '../../defaults.js';
+import { getMainCurrency } from '../../appSettings.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { FilterBar } from '../../components/dumb/filterBar/filterBar.js';
 import { ensureAgGridLoaded } from '../../lib/agGridLoader.js';
@@ -72,7 +72,7 @@ async function initMonthlyReportPage(root = document) {
   }
 
   // ── State ────────────────────────────────────────────────────────────
-  const mainCurrency = (finalAppConfig.currency || 'usd').toUpperCase();
+  const mainCurrency = getMainCurrency().toUpperCase();
   const prev = getPreviousMonth();
   const state = {
     year: prev.year,

@@ -9,7 +9,7 @@
  *  Row 4 - Recent Movements:   full-width AG Grid matching the Movements page columns
  */
 
-import { finalAppConfig } from '../../defaults.js';
+import { getMainCurrency } from '../../appSettings.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
 import { AccountsSummary }   from '../../components/smart/accountsSummary/accountsSummary.js';
 import { CurrencySummary }   from '../../components/smart/currencySummary/currencySummary.js';
@@ -39,7 +39,7 @@ async function initDashboardPage(root = document) {
     els[key] = root.querySelector(selector);
   }
 
-  const mainCurrency = normalizeCurrency(finalAppConfig.currency);
+  const mainCurrency = normalizeCurrency(getMainCurrency());
 
   renderLoadingStats(els.statsPrimary, els.statsSecondary);
 
