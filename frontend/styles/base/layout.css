@@ -2,14 +2,23 @@
 
 .ft-app {
   display: flex;
-  height: 100vh;
+  height: var(--ft-app-height);
+  min-height: 100vh;
   overflow: hidden;
+}
+
+#app-nav {
+  display: flex;
+  flex-shrink: 0;
 }
 
 #app-content {
   background: var(--ft-color-surface-alt);
   flex: 1;
+  min-height: 0;
+  min-width: 0;
   opacity: 0;
+  overscroll-behavior: contain;
   overflow-y: auto;
   padding: calc(var(--ft-spacing) * 3);
   transition: opacity 150ms ease;
@@ -39,6 +48,7 @@
 .ft-page__header-row {
   align-items: center;
   display: flex;
+  gap: calc(var(--ft-spacing) * 1.5);
   justify-content: space-between;
   width: 100%;
 }
@@ -54,6 +64,7 @@
 .ft-section__header {
   align-items: center;
   display: flex;
+  gap: var(--ft-spacing);
   justify-content: space-between;
 }
 
@@ -82,6 +93,7 @@
   background: var(--ft-color-card);
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-card);
+  min-width: 0;
   padding: calc(var(--ft-spacing) * 2);
 }
 
@@ -105,6 +117,7 @@
   background: var(--ft-color-card);
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-wrapper);
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -116,6 +129,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--ft-spacing);
+  min-width: 0;
   padding: calc(var(--ft-spacing) * 1.5);
 }
 
@@ -215,4 +229,53 @@
 .ft-link:hover {
   opacity: 0.8;
   text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  #app-content {
+    padding:
+      calc(var(--ft-mobile-header-height) + var(--ft-safe-top) + calc(var(--ft-spacing) * 2))
+      calc(var(--ft-spacing) * 2)
+      calc(var(--ft-safe-bottom) + calc(var(--ft-spacing) * 2));
+  }
+
+  .ft-page {
+    gap: calc(var(--ft-spacing) * 2);
+  }
+
+  .ft-page__header-row,
+  .ft-section__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ft-page__header-row > .ft-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .ft-stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .ft-accounts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-empty,
+  .ft-page__error {
+    padding: calc(var(--ft-spacing) * 4);
+  }
+}
+
+@media (max-width: 640px) {
+  #app-content {
+    padding-left: calc(var(--ft-spacing) * 1.5);
+    padding-right: calc(var(--ft-spacing) * 1.5);
+  }
+
+  .ft-card,
+  .ft-toolbar {
+    padding: calc(var(--ft-spacing) * 1.5);
+  }
 }

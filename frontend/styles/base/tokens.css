@@ -46,6 +46,10 @@
 
   --ft-spacing: 8px;
   --ft-icon-size: 16px;
+  --ft-app-height: 100dvh;
+  --ft-mobile-header-height: 58px;
+  --ft-safe-top: env(safe-area-inset-top, 0px);
+  --ft-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .ft-theme {

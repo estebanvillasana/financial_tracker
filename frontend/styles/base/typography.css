@@ -32,3 +32,17 @@
 .ft-small {
   font-size: 12px;
 }
+
+@media (max-width: 640px) {
+  .ft-h1 {
+    font-size: 28px;
+  }
+
+  .ft-h2 {
+    font-size: 22px;
+  }
+
+  .ft-h3 {
+    font-size: 17px;
+  }
+}
