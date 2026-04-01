@@ -56,10 +56,17 @@ const SideBarMenu = (() => {
 
     const safeUserName = _escapeAttr(userName || '');
     const userTag = userName
-      ? `<div class="ft-nav__user" data-tooltip="${safeUserName}" aria-label="Signed in as ${safeUserName}">
+      ? `<button
+           class="ft-nav__user"
+           id="ft-nav-user-btn"
+           type="button"
+           data-tooltip="${safeUserName}"
+           aria-label="Open settings for ${safeUserName}"
+           aria-haspopup="dialog"
+         >
            <span class="ft-nav__user-icon material-symbols-outlined" aria-hidden="true">account_circle</span>
            <span class="ft-nav__user-name">${safeUserName}</span>
-         </div>`
+         </button>`
       : '';
 
     return `
@@ -189,7 +196,7 @@ const SideBarMenu = (() => {
     });
   }
 
-  function _bindLocalHandlers(onCurrencyChange) {
+  function _bindLocalHandlers(onCurrencyChange, onOpenSettings) {
     document.getElementById('ft-nav-collapse-btn')?.addEventListener('click', _toggleCollapse);
     document.getElementById('ft-nav-mobile-toggle')?.addEventListener('click', _toggleMobileDrawer);
     document.getElementById('ft-nav-backdrop')?.addEventListener('click', _closeMobileDrawer);
@@ -205,6 +212,16 @@ const SideBarMenu = (() => {
     const select = document.getElementById('ft-nav-currency-select');
     if (select && typeof onCurrencyChange === 'function') {
       select.addEventListener('change', () => onCurrencyChange(select.value));
+    }
+
+    const userButton = document.getElementById('ft-nav-user-btn');
+    if (userButton && typeof onOpenSettings === 'function') {
+      userButton.addEventListener('click', () => {
+        if (_isMobileViewport()) {
+          _closeMobileDrawer();
+        }
+        onOpenSettings();
+      });
     }
   }
 
@@ -229,15 +246,16 @@ const SideBarMenu = (() => {
    * @param {string}   opts.currentCurrency  — active currency code from finalAppConfig
    * @param {string}   [opts.userName]       — display name shown in the sidebar footer
    * @param {Function} opts.onCurrencyChange — async (code: string) => void
+   * @param {Function} [opts.onOpenSettings] — () => void
    */
-  async function init({ currentCurrency = 'usd', userName = null, onCurrencyChange } = {}) {
+  async function init({ currentCurrency = 'usd', userName = null, onCurrencyChange, onOpenSettings } = {}) {
     const container = document.getElementById('app-nav');
     if (!container) return;
 
     const currencies = await _currenciesPromise;
     container.innerHTML = _buildHTML(currencies, currentCurrency, userName);
 
-    _bindLocalHandlers(onCurrencyChange);
+    _bindLocalHandlers(onCurrencyChange, onOpenSettings);
     _bindGlobalHandlers();
     _restoreState();
     _setMobilePageLabel(window.location.hash.replace('#', '').trim() || 'dashboard');

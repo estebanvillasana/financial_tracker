@@ -18,6 +18,7 @@ const ROUTES = {
 
 const DEFAULT_ROUTE = 'dashboard';
 let pageLoadToken = 0;
+let lastContentPage = DEFAULT_ROUTE;
 const PAGE_INITIALIZERS = {
   dashboard: async () => (await import('./pages/dashboard/index.js')).initDashboardPage,
   'add-movements': async () => (await import('./pages/add-movements/index.js')).initAddMovementsPage,
@@ -71,9 +72,31 @@ async function loadPage(page) {
 
   requestAnimationFrame(() => content.classList.add('ft-content--visible'));
   SideBarMenu.setActivePage(page);
+  lastContentPage = page;
 }
 
-window.addEventListener('hashchange', () => loadPage(getPage()));
+async function openSettingsDialog(initialTab = 'preferences') {
+  const module = await import('./pages/settings/index.js');
+  return module.openSettingsModal({ initialTab });
+}
+
+async function handleRouteChange() {
+  const page = getPage();
+
+  if (page === 'settings') {
+    const fallbackPage = lastContentPage || DEFAULT_ROUTE;
+    if (!document.getElementById('app-content')?.children.length) {
+      await loadPage(fallbackPage);
+    }
+    history.replaceState(null, '', `#${fallbackPage}`);
+    await openSettingsDialog();
+    return;
+  }
+
+  await loadPage(page);
+}
+
+window.addEventListener('hashchange', handleRouteChange);
 
 // Module with top-level-await dependency (defaults.js) may evaluate after
 // DOMContentLoaded has already fired, so check readyState instead.
@@ -99,12 +122,13 @@ async function bootstrap() {
       await request('/app-config', { method: 'PATCH', body: { currency: code } });
       window.location.reload();
     },
+    onOpenSettings: () => openSettingsDialog(),
   });
 
   if (!window.location.hash) {
     window.location.hash = DEFAULT_ROUTE;
   } else {
-    loadPage(getPage());
+    await handleRouteChange();
   }
 }
 

@@ -315,16 +315,28 @@
 
 .ft-nav__user {
   align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--ft-radius-wrapper);
   color: var(--ft-color-text-muted);
+  cursor: pointer;
   display: flex;
   gap: 10px;
   height: 36px;
   overflow: hidden;
   padding: 0 10px;
   position: relative;
+  text-align: left;
+  width: 100%;
   white-space: nowrap;
-  border: 1px solid transparent;
+}
+
+.ft-nav__user:hover,
+.ft-nav__user:focus-visible {
+  background: var(--ft-color-elevated);
+  border-color: var(--ft-color-border);
+  color: var(--ft-color-text);
+  outline: none;
 }
 
 .ft-nav__user-icon {
@@ -348,6 +360,11 @@
   transition: opacity 150ms ease;
   white-space: nowrap;
   text-transform: capitalize;
+}
+
+.ft-nav__user:hover .ft-nav__user-name,
+.ft-nav__user:focus-visible .ft-nav__user-name {
+  color: var(--ft-color-text);
 }
 
 .ft-nav--collapsed .ft-nav__user {
