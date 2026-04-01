@@ -45,13 +45,3 @@
   background: var(--ft-color-success-15);
   color: var(--ft-color-success);
 }
-
-@media (max-width: 640px) {
-  .ft-type-toggle {
-    width: 100%;
-  }
-
-  .ft-type-toggle__btn {
-    flex: 0 0 auto;
-  }
-}
