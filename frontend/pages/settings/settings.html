@@ -1,0 +1,105 @@
+<div class="ft-page ft-settings">
+  <header class="ft-page__header">
+    <div class="ft-page__header-row">
+      <div>
+        <h1 class="ft-h2">Settings</h1>
+        <p class="ft-small ft-text-muted">Manage preferences and local database backups</p>
+      </div>
+      <button class="ft-btn ft-btn--ghost" id="settings-refresh-btn" type="button">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <div id="settings-feedback"></div>
+
+  <section class="ft-settings__grid">
+    <article class="ft-card ft-settings__panel">
+      <div class="ft-settings__panel-header">
+        <div>
+          <h2 class="ft-h3">Preferences</h2>
+          <p class="ft-small ft-text-muted">Stored in the active database and applied across the app.</p>
+        </div>
+      </div>
+
+      <form class="ft-settings__form" id="settings-preferences-form">
+        <label class="ft-settings__field" for="settings-currency">
+          <span class="ft-label">Main Currency</span>
+          <select class="ft-settings__control" id="settings-currency" name="currency"></select>
+          <span class="ft-small ft-text-muted">This is used by dashboards, reports, and converted totals.</span>
+        </label>
+
+        <div class="ft-settings__actions">
+          <button class="ft-btn ft-btn--primary" id="settings-save-btn" type="submit">
+            <span class="material-symbols-outlined" aria-hidden="true">save</span>
+            Save Preferences
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="ft-card ft-settings__panel">
+      <div class="ft-settings__panel-header">
+        <div>
+          <h2 class="ft-h3">Database</h2>
+          <p class="ft-small ft-text-muted">Inspect the active SQLite file and download a consistent snapshot.</p>
+        </div>
+      </div>
+
+      <dl class="ft-settings__meta" id="settings-database-meta">
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">File</dt>
+          <dd class="ft-label" id="settings-db-filename">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Location</dt>
+          <dd id="settings-db-path">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Size</dt>
+          <dd id="settings-db-size">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Updated</dt>
+          <dd id="settings-db-modified">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Last Auto Backup</dt>
+          <dd id="settings-db-backup">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Backup Folder</dt>
+          <dd id="settings-db-backup-dir">-</dd>
+        </div>
+      </dl>
+
+      <div class="ft-settings__actions">
+        <button class="ft-btn ft-btn--primary" id="settings-download-db-btn" type="button">
+          <span class="material-symbols-outlined" aria-hidden="true">download</span>
+          Download Current .db
+        </button>
+      </div>
+    </article>
+
+    <article class="ft-card ft-settings__panel">
+      <div class="ft-settings__panel-header">
+        <div>
+          <h2 class="ft-h3">Connection</h2>
+          <p class="ft-small ft-text-muted">These values come from your frontend configuration.</p>
+        </div>
+      </div>
+
+      <dl class="ft-settings__meta">
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Backend URL</dt>
+          <dd id="settings-api-base">-</dd>
+        </div>
+        <div class="ft-settings__meta-row">
+          <dt class="ft-small ft-text-muted">Mode</dt>
+          <dd id="settings-api-mode">-</dd>
+        </div>
+      </dl>
+    </article>
+  </section>
+</div>
