@@ -22,10 +22,17 @@
 }
 
 .ft-add-movements-toolbar__left {
-  align-items: center;
-  display: flex;
+  align-items: end;
+  display: grid;
   gap: 10px;
-  flex-wrap: wrap;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  min-width: 0;
+}
+
+.ft-add-movements-toolbar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -47,6 +54,7 @@
   height: 34px;
   min-width: 260px;
   padding: 0 10px;
+  width: 100%;
 }
 
 .ft-add-movements-toolbar__actions {
@@ -59,11 +67,14 @@
 /* ── Type Toggle (Expense / Income) ───────────────────────── */
 
 .ft-add-type-toggle {
+  align-self: flex-start;
   background: var(--ft-color-surface);
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-widget);
   display: inline-flex;
-  overflow: hidden;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ft-add-type-toggle__btn {
@@ -100,6 +111,126 @@
   display: grid;
   gap: calc(var(--ft-spacing) * 2);
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.ft-add-movements-mobile-entry {
+  display: none;
+}
+
+.ft-add-movements-mobile-card {
+  background: var(--ft-color-card);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ft-spacing) * 1.5);
+  padding: calc(var(--ft-spacing) * 1.5);
+}
+
+.ft-add-movements-mobile-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-add-movements-mobile-card__eyebrow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ft-add-movements-mobile-card__badge {
+  background: var(--ft-color-elevated);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 999px;
+  color: var(--ft-color-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  padding: 6px 10px;
+  text-transform: uppercase;
+}
+
+.ft-add-movements-mobile-card__account {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.ft-add-movements-mobile-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ft-add-movements-mobile-card__subtitle {
+  margin: 0;
+}
+
+.ft-add-movements-mobile-form {
+  display: grid;
+  gap: 10px;
+}
+
+.ft-add-movements-mobile-form__row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ft-add-movements-mobile-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ft-add-movements-mobile-form__field .ft-date-popup {
+  width: 100%;
+}
+
+.ft-add-movements-mobile-form__field .ft-date-popup__trigger {
+  flex: 1;
+  min-width: 0;
+}
+
+.ft-add-movements-mobile-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.ft-add-movements-mobile-form__control {
+  background: var(--ft-color-surface);
+  border: 1px solid var(--ft-color-border);
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text);
+  font: inherit;
+  min-height: 34px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.ft-add-movements-mobile-form__control--textarea {
+  min-height: 78px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.ft-add-movements-mobile-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ft-add-movements-mobile-form__actions .ft-btn {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.ft-add-movements-mobile-form__hint {
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  margin: 0;
 }
 
 .ft-add-movements-balance-input-card {
@@ -360,31 +491,30 @@
   }
 
   .ft-add-movements-toolbar__select {
-    flex: 1 1 220px;
+    min-width: 0;
   }
 
   .ft-add-movements-toolbar__actions .ft-btn {
     flex: 1 1 180px;
     justify-content: center;
   }
+
+  .ft-add-movements-mobile-entry {
+    display: flex;
+  }
+
+  .ft-add-movements-hints {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
   .ft-add-movements-toolbar__left {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
-  .ft-add-movements-toolbar__select {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .ft-add-type-toggle {
-    width: 100%;
-  }
-
-  .ft-add-type-toggle__btn {
-    flex: 1 1 0;
+  .ft-add-movements-toolbar__field--type {
+    justify-self: start;
   }
 
   .ft-add-movements-toolbar__actions .ft-btn {
@@ -393,6 +523,18 @@
 
   .ft-add-movements-balance-row {
     grid-template-columns: 1fr;
+  }
+
+  .ft-add-movements-mobile-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-add-movements-mobile-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .ft-add-movements-mobile-form__actions .ft-btn {
+    flex-basis: auto;
   }
 
   .ft-add-movements-hints {

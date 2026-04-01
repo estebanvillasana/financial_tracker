@@ -7,6 +7,7 @@
  * - Button state management
  */
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
+import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency, formatMoneyFromCents, toSignedCents } from '../../utils/formatters.js';
 import { getSelectedAccount } from './utils.js';
 
@@ -210,13 +211,18 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
 
     toolbarEl.innerHTML = `
       <div class="ft-add-movements-toolbar__left">
-        <label class="ft-add-movements-toolbar__label" for="add-movements-account-select">Account</label>
-        <select id="add-movements-account-select" class="ft-add-movements-toolbar__select">
-          ${optionsHtml}
-        </select>
-        <div class="ft-add-type-toggle" id="add-movements-type-toggle">
-          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--expense${state.draftType === 'Expense' ? ' ft-add-type-toggle__btn--active' : ''}" data-type="Expense">Expense</button>
-          <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--income${state.draftType === 'Income' ? ' ft-add-type-toggle__btn--active' : ''}" data-type="Income">Income</button>
+        <div class="ft-add-movements-toolbar__field ft-add-movements-toolbar__field--account">
+          <label class="ft-add-movements-toolbar__label" for="add-movements-account-select">Account</label>
+          <select id="add-movements-account-select" class="ft-add-movements-toolbar__select">
+            ${optionsHtml}
+          </select>
+        </div>
+        <div class="ft-add-movements-toolbar__field ft-add-movements-toolbar__field--type">
+          <span class="ft-add-movements-toolbar__label">Type</span>
+          <div class="ft-add-type-toggle" id="add-movements-type-toggle">
+            <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--expense${state.draftType === 'Expense' ? ' ft-add-type-toggle__btn--active' : ''}" data-type="Expense">Expense</button>
+            <button class="ft-add-type-toggle__btn ft-add-type-toggle__btn--income${state.draftType === 'Income' ? ' ft-add-type-toggle__btn--active' : ''}" data-type="Income">Income</button>
+          </div>
         </div>
       </div>
       <div class="ft-add-movements-toolbar__actions">
@@ -246,10 +252,126 @@ function renderAccountToolbar(toolbarEl, state, domRefs) {
   }
 }
 
+function renderMobileComposer(target, state) {
+  if (!target) return;
+
+  if (typeof target._mobileDatePickerCleanup === 'function') {
+    target._mobileDatePickerCleanup();
+    target._mobileDatePickerCleanup = null;
+  }
+
+  const draft = state.mobileDraft || {};
+  const account = getSelectedAccount(state);
+  const accountLabel = account
+    ? `${account.account} · ${account.owner} · ${normalizeCurrency(account.currency)}`
+    : 'No account selected';
+  const categories = state.categories.filter(category => category.type === state.draftType);
+  const subCategories = state.subCategories.filter(subCategory => {
+    if (subCategory.type !== state.draftType) return false;
+    if (!Number.isFinite(Number(draft.category_id))) return true;
+    return Number(subCategory.category_id) === Number(draft.category_id);
+  });
+  const repetitiveItems = (state.repetitiveMovements || []).filter(item => item.type === state.draftType);
+
+  const categoryOptions = [
+    '<option value="">Select category</option>',
+    ...categories.map(category => `<option value="${category.id}"${Number(draft.category_id) === Number(category.id) ? ' selected' : ''}>${category.category}</option>`),
+  ].join('');
+
+  const subCategoryOptions = [
+    '<option value="">Select sub-category</option>',
+    ...subCategories.map(subCategory => `<option value="${subCategory.id}"${Number(draft.sub_category_id) === Number(subCategory.id) ? ' selected' : ''}>${subCategory.sub_category}</option>`),
+  ].join('');
+
+  const repetitiveOptions = [
+    '<option value="">No repetitive movement</option>',
+    ...repetitiveItems.map(item => `<option value="${item.id}"${Number(draft.repetitive_movement_id) === Number(item.id) ? ' selected' : ''}>${item.movement}</option>`),
+  ].join('');
+
+  target.innerHTML = `
+    <div class="ft-add-movements-mobile-card">
+      <div class="ft-add-movements-mobile-card__header">
+        <div class="ft-add-movements-mobile-card__eyebrow">
+          <span class="ft-add-movements-mobile-card__badge">${state.draftType}</span>
+          <span class="ft-add-movements-mobile-card__account">${_escapeHtml(accountLabel)}</span>
+        </div>
+        <h2 class="ft-add-movements-mobile-card__title">Add movement</h2>
+        <p class="ft-small ft-text-muted ft-add-movements-mobile-card__subtitle">Fill this form, tap add, then review the draft list below before committing.</p>
+      </div>
+      <div class="ft-add-movements-mobile-form">
+        <div class="ft-add-movements-mobile-form__field ft-add-movements-mobile-form__field--full">
+          <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-movement">Movement</label>
+          <input id="add-movements-mobile-movement" class="ft-add-movements-mobile-form__control" type="text" value="${_escapeAttr(draft.movement || '')}" data-mobile-draft-field="movement" placeholder="Groceries, Salary, Rent..." />
+        </div>
+        <div class="ft-add-movements-mobile-form__row">
+          <div class="ft-add-movements-mobile-form__field">
+            <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-amount">Amount</label>
+            <input id="add-movements-mobile-amount" class="ft-add-movements-mobile-form__control" type="number" inputmode="decimal" min="0" step="0.01" value="${_escapeAttr(draft.amount ?? '')}" data-mobile-draft-field="amount" placeholder="0.00" />
+          </div>
+          <div class="ft-add-movements-mobile-form__field">
+            <label class="ft-add-movements-toolbar__label">Date</label>
+            <div data-mobile-date-picker-insert></div>
+          </div>
+        </div>
+        <div class="ft-add-movements-mobile-form__row">
+          <div class="ft-add-movements-mobile-form__field">
+            <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-category">Category</label>
+            <select id="add-movements-mobile-category" class="ft-add-movements-mobile-form__control" data-mobile-draft-field="category_id">${categoryOptions}</select>
+          </div>
+          <div class="ft-add-movements-mobile-form__field">
+            <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-subcategory">Sub-category</label>
+            <select id="add-movements-mobile-subcategory" class="ft-add-movements-mobile-form__control" data-mobile-draft-field="sub_category_id">${subCategoryOptions}</select>
+          </div>
+        </div>
+        <div class="ft-add-movements-mobile-form__field ft-add-movements-mobile-form__field--full">
+          <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-description">Description</label>
+          <textarea id="add-movements-mobile-description" class="ft-add-movements-mobile-form__control ft-add-movements-mobile-form__control--textarea" data-mobile-draft-field="description" placeholder="Optional details">${draft.description || ''}</textarea>
+        </div>
+        <div class="ft-add-movements-mobile-form__field ft-add-movements-mobile-form__field--full">
+          <label class="ft-add-movements-toolbar__label" for="add-movements-mobile-repetitive">Repetitive Movement</label>
+          <select id="add-movements-mobile-repetitive" class="ft-add-movements-mobile-form__control" data-mobile-draft-field="repetitive_movement_id">${repetitiveOptions}</select>
+        </div>
+        <div class="ft-add-movements-mobile-form__actions">
+          <button type="button" class="ft-btn ft-btn--ghost" data-mobile-draft-action="clear">Clear</button>
+          <button type="button" class="ft-btn ft-btn--primary" data-mobile-draft-action="add">Add ${state.draftType.toLowerCase()} draft</button>
+        </div>
+        <p class="ft-add-movements-mobile-form__hint">Your drafts appear in the list below. Use Commit when you are done.</p>
+      </div>
+    </div>
+  `;
+
+  const dateInsert = target.querySelector('[data-mobile-date-picker-insert]');
+  if (dateInsert) {
+    const pickerField = DatePicker.createPickerField(
+      'Select date',
+      draft.date || '',
+      isoDate => { state.mobileDraft.date = isoDate; }
+    );
+    dateInsert.replaceWith(pickerField);
+    target._mobileDatePickerCleanup = pickerField._cleanup;
+  }
+}
+
+function _escapeAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function _escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export {
   updateHeaderButtons,
   renderBalanceCards,
   renderAccountToolbar,
+  renderMobileComposer,
   syncBalanceCalculator,
   parseActualBalanceInput,
   formatActualBalanceInput,

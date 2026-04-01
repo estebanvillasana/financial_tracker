@@ -24,6 +24,7 @@ import {
   updateHeaderButtons,
   renderBalanceCards,
   renderAccountToolbar,
+  renderMobileComposer,
   syncBalanceCalculator,
   parseActualBalanceInput,
   formatActualBalanceInput,
@@ -46,6 +47,7 @@ function refreshSummaryState(state, domRefs) {
   syncRowsFromGrid(state);
   renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
   renderBalanceCards(domRefs.balancesEl, state);
+  renderMobileComposer(domRefs.mobileEntryEl, state);
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
   saveDrafts(state);
 }
@@ -62,6 +64,7 @@ function refreshSummaryState(state, domRefs) {
 function wireEvents(state, domRefs, toolbarEl) {
   const feedbackEl = domRefs.feedbackEl;
   const balancesEl = domRefs.balancesEl;
+  const mobileEntryEl = domRefs.mobileEntryEl;
 
   /* ── Account selector change ── */
   toolbarEl.addEventListener('change', event => {
@@ -83,6 +86,7 @@ function wireEvents(state, domRefs, toolbarEl) {
 
     const nextType = String(btn.dataset.type || 'Expense');
     state.draftType = TYPE_VALUES.includes(nextType) ? nextType : 'Expense';
+    state.mobileDraft = createDraftRow(state.draftType);
 
     const sentinel = state.gridApi.getRowNode(SENTINEL_ID);
     if (sentinel?.data) {
@@ -91,6 +95,7 @@ function wireEvents(state, domRefs, toolbarEl) {
     }
 
     renderAccountToolbar(toolbarEl, state, domRefs);
+    renderMobileComposer(mobileEntryEl, state);
     FeedbackBanner.clear(feedbackEl);
   });
 
@@ -157,6 +162,74 @@ function wireEvents(state, domRefs, toolbarEl) {
     syncBalanceCalculator(balancesEl, state, { updateInput: false });
     saveDraftsImmediate(state);
   });
+
+  mobileEntryEl?.addEventListener('input', event => {
+    const field = event.target.dataset.mobileDraftField;
+    if (!field) return;
+    state.mobileDraft[field] = event.target.value;
+  });
+
+  mobileEntryEl?.addEventListener('change', event => {
+    const field = event.target.dataset.mobileDraftField;
+    if (!field) return;
+
+    if (field === 'category_id') {
+      state.mobileDraft.category_id = event.target.value ? Number(event.target.value) : null;
+      state.mobileDraft.sub_category_id = null;
+      renderMobileComposer(mobileEntryEl, state);
+      return;
+    }
+
+    if (field === 'sub_category_id' || field === 'repetitive_movement_id') {
+      state.mobileDraft[field] = event.target.value ? Number(event.target.value) : null;
+      return;
+    }
+
+    if (field === 'amount') {
+      state.mobileDraft.amount = event.target.value;
+      return;
+    }
+
+    state.mobileDraft[field] = event.target.value;
+  });
+
+  mobileEntryEl?.addEventListener('click', event => {
+    const action = event.target.closest('[data-mobile-draft-action]')?.dataset.mobileDraftAction;
+    if (!action) return;
+
+    if (action === 'clear') {
+      state.mobileDraft = createDraftRow(state.draftType);
+      renderMobileComposer(mobileEntryEl, state);
+      return;
+    }
+
+    if (action === 'add') {
+      const row = createDraftRow(state.draftType);
+      row.movement = String(state.mobileDraft.movement || '').trim();
+      row.description = String(state.mobileDraft.description || '').trim();
+      row.date = state.mobileDraft.date || row.date;
+      row.amount = state.mobileDraft.amount === '' || state.mobileDraft.amount == null ? null : Number(state.mobileDraft.amount);
+      row.category_id = Number.isFinite(Number(state.mobileDraft.category_id)) ? Number(state.mobileDraft.category_id) : null;
+      row.sub_category_id = Number.isFinite(Number(state.mobileDraft.sub_category_id)) ? Number(state.mobileDraft.sub_category_id) : null;
+      row.repetitive_movement_id = Number.isFinite(Number(state.mobileDraft.repetitive_movement_id)) ? Number(state.mobileDraft.repetitive_movement_id) : null;
+
+      if (!row.movement) {
+        FeedbackBanner.render(feedbackEl, 'Movement name is required.');
+        return;
+      }
+
+      state.gridApi.applyTransaction({ add: [row], addIndex: state.rows.length });
+      state.mobileDraft = createDraftRow(state.draftType);
+      FeedbackBanner.render(feedbackEl, 'Draft movement added.', 'success');
+      refreshSummaryState(state, domRefs);
+      requestAnimationFrame(() => {
+        applyRowTypeAttributes(state.gridApi);
+        if (window.matchMedia('(max-width: 900px)').matches) {
+          domRefs.gridWrapperEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  });
 }
 
 /* ── Page Initialization ──────────────────────────────────────────────────── */
@@ -170,15 +243,18 @@ function wireEvents(state, domRefs, toolbarEl) {
 async function initAddMovementsPage(root = document) {
   const toolbarEl = root.querySelector('#widget-add-movements-toolbar');
   const balancesEl = root.querySelector('#widget-add-movements-balances');
+  const mobileEntryEl = root.querySelector('#widget-add-movements-mobile-entry');
   const gridWrapperEl = root.querySelector('#widget-add-movements-grid');
   const feedbackEl = root.querySelector('#widget-add-movements-feedback');
 
-  if (!toolbarEl || !balancesEl || !gridWrapperEl) return;
+  if (!toolbarEl || !balancesEl || !mobileEntryEl || !gridWrapperEl) return;
 
   const domRefs = {
     toolbarEl,
     balancesEl,
+    mobileEntryEl,
     feedbackEl,
+    gridWrapperEl,
     commitBtn: null,
     discardBtn: null,
   };
@@ -239,6 +315,7 @@ async function initAddMovementsPage(root = document) {
     draftType: 'Expense',
     gridApi: null,
     rows: [],
+    mobileDraft: createDraftRow('Expense'),
     isCommitting: false,
     lastFocusWasSentinel: false,
   };
@@ -252,10 +329,12 @@ async function initAddMovementsPage(root = document) {
     state.rows = savedDrafts.rows;
     state.actualBalances = savedDrafts.actualBalances || {};
   }
+  state.mobileDraft = createDraftRow(state.draftType);
 
   /* ── Render initial toolbar ── */
   renderAccountToolbar(toolbarEl, state, domRefs);
   renderBalanceCards(balancesEl, state);
+  renderMobileComposer(mobileEntryEl, state);
 
   /* ── Mount AG Grid ── */
   gridWrapperEl.innerHTML = '<div class="ft-add-movements-grid ft-ag-grid" id="add-movements-grid-host"></div>';
@@ -321,6 +400,13 @@ function _applyTemplateIfPresent(state, feedbackEl) {
   row.movement = template.movement;
   row.description = template.description || '';
   row.repetitive_movement_id = template.repetitive_movement_id || null;
+
+  state.mobileDraft = {
+    ...createDraftRow(state.draftType),
+    movement: row.movement,
+    description: row.description,
+    repetitive_movement_id: row.repetitive_movement_id,
+  };
 
   // Add the pre-filled row before the sentinel
   state.gridApi?.applyTransaction({
