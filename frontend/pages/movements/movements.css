@@ -18,7 +18,17 @@
 /* class (layout.css). Only movements-specific overrides remain.   */
 
 .ft-movements-toolbar {
-  gap: 10px;
+  align-items: end;
+  display: grid;
+  gap: 10px 12px;
+  grid-template-columns: minmax(220px, 1.5fr) auto auto auto;
+}
+
+.ft-movements-toolbar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .ft-movements-toolbar__label {
@@ -37,16 +47,40 @@
   color: var(--ft-color-text);
   font-size: 13px;
   height: 34px;
-  min-width: 260px;
   padding: 0 10px;
+  width: 100%;
 }
 
 /* ── Date Range Container ────────────────────────────────────── */
 
 .ft-movements-toolbar__dates {
-  align-items: center;
-  display: flex;
+  display: grid;
   gap: 6px;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+}
+
+.ft-movements-toolbar__field--type .ft-type-toggle {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  width: 100%;
+}
+
+.ft-movements-toolbar__field--type .ft-type-toggle__btn {
+  justify-content: center;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.ft-movements-toolbar__dates .ft-date-popup {
+  min-width: 0;
+  width: 100%;
+}
+
+.ft-movements-toolbar__dates .ft-date-popup__trigger {
+  min-width: 0;
+  width: 100%;
 }
 
 .ft-movements-toolbar__date-sep {
@@ -91,7 +125,8 @@
   cursor: pointer;
   display: flex;
   gap: 6px;
-  margin-left: auto;
+  justify-self: end;
+  padding: 0;
   white-space: nowrap;
 }
 
@@ -121,42 +156,28 @@
     height: clamp(280px, 52dvh, 420px);
   }
 
-  .ft-movements-toolbar__dates {
-    flex-wrap: wrap;
+  .ft-movements-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px) auto;
   }
 
-  .ft-movements-toolbar__dates .ft-date-popup {
-    flex: 1 1 180px;
+  .ft-movements-toolbar__field--account {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 720px) {
   .ft-movements-toolbar {
     align-items: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ft-movements-toolbar__label,
-  .ft-movements-toolbar__select,
-  .ft-movements-toolbar__dates,
-  .ft-movements-toolbar__toggle {
-    width: 100%;
-  }
-
-  .ft-movements-toolbar__select {
-    min-width: 0;
-  }
-
-  .ft-movements-toolbar__date-sep {
-    display: none;
+  .ft-movements-toolbar__field--dates {
+    grid-column: 1 / -1;
   }
 
   .ft-movements-toolbar__toggle {
-    margin-left: 0;
-  }
-
-  .ft-movements-toolbar__dates {
-    align-items: stretch;
-    flex-direction: column;
+    justify-content: flex-start;
+    justify-self: start;
   }
 
   .ft-movements-code-banner {
@@ -167,5 +188,24 @@
   .ft-movements-code-banner .ft-btn {
     justify-content: center;
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .ft-movements-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-movements-toolbar__field--type .ft-type-toggle__btn {
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .ft-movements-toolbar__field--dates {
+    grid-column: auto;
+  }
+
+  .ft-movements-toolbar__dates {
+    grid-template-columns: 1fr 1fr;
   }
 }

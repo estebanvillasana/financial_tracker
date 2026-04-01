@@ -116,13 +116,9 @@ async function initMovementsPage(root = document) {
 
   if (datePickers) {
     const fromField = DatePicker.createPickerField('From', '', v => { state.dateFrom = v; reloadGrid(); });
-    const sep = document.createElement('span');
-    sep.className = 'ft-movements-toolbar__date-sep';
-    sep.textContent = '–';
     const toField = DatePicker.createPickerField('To', '', v => { state.dateTo = v; reloadGrid(); });
 
     datePickers.appendChild(fromField);
-    datePickers.appendChild(sep);
     datePickers.appendChild(toField);
 
     /* Store cleanup so the next navigation can remove document listeners. */

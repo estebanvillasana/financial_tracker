@@ -8,14 +8,22 @@
 
   <!-- Toolbar (account + type toggle + date filters) -->
   <div class="ft-toolbar ft-movements-toolbar" id="widget-movements-toolbar">
-    <label class="ft-movements-toolbar__label" for="movements-account-select">Account</label>
-    <select id="movements-account-select" class="ft-movements-toolbar__select"></select>
-    <div class="ft-type-toggle" id="movements-type-toggle">
-      <button class="ft-type-toggle__btn ft-type-toggle__btn--all ft-type-toggle__btn--active" data-type="">All</button>
-      <button class="ft-type-toggle__btn ft-type-toggle__btn--expense" data-type="Expense">Expense</button>
-      <button class="ft-type-toggle__btn ft-type-toggle__btn--income" data-type="Income">Income</button>
+    <div class="ft-movements-toolbar__field ft-movements-toolbar__field--account">
+      <label class="ft-movements-toolbar__label" for="movements-account-select">Account</label>
+      <select id="movements-account-select" class="ft-movements-toolbar__select"></select>
     </div>
-    <div class="ft-movements-toolbar__dates" id="movements-date-pickers"></div>
+    <div class="ft-movements-toolbar__field ft-movements-toolbar__field--type">
+      <span class="ft-movements-toolbar__label">Type</span>
+      <div class="ft-type-toggle" id="movements-type-toggle">
+        <button class="ft-type-toggle__btn ft-type-toggle__btn--all ft-type-toggle__btn--active" data-type="">All</button>
+        <button class="ft-type-toggle__btn ft-type-toggle__btn--expense" data-type="Expense">Expense</button>
+        <button class="ft-type-toggle__btn ft-type-toggle__btn--income" data-type="Income">Income</button>
+      </div>
+    </div>
+    <div class="ft-movements-toolbar__field ft-movements-toolbar__field--dates">
+      <span class="ft-movements-toolbar__label">Date Range</span>
+      <div class="ft-movements-toolbar__dates" id="movements-date-pickers"></div>
+    </div>
     <label class="ft-movements-toolbar__toggle" for="movements-show-deleted">
       <input type="checkbox" id="movements-show-deleted" />
       <span class="ft-movements-toolbar__toggle-label">Show deleted</span>
