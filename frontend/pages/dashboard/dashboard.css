@@ -4,6 +4,7 @@
 .ft-dashboard__actions {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--ft-spacing);
 }
 
@@ -157,6 +158,22 @@
 
 @media (max-width: 640px) {
   .ft-dashboard__actions {
-    display: none;
+    width: 100%;
+  }
+
+  .ft-dashboard__actions .ft-btn {
+    flex: 1 1 180px;
+    justify-content: center;
+  }
+
+  .ft-dashboard__breakdown-header,
+  .ft-currency-summary__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ft-dashboard__movements-grid {
+    height: min(44dvh, 320px);
   }
 }

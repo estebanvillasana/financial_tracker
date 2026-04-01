@@ -265,7 +265,28 @@
 /* ── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 640px) {
+  .ft-categories-toolbar__deleted-toggle {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .ft-categories-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ft-category-card__title-row,
+  .ft-category-card__meta,
+  .ft-category-card__actions {
+    flex-wrap: wrap;
+  }
+
+  .ft-category-card__sub-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ft-category-card__sub-actions {
+    justify-content: flex-end;
+    width: 100%;
   }
 }

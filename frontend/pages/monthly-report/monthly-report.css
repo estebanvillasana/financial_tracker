@@ -156,3 +156,27 @@
   color: var(--ft-color-accent);
   font-weight: 500;
 }
+
+@media (max-width: 900px) {
+  .ft-monthly-report__toolbar,
+  .ft-monthly-report__month-input,
+  #widget-owner-filter {
+    width: 100%;
+  }
+
+  .ft-monthly-report__sub-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-monthly-report__sub-header .ft-btn {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .ft-monthly-report__chart-container {
+    height: 260px;
+  }
+}
