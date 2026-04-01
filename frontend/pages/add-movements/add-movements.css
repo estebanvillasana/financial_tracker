@@ -336,3 +336,66 @@
   cursor: crosshair !important;
   user-select: none;
 }
+
+@media (max-width: 900px) {
+  .ft-add-movements-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .ft-add-movements-grid-section {
+    flex: initial;
+    min-height: clamp(320px, 58dvh, 560px);
+  }
+
+  .ft-add-movements-toolbar,
+  .ft-add-movements-toolbar__left,
+  .ft-add-movements-toolbar__actions {
+    align-items: stretch;
+  }
+
+  .ft-add-movements-toolbar__left,
+  .ft-add-movements-toolbar__actions {
+    width: 100%;
+  }
+
+  .ft-add-movements-toolbar__select {
+    flex: 1 1 220px;
+  }
+
+  .ft-add-movements-toolbar__actions .ft-btn {
+    flex: 1 1 180px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .ft-add-movements-toolbar__left {
+    flex-direction: column;
+  }
+
+  .ft-add-movements-toolbar__select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ft-add-type-toggle {
+    width: 100%;
+  }
+
+  .ft-add-type-toggle__btn {
+    flex: 1 1 0;
+  }
+
+  .ft-add-movements-toolbar__actions .ft-btn {
+    flex-basis: 100%;
+  }
+
+  .ft-add-movements-balance-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ft-add-movements-hints {
+    text-align: left;
+  }
+}

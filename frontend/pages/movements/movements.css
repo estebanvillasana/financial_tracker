@@ -8,7 +8,7 @@
 /* ── Grid Host ──────────────────────────────────────────────── */
 
 .ft-movements-grid {
-  height: calc(100vh - 440px);
+  height: clamp(280px, calc(var(--ft-app-height) - 440px), 720px);
   min-height: 280px;
   width: 100%;
 }
@@ -114,4 +114,58 @@
 
 .ft-grid-amount--balance-na {
   color: var(--ft-color-text-muted);
+}
+
+@media (max-width: 900px) {
+  .ft-movements-grid {
+    height: clamp(280px, 52dvh, 420px);
+  }
+
+  .ft-movements-toolbar__dates {
+    flex-wrap: wrap;
+  }
+
+  .ft-movements-toolbar__dates .ft-date-popup {
+    flex: 1 1 180px;
+  }
+}
+
+@media (max-width: 720px) {
+  .ft-movements-toolbar {
+    align-items: stretch;
+  }
+
+  .ft-movements-toolbar__label,
+  .ft-movements-toolbar__select,
+  .ft-movements-toolbar__dates,
+  .ft-movements-toolbar__toggle {
+    width: 100%;
+  }
+
+  .ft-movements-toolbar__select {
+    min-width: 0;
+  }
+
+  .ft-movements-toolbar__date-sep {
+    display: none;
+  }
+
+  .ft-movements-toolbar__toggle {
+    margin-left: 0;
+  }
+
+  .ft-movements-toolbar__dates {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-movements-code-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-movements-code-banner .ft-btn {
+    justify-content: center;
+    width: 100%;
+  }
 }

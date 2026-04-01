@@ -8,7 +8,9 @@
   background: var(--ft-color-card);
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-wrapper);
-  overflow: hidden;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 4px;
 }
 
@@ -109,4 +111,17 @@
 
 .ft-repetitive-grid .ag-row.ft-row-inactive {
   opacity: 0.45;
+}
+
+@media (max-width: 900px) {
+  .ft-repetitive-toolbar__toggle {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .ft-rep-tabs__tab {
+    flex: 0 0 auto;
+  }
 }

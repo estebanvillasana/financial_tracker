@@ -583,6 +583,108 @@
   }
 }
 
+@media (max-width: 900px) {
+  .ft-quick-add-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .ft-quick-add-flow-section {
+    flex: initial;
+  }
+
+  .ft-quick-add-history-section {
+    overflow: visible;
+  }
+
+  .ft-qa-history-list {
+    max-height: none;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .ft-quick-add-toolbar__left {
+    width: 100%;
+  }
+
+  .ft-qa-prompt {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ft-qa-prompt__label {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .ft-qa-prompt__chevron {
+    display: none;
+  }
+
+  .ft-qa-select-wrap,
+  .ft-qa-smart-date,
+  .ft-qa-type-toggle,
+  .ft-qa-invoice-toggle,
+  .ft-qa-amount-wrap,
+  .ft-qa-prompt__input {
+    width: 100%;
+  }
+
+  .ft-qa-type-toggle,
+  .ft-qa-invoice-toggle {
+    display: flex;
+  }
+
+  .ft-qa-type-toggle__btn,
+  .ft-qa-invoice-toggle__btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .ft-qa-review,
+  .ft-qa-success {
+    max-width: none;
+  }
+
+  .ft-qa-review__grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .ft-qa-review__label {
+    text-align: left;
+  }
+
+  .ft-quick-add-hints {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .ft-quick-add-toolbar__left {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-quick-add-toolbar__select,
+  .ft-quick-add-toolbar__change-btn,
+  .ft-quick-add-toolbar .ft-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ft-quick-add-toolbar__locked {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .ft-quick-add-account-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Smart Date Selector ──────────────────────────────────── */
 
 .ft-qa-smart-date {
