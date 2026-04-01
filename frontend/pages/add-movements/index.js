@@ -23,6 +23,7 @@ import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBan
 import {
   updateHeaderButtons,
   renderBalanceCards,
+  renderMobileDraftList,
   renderAccountToolbar,
   renderMobileComposer,
   syncBalanceCalculator,
@@ -48,6 +49,7 @@ function refreshSummaryState(state, domRefs) {
   renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
   renderBalanceCards(domRefs.balancesEl, state);
   renderMobileComposer(domRefs.mobileEntryEl, state);
+  renderMobileDraftList(domRefs.mobileDraftsEl, state);
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
   saveDrafts(state);
 }
@@ -65,6 +67,7 @@ function wireEvents(state, domRefs, toolbarEl) {
   const feedbackEl = domRefs.feedbackEl;
   const balancesEl = domRefs.balancesEl;
   const mobileEntryEl = domRefs.mobileEntryEl;
+  const mobileDraftsEl = domRefs.mobileDraftsEl;
 
   /* ── Account selector change ── */
   toolbarEl.addEventListener('change', event => {
@@ -230,6 +233,16 @@ function wireEvents(state, domRefs, toolbarEl) {
       });
     }
   });
+
+  mobileDraftsEl?.addEventListener('click', event => {
+    const rowId = event.target.closest('[data-mobile-draft-remove]')?.dataset.mobileDraftRemove;
+    if (!rowId || !state.gridApi) return;
+
+    state.gridApi.applyTransaction({ remove: [{ _id: rowId }] });
+    FeedbackBanner.clear(feedbackEl);
+    refreshSummaryState(state, domRefs);
+    requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+  });
 }
 
 /* ── Page Initialization ──────────────────────────────────────────────────── */
@@ -244,15 +257,17 @@ async function initAddMovementsPage(root = document) {
   const toolbarEl = root.querySelector('#widget-add-movements-toolbar');
   const balancesEl = root.querySelector('#widget-add-movements-balances');
   const mobileEntryEl = root.querySelector('#widget-add-movements-mobile-entry');
+  const mobileDraftsEl = root.querySelector('#widget-add-movements-mobile-drafts');
   const gridWrapperEl = root.querySelector('#widget-add-movements-grid');
   const feedbackEl = root.querySelector('#widget-add-movements-feedback');
 
-  if (!toolbarEl || !balancesEl || !mobileEntryEl || !gridWrapperEl) return;
+  if (!toolbarEl || !balancesEl || !mobileEntryEl || !mobileDraftsEl || !gridWrapperEl) return;
 
   const domRefs = {
     toolbarEl,
     balancesEl,
     mobileEntryEl,
+    mobileDraftsEl,
     feedbackEl,
     gridWrapperEl,
     commitBtn: null,
@@ -335,6 +350,7 @@ async function initAddMovementsPage(root = document) {
   renderAccountToolbar(toolbarEl, state, domRefs);
   renderBalanceCards(balancesEl, state);
   renderMobileComposer(mobileEntryEl, state);
+  renderMobileDraftList(mobileDraftsEl, state);
 
   /* ── Mount AG Grid ── */
   gridWrapperEl.innerHTML = '<div class="ft-add-movements-grid ft-ag-grid" id="add-movements-grid-host"></div>';

@@ -9,7 +9,7 @@
 import { InfoCard } from '../../components/dumb/infoCard/infoCard.js';
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { normalizeCurrency, formatMoneyFromCents, toSignedCents } from '../../utils/formatters.js';
-import { getSelectedAccount } from './utils.js';
+import { getSelectedAccount, categoryLabelById, subCategoryLabelById } from './utils.js';
 
 /* ── Button State Management ──────────────────────────────────────────────── */
 
@@ -63,6 +63,53 @@ function renderBalanceCards(target, state) {
   );
 
   target.appendChild(_createReconciliationCard(currency, actualBalance, difference));
+}
+
+function renderMobileDraftList(target, state) {
+  if (!target) return;
+
+  const rows = Array.isArray(state.rows) ? state.rows : [];
+  const account = getSelectedAccount(state);
+  const currency = normalizeCurrency(account?.currency || 'USD');
+
+  if (rows.length === 0) {
+    target.innerHTML = `
+      <div class="ft-add-movements-mobile-drafts__empty">
+        <span class="material-symbols-outlined" aria-hidden="true">playlist_add</span>
+        <p class="ft-small">Draft movements will appear here after you add them.</p>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = rows.map((row, index) => {
+    const signedAmount = toSignedCents(row);
+    const amountLabel = row.amount == null
+      ? 'No amount'
+      : `${signedAmount > 0 ? '+' : ''}${formatMoneyFromCents(signedAmount, currency)}`;
+    const category = categoryLabelById(state, row.category_id) || 'No category';
+    const subCategory = subCategoryLabelById(state, row.sub_category_id);
+    const repetitive = state.repetitiveMovements?.find(item => Number(item.id) === Number(row.repetitive_movement_id));
+
+    return `
+      <article class="ft-add-movements-mobile-draft" data-draft-id="${_escapeAttr(row._id)}">
+        <div class="ft-add-movements-mobile-draft__header">
+          <div>
+            <p class="ft-add-movements-mobile-draft__eyebrow">Draft ${index + 1} · ${_escapeHtml(row.type || 'Expense')}</p>
+            <h3 class="ft-add-movements-mobile-draft__title">${_escapeHtml(row.movement || 'Unnamed movement')}</h3>
+          </div>
+          <div class="ft-add-movements-mobile-draft__amount">${_escapeHtml(amountLabel)}</div>
+        </div>
+        <div class="ft-add-movements-mobile-draft__meta">
+          <span>${_escapeHtml(row.date || 'No date')}</span>
+          <span>${_escapeHtml(category)}${subCategory ? ` · ${_escapeHtml(subCategory)}` : ''}</span>
+        </div>
+        ${row.description ? `<p class="ft-add-movements-mobile-draft__description">${_escapeHtml(row.description)}</p>` : ''}
+        ${repetitive ? `<p class="ft-add-movements-mobile-draft__tag">Repeats from ${_escapeHtml(repetitive.movement)}</p>` : ''}
+        <button type="button" class="ft-btn ft-btn--ghost ft-add-movements-mobile-draft__remove" data-mobile-draft-remove="${_escapeAttr(row._id)}">Remove</button>
+      </article>
+    `;
+  }).join('');
 }
 
 function syncBalanceCalculator(target, state, options = {}) {
@@ -370,6 +417,7 @@ function _escapeHtml(value) {
 export {
   updateHeaderButtons,
   renderBalanceCards,
+  renderMobileDraftList,
   renderAccountToolbar,
   renderMobileComposer,
   syncBalanceCalculator,

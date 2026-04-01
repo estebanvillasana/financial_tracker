@@ -19,6 +19,7 @@ import { PdfImportModal } from '../../components/modals/pdfImportModal/pdfImport
 import {
   updateHeaderButtons,
   renderBalanceCards,
+  renderMobileDraftList,
   renderAccountToolbar,
 } from './render.js';
 
@@ -83,6 +84,7 @@ async function commitDrafts(state, domRefs, refreshSummaryState) {
     syncRowsFromGrid(state);
     renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
     renderBalanceCards(domRefs.balancesEl, state);
+    renderMobileDraftList(domRefs.mobileDraftsEl, state);
 
   } catch (error) {
     FeedbackBanner.render(domRefs.feedbackEl, error?.message || 'Failed to commit movements.');
@@ -172,6 +174,7 @@ function handleAccountChange(newAccountId, state, domRefs) {
 
   renderAccountToolbar(domRefs.toolbarEl, state, domRefs);
   renderBalanceCards(domRefs.balancesEl, state);
+  renderMobileDraftList(domRefs.mobileDraftsEl, state);
   updateHeaderButtons(state, domRefs.commitBtn, domRefs.discardBtn);
 
   if (state.gridApi) {
