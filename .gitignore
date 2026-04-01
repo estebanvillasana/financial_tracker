@@ -3,7 +3,7 @@
 log/
 .vscode/
 .ignore/
-TODO.md
+TODO/
 
 # Backend
 backend/data/database/*
@@ -30,3 +30,4 @@ cli/screens/test_inputs.py
 demos/
 .claude/
 updater/
+
