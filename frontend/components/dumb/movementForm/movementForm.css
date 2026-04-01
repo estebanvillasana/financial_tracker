@@ -134,3 +134,31 @@
   justify-content: flex-end;
   padding-top: 4px;
 }
+
+@media (max-width: 720px) {
+  .ft-movement-form {
+    padding: 14px;
+  }
+
+  .ft-movement-form__row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ft-movement-form__field--date,
+  .ft-movement-form__field--type,
+  .ft-movement-form__field--amount,
+  .ft-movement-form__field--invoice {
+    min-width: 0;
+  }
+
+  .ft-movement-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .ft-movement-form__actions .ft-btn {
+    justify-content: center;
+    width: 100%;
+  }
+}

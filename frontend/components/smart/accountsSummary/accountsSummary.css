@@ -139,3 +139,14 @@
   height: 72px;
   width: 100%;
 }
+
+@media (max-width: 640px) {
+  .ft-accounts-summary__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ft-accounts-summary .ft-accounts-grid {
+    grid-template-columns: 1fr;
+  }
+}

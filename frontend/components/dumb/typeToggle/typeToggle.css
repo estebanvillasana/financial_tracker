@@ -7,7 +7,10 @@
   border: 1px solid var(--ft-color-border);
   border-radius: var(--ft-radius-widget);
   display: inline-flex;
-  overflow: hidden;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .ft-type-toggle__btn {
@@ -41,4 +44,14 @@
 .ft-type-toggle__btn--active.ft-type-toggle__btn--income {
   background: var(--ft-color-success-15);
   color: var(--ft-color-success);
+}
+
+@media (max-width: 640px) {
+  .ft-type-toggle {
+    width: 100%;
+  }
+
+  .ft-type-toggle__btn {
+    flex: 0 0 auto;
+  }
 }

@@ -95,3 +95,22 @@
     justify-content: flex-end;
   }
 }
+
+@media (max-width: 640px) {
+  .ft-filter-bar__fields,
+  .ft-filter-bar__field,
+  .ft-filter-bar__field--search,
+  .ft-filter-bar__actions {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ft-filter-bar__actions {
+    justify-content: stretch;
+  }
+
+  .ft-filter-bar__actions .ft-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

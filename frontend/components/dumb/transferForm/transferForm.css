@@ -122,3 +122,31 @@
   flex: 1;
   min-width: 0;
 }
+
+@media (max-width: 720px) {
+  .ft-transfer-form__row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ft-transfer-form__field--account,
+  .ft-transfer-form__field--amount,
+  .ft-transfer-form__field--date,
+  .ft-transfer-form__field--desc {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ft-transfer-form__arrow {
+    display: none;
+  }
+
+  .ft-transfer-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .ft-transfer-form__actions .ft-btn {
+    justify-content: center;
+    width: 100%;
+  }
+}

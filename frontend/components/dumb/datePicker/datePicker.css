@@ -259,3 +259,19 @@
   position: fixed;
   z-index: 200;
 }
+
+@media (max-width: 640px) {
+  .ft-date-popup {
+    width: 100%;
+  }
+
+  .ft-date-popup__trigger {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ft-date-picker {
+    max-width: calc(100vw - 24px);
+    width: min(264px, calc(100vw - 24px));
+  }
+}
