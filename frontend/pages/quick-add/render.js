@@ -196,8 +196,8 @@ function renderFlow(flowEl, flow, state, phase) {
     return;
   }
 
-  if (phase === 'review') {
-    _renderReview(flowEl, flow, state);
+  if (phase === 'review' || phase === 'saving') {
+    _renderReview(flowEl, flow, state, { isSaving: phase === 'saving' });
     return;
   }
 
@@ -226,7 +226,9 @@ function renderFlow(flowEl, flow, state, phase) {
         </div>`;
     } else if (i === currentIdx) {
       // Active step
-      html += _renderActiveStep(step, state, values);
+      html += _renderActiveStep(step, state, values, {
+        canGoBack: currentIdx > 0,
+      });
     }
     // Future steps are hidden
   }
@@ -235,33 +237,55 @@ function renderFlow(flowEl, flow, state, phase) {
 
   // Focus the active input
   requestAnimationFrame(() => {
+    const activePrompt = flowEl.querySelector('.ft-qa-prompt[data-step]');
+    if (state.isMobileInteraction) {
+      activePrompt?.scrollIntoView({ block: 'nearest' });
+    }
+
     const smartDate = flowEl.querySelector('.ft-qa-smart-date');
-    if (smartDate) {
+    if (smartDate && !state.isMobileInteraction) {
       smartDate.focus();
       return;
     }
+
+    if (state.isMobileInteraction && flowEl.querySelector('[data-qa-date-picker-host]')) {
+      return;
+    }
+
     const input = flowEl.querySelector('.ft-qa-prompt__input, .ft-qa-type-toggle__btn--active, .ft-qa-invoice-toggle__btn--active');
-    if (input) input.focus();
+    if (!input) return;
+
+    input.focus();
   });
 }
 
-function _renderActiveStep(step, state, values) {
+function _renderActiveStep(step, state, values, options = {}) {
   const defaultVal = step.defaultFn ? step.defaultFn() : '';
+  const isMobile = Boolean(state.isMobileInteraction);
+  const actionBar = isMobile
+    ? _renderMobileStepActions({
+      canGoBack: options.canGoBack,
+      canSkip: !step.required,
+    })
+    : '';
 
   if (step.inputType === 'type-toggle') {
     const current = defaultVal || 'Expense';
+    const expenseLabel = isMobile ? 'Expense' : '<kbd>E</kbd> Expense';
+    const incomeLabel = isMobile ? 'Income' : '<kbd>I</kbd> Income';
     return `
       <div class="ft-qa-prompt" data-step="${step.key}">
         <span class="ft-qa-prompt__label">${step.label}</span>
         <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
         <div class="ft-qa-type-toggle" id="qa-type-toggle">
-          <button class="ft-qa-type-toggle__btn ft-qa-type-toggle__btn--expense${current === 'Expense' ? ' ft-qa-type-toggle__btn--active' : ''}" data-value="Expense" tabindex="0">
-            <kbd>E</kbd> Expense
+          <button type="button" class="ft-qa-type-toggle__btn ft-qa-type-toggle__btn--expense${current === 'Expense' ? ' ft-qa-type-toggle__btn--active' : ''}" data-value="Expense" tabindex="0">
+            ${expenseLabel}
           </button>
-          <button class="ft-qa-type-toggle__btn ft-qa-type-toggle__btn--income${current === 'Income' ? ' ft-qa-type-toggle__btn--active' : ''}" data-value="Income" tabindex="0">
-            <kbd>I</kbd> Income
+          <button type="button" class="ft-qa-type-toggle__btn ft-qa-type-toggle__btn--income${current === 'Income' ? ' ft-qa-type-toggle__btn--active' : ''}" data-value="Income" tabindex="0">
+            ${incomeLabel}
           </button>
         </div>
+        ${isMobile ? '<span class="ft-qa-mobile-hint ft-small ft-text-muted">Tap a type to continue.</span>' : ''}
       </div>`;
   }
 
@@ -278,9 +302,22 @@ function _renderActiveStep(step, state, values) {
         <span class="ft-qa-prompt__label">${step.label}</span>
         <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
         <div class="ft-qa-select-wrap">
-          <input class="ft-qa-prompt__input" type="text" placeholder="Type to filter… (Enter to skip)" autocomplete="off" data-select-input="true" />
+          <input class="ft-qa-prompt__input" type="text" placeholder="Type to filter…${step.required ? '' : ' (blank skips)'}" autocomplete="off" data-select-input="true" enterkeyhint="next" />
           <div class="ft-qa-select-dropdown" id="qa-select-dropdown">${optionsHtml}</div>
         </div>
+        ${actionBar}
+      </div>`;
+  }
+
+  if (step.inputType === 'smart-date' && isMobile) {
+    const iso = defaultVal || new Date().toISOString().slice(0, 10);
+    return `
+      <div class="ft-qa-prompt" data-step="${step.key}">
+        <span class="ft-qa-prompt__label">${step.label}</span>
+        <span class="ft-qa-prompt__chevron material-symbols-outlined">chevron_right</span>
+        <div class="ft-qa-date-picker-host" data-qa-date-picker-host data-value="${escapeHtml(iso)}"></div>
+        <span class="ft-qa-mobile-hint ft-small ft-text-muted">Use your phone’s date picker, then continue.</span>
+        ${actionBar}
       </div>`;
   }
 
@@ -316,14 +353,17 @@ function _renderActiveStep(step, state, values) {
         <div class="ft-qa-amount-wrap">
           <input
             class="ft-qa-prompt__input ft-qa-prompt__input--amount"
-            type="text"
+            type="${isMobile ? 'number' : 'text'}"
             value=""
             placeholder="0.00"
             inputmode="decimal"
+            step="0.01"
             autocomplete="off"
+            enterkeyhint="next"
           />
           <span class="ft-qa-amount-currency">${escapeHtml(currency)}</span>
         </div>
+        ${actionBar}
       </div>`;
   }
 
@@ -337,16 +377,19 @@ function _renderActiveStep(step, state, values) {
         value="${escapeHtml(defaultVal)}"
         placeholder="${escapeHtml(step.placeholder || '')}"
         autocomplete="off"
+        enterkeyhint="next"
       />
+      ${actionBar}
     </div>`;
 }
 
 /* ── Review Card ──────────────────────────────────────────── */
 
-function _renderReview(flowEl, flow, state) {
+function _renderReview(flowEl, flow, state, options = {}) {
   const values = flow.getValues();
   const account = state.accounts.find(a => Number(a.id) === Number(state.selectedAccountId));
   const currency = normalizeCurrency(account?.currency);
+  const isSaving = Boolean(options.isSaving);
 
   const catLabel = values.category_id
     ? categoryLabelById(state.categories, values.category_id)
@@ -379,7 +422,12 @@ function _renderReview(flowEl, flow, state) {
         <span class="ft-qa-review__label">Repetitive</span>
         <span class="ft-qa-review__value">${escapeHtml(repLabel)}</span>
       </div>
-      <p class="ft-qa-review__hint">Press <kbd>Enter</kbd> to save · <kbd>Esc</kbd> to start over</p>
+      ${state.isMobileInteraction
+        ? `<div class="ft-qa-actions ft-qa-actions--review">
+            <button type="button" class="ft-btn ft-btn--ghost" data-qa-action="edit"${isSaving ? ' disabled' : ''}>Back</button>
+            <button type="button" class="ft-btn ft-btn--primary" data-qa-action="save"${isSaving ? ' disabled' : ''}>${isSaving ? 'Saving...' : 'Save movement'}</button>
+          </div>`
+        : `<p class="ft-qa-review__hint">${isSaving ? 'Saving movement…' : 'Press <kbd>Enter</kbd> to save · <kbd>Esc</kbd> to start over'}</p>`}
     </div>`;
 }
 
@@ -396,7 +444,12 @@ function _renderSuccess(flowEl, flow, state) {
       <span class="ft-qa-success__text">
         <b>${escapeHtml(values.movement)}</b> — ${formatMoney(values.amount, currency)} (${escapeHtml(values.type)})
       </span>
-      <span class="ft-qa-success__hint">Press <kbd>Enter</kbd> to add another · <kbd>Esc</kbd> to finish</span>
+      ${state.isMobileInteraction
+        ? `<div class="ft-qa-actions ft-qa-actions--success">
+            <button type="button" class="ft-btn ft-btn--ghost" data-qa-action="finish">Finish</button>
+            <button type="button" class="ft-btn ft-btn--primary" data-qa-action="add-another">Add another</button>
+          </div>`
+        : '<span class="ft-qa-success__hint">Press <kbd>Enter</kbd> to add another · <kbd>Esc</kbd> to finish</span>'}
     </div>`;
 }
 
@@ -439,6 +492,48 @@ function _formatDisplayValue(step, value, state) {
     return formatMoney(Number(value), currency);
   }
   return String(value);
+}
+
+function renderHints(hintsEl, state, phase) {
+  if (!hintsEl) return;
+
+  if (state.isMobileInteraction) {
+    if (!state.accountLocked) {
+      hintsEl.textContent = 'Pick an account, then use the on-screen buttons to move through each step.';
+      return;
+    }
+
+    if (phase === 'review') {
+      hintsEl.textContent = 'Review the movement, then use Back or Save movement.';
+      return;
+    }
+
+    if (phase === 'saving') {
+      hintsEl.textContent = 'Saving movement...';
+      return;
+    }
+
+    if (phase === 'success') {
+      hintsEl.textContent = 'Use Add another to keep going, or Finish to unlock the account.';
+      return;
+    }
+
+    hintsEl.textContent = 'Use Back to revisit the previous step. Optional fields can be skipped.';
+    return;
+  }
+
+  hintsEl.innerHTML = `
+    <kbd>Enter</kbd> confirm / next · <kbd>Esc</kbd> skip optional / cancel ·
+    <kbd>E</kbd>/<kbd>I</kbd> expense/income · <kbd>↑</kbd><kbd>↓</kbd> navigate options ·
+    <kbd>Ctrl</kbd>+<kbd>B</kbd> go back`;
+}
+
+function _renderMobileStepActions({ canGoBack, canSkip }) {
+  return `
+    <div class="ft-qa-actions">
+      ${canGoBack ? '<button type="button" class="ft-btn ft-btn--ghost" data-qa-action="back">Back</button>' : ''}
+      <button type="button" class="ft-btn ft-btn--primary" data-qa-action="next">${canSkip ? 'Continue' : 'Next'}</button>
+    </div>`;
 }
 
 function _createReconcileCard(currency, actualBalance, difference) {
@@ -516,5 +611,6 @@ export {
   renderTally,
   renderFlow,
   renderHistory,
+  renderHints,
   MONTH_NAMES,
 };

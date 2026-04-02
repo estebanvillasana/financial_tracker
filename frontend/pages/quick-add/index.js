@@ -25,6 +25,7 @@ import {
   renderTally,
   renderFlow,
   renderHistory,
+  renderHints,
   MONTH_NAMES,
 } from './render.js';
 import { saveMovement } from './actions.js';
@@ -38,6 +39,7 @@ async function initQuickAddPage(root = document) {
   const flowEl = root.querySelector('#widget-quick-add-flow');
   const feedbackEl = root.querySelector('#widget-quick-add-feedback');
   const historyEl = root.querySelector('#widget-quick-add-history');
+  const hintsEl = root.querySelector('#widget-quick-add-hints');
 
   if (!toolbarEl || !flowEl) return;
 
@@ -94,6 +96,7 @@ async function initQuickAddPage(root = document) {
     actualBalances: {},
     selectedAccountId: Number(accountList[0].id),
     accountLocked: false,
+    isMobileInteraction: _isMobileInteraction(),
   };
 
   const sessionStats = {
@@ -105,14 +108,131 @@ async function initQuickAddPage(root = document) {
   const history = [];
   const flow = createFlow();
   let phase = 'idle';
+  let mobileDatePickerCleanup = null;
 
   /* ── Render helpers ── */
   function refresh() {
+    if (typeof mobileDatePickerCleanup === 'function') {
+      mobileDatePickerCleanup();
+      mobileDatePickerCleanup = null;
+    }
+
     renderAccountToolbar(toolbarEl, state);
     renderAccountPanel(accountPanelEl, state);
     renderTally(tallyEl, sessionStats);
     renderFlow(flowEl, flow, state, phase);
+    _mountMobileDatePicker();
     renderHistory(historyEl, history, sessionStats.currency);
+    renderHints(hintsEl, state, phase);
+  }
+
+  function _isMobileInteraction() {
+    return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+  }
+
+  function _syncInteractionMode() {
+    const nextMode = _isMobileInteraction();
+    if (state.isMobileInteraction === nextMode) return;
+    state.isMobileInteraction = nextMode;
+    _closeSmartDatePopup();
+    refresh();
+  }
+
+  function _resetForNextEntry() {
+    flow.reset();
+    phase = 'input';
+    FeedbackBanner.clear(feedbackEl);
+    refresh();
+  }
+
+  function _finishSession() {
+    flow.reset();
+    phase = 'idle';
+    state.accountLocked = false;
+    FeedbackBanner.clear(feedbackEl);
+    _closeSmartDatePopup();
+    refresh();
+  }
+
+  function _goBackOneStep() {
+    const didGoBack = flow.back();
+    if (!didGoBack) return;
+    phase = 'input';
+    FeedbackBanner.clear(feedbackEl);
+    _closeSmartDatePopup();
+    refresh();
+  }
+
+  async function _saveCurrentReview() {
+    if (phase !== 'review') return;
+
+    phase = 'saving';
+    refresh();
+
+    const values = flow.getValues();
+    const result = await saveMovement(flow, state, feedbackEl);
+    if (result) {
+      const amount = values.amount || 0;
+      const cents = Math.round(Math.abs(amount) * 100);
+      sessionStats.count++;
+      sessionStats.totalCents += cents;
+      history.push({ movement: values.movement, date: values.date, type: values.type, amount });
+      phase = 'success';
+      _refreshAccountData();
+    } else {
+      phase = 'review';
+    }
+
+    refresh();
+  }
+
+  function _mountMobileDatePicker() {
+    const host = flowEl.querySelector('[data-qa-date-picker-host]');
+    if (!host) return;
+
+    const initialValue = host.dataset.value || new Date().toISOString().slice(0, 10);
+    const pickerField = DatePicker.createPickerField('Select date', initialValue, isoDate => {
+      host.dataset.value = isoDate;
+    });
+
+    host.replaceChildren(pickerField);
+    mobileDatePickerCleanup = pickerField._cleanup ?? null;
+  }
+
+  function _getActiveStepValue(step) {
+    if (!step) return '';
+
+    if (step.inputType === 'smart-date') {
+      const mobileDatePickerHost = flowEl.querySelector('[data-qa-date-picker-host]');
+      if (mobileDatePickerHost instanceof HTMLElement) {
+        return mobileDatePickerHost.dataset.value || '';
+      }
+
+      const smartDate = _getSmartDateEl();
+      return smartDate ? _smartDateIso(smartDate) : '';
+    }
+
+    if (step.inputType === 'type-toggle') {
+      return flowEl.querySelector('.ft-qa-type-toggle__btn--active')?.dataset.value || 'Expense';
+    }
+
+    if (step.inputType === 'filtered-select') {
+      const highlighted = flowEl.querySelector('.ft-qa-select-option--highlighted:not(.ft-qa-select-option--empty)');
+      return highlighted?.dataset.id || '';
+    }
+
+    return flowEl.querySelector('.ft-qa-prompt__input')?.value || '';
+  }
+
+  function _handleStepAction(action) {
+    if (action === 'back') {
+      _goBackOneStep();
+      return;
+    }
+
+    if (action === 'next') {
+      _advanceStep(_getActiveStepValue(flow.currentStep()));
+    }
   }
 
   /* ── Wire toolbar events ── */
@@ -447,12 +567,7 @@ async function initQuickAddPage(root = document) {
     if (e.ctrlKey && e.key === 'b') {
       e.preventDefault();
       if (phase === 'input' || phase === 'review') {
-        const didGoBack = flow.back();
-        if (didGoBack) {
-          phase = 'input';
-          FeedbackBanner.clear(feedbackEl);
-          refresh();
-        }
+        _goBackOneStep();
       }
       return;
     }
@@ -461,15 +576,10 @@ async function initQuickAddPage(root = document) {
     if (phase === 'success') {
       if (e.key === 'Enter') {
         e.preventDefault();
-        flow.reset();
-        phase = 'input';
-        FeedbackBanner.clear(feedbackEl);
-        refresh();
+        _resetForNextEntry();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        phase = 'idle';
-        state.accountLocked = false;
-        refresh();
+        _finishSession();
       }
       return;
     }
@@ -478,28 +588,10 @@ async function initQuickAddPage(root = document) {
     if (phase === 'review') {
       if (e.key === 'Enter') {
         e.preventDefault();
-        phase = 'saving';
-        const values = flow.getValues();
-        const result = await saveMovement(flow, state, feedbackEl);
-        if (result) {
-          const amount = values.amount || 0;
-          const cents = Math.round(Math.abs(amount) * 100);
-          sessionStats.count++;
-          sessionStats.totalCents += cents;
-          history.push({ movement: values.movement, date: values.date, type: values.type, amount });
-          phase = 'success';
-          // Refresh account data so balance card reflects the new movement
-          _refreshAccountData();
-        } else {
-          phase = 'review';
-        }
-        refresh();
+        await _saveCurrentReview();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        flow.reset();
-        phase = 'input';
-        FeedbackBanner.clear(feedbackEl);
-        refresh();
+        _resetForNextEntry();
       }
       return;
     }
@@ -512,6 +604,15 @@ async function initQuickAddPage(root = document) {
 
     /* Smart date: segment-based arrow key navigation */
     if (step.inputType === 'smart-date') {
+      const mobileDatePickerHost = flowEl.querySelector('[data-qa-date-picker-host]');
+      if (mobileDatePickerHost instanceof HTMLElement) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          _advanceStep(mobileDatePickerHost.dataset.value || '');
+        }
+        return;
+      }
+
       const popupEl = _getSmartDatePopupEl();
       if (popupEl && popupEl.contains(e.target)) {
         if (e.key === 'Escape') {
@@ -724,11 +825,35 @@ async function initQuickAddPage(root = document) {
   }
 
   /* ── Wire click on type/invoice toggle and select options ── */
-  flowEl.addEventListener('click', e => {
+  flowEl.addEventListener('click', async e => {
+    const action = e.target.closest('[data-qa-action]')?.dataset.qaAction;
+    if (action) {
+      if (action === 'save' && phase === 'review') {
+        await _saveCurrentReview();
+        return;
+      }
+      if (action === 'edit' && phase === 'review') {
+        _goBackOneStep();
+        return;
+      }
+      if (action === 'add-another' && phase === 'success') {
+        _resetForNextEntry();
+        return;
+      }
+      if (action === 'finish' && phase === 'success') {
+        _finishSession();
+        return;
+      }
+      if (phase === 'input') {
+        _handleStepAction(action);
+      }
+      return;
+    }
+
     const smartDate = e.target.closest('.ft-qa-smart-date');
     if (smartDate && phase === 'input') {
       const step = flow.currentStep();
-      if (step?.inputType === 'smart-date') {
+      if (step?.inputType === 'smart-date' && !state.isMobileInteraction) {
         const seg = e.target.closest('.ft-qa-smart-date__seg');
         if (seg) {
           const segIndex = Number.parseInt(seg.dataset.seg || '0', 10);
@@ -772,8 +897,24 @@ async function initQuickAddPage(root = document) {
     _closeSmartDatePopup();
   };
 
+  const routeCleanupHandler = () => {
+    setTimeout(() => {
+      if (window.location.hash === '#quick-add' && root.querySelector('.ft-quick-add-page')) return;
+      if (typeof mobileDatePickerCleanup === 'function') {
+        mobileDatePickerCleanup();
+        mobileDatePickerCleanup = null;
+      }
+      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener('click', outsideClickHandler);
+      window.removeEventListener('resize', _syncInteractionMode);
+      window.removeEventListener('hashchange', routeCleanupHandler);
+    }, 0);
+  };
+
   document.addEventListener('keydown', keyHandler);
   document.addEventListener('click', outsideClickHandler);
+  window.addEventListener('resize', _syncInteractionMode);
+  window.addEventListener('hashchange', routeCleanupHandler);
 
   /* ── Initial render ── */
   refresh();
