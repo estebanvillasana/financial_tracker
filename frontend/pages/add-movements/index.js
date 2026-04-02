@@ -34,6 +34,7 @@ import {
 import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';
 import { saveDrafts, saveDraftsImmediate, restoreDrafts } from './drafts.js';
 import { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handlePdfImport } from './actions.js';
+import { openDraftModal } from './draftMovementModal.js';
 
 /* ── State Refresh ────────────────────────────────────────────────────────── */
 
@@ -360,6 +361,33 @@ async function initAddMovementsPage(root = document) {
     getGridTheme,
     refreshSummaryState,
     renderFeedback: FeedbackBanner.render,
+    openDraftModal: ({ mode, row }) => {
+      openDraftModal(
+        { mode, row, state },
+        {
+          onSave: rowData => {
+            if (mode === 'add') {
+              const newRow = createDraftRow(rowData.type || state.draftType);
+              Object.assign(newRow, rowData);
+              state.gridApi.applyTransaction({ add: [newRow], addIndex: state.rows.length });
+              FeedbackBanner.render(feedbackEl, 'Draft movement added.', 'success');
+            } else {
+              state.gridApi.applyTransaction({ update: [{ ...row, ...rowData }] });
+              FeedbackBanner.render(feedbackEl, 'Draft movement updated.', 'success');
+            }
+            refreshSummaryState(state, domRefs);
+            requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+          },
+          onDelete: () => {
+            if (!row) return;
+            state.gridApi.applyTransaction({ remove: [row] });
+            FeedbackBanner.clear(feedbackEl);
+            refreshSummaryState(state, domRefs);
+            requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+          },
+        }
+      );
+    },
   });
 
   /* ── Restore draft rows into grid ── */

@@ -347,8 +347,8 @@ function buildGridOptions(state, domRefs, handlers) {
         suppressMovable: true,
         cellRenderer: params => {
           if (isAddRow(params.data)) return '';
-          return '<button type="button" class="ft-add-actions-btn" data-action="remove" aria-label="Remove row" title="Remove row">'
-            + '<span class="material-symbols-outlined" aria-hidden="true">close</span>'
+          return '<button type="button" class="ft-add-actions-btn" data-action="edit" aria-label="Edit row" title="Edit row">'
+            + '<span class="material-symbols-outlined" aria-hidden="true">edit</span>'
             + '</button>';
         },
       },
@@ -428,14 +428,20 @@ function buildGridOptions(state, domRefs, handlers) {
     },
 
     onCellClicked: params => {
+      /* Sentinel row on mobile → open add modal instead of inline editing */
+      if (isAddRow(params.data) && window.matchMedia('(max-width: 900px)').matches) {
+        params.api.stopEditing(true);
+        handlers.openDraftModal?.({ mode: 'add' });
+        return;
+      }
+
       if (['category_id', 'sub_category_id', 'repetitive_movement_id'].includes(params.colDef.field)) {
         params.api.startEditingCell({ rowIndex: params.rowIndex, colKey: params.column.getColId() });
       }
-      if (params.colDef.field === '__actions' && !isAddRow(params.data) && params.event?.target?.closest('[data-action="remove"]')) {
-        params.api.applyTransaction({ remove: [params.data] });
-        handlers.refreshSummaryState(state, domRefs);
-        handlers.renderFeedback(domRefs.feedbackEl, '');
-        requestAnimationFrame(() => applyRowTypeAttributes(params.api));
+
+      /* Edit button → open edit modal */
+      if (params.colDef.field === '__actions' && !isAddRow(params.data) && params.event?.target?.closest('[data-action="edit"]')) {
+        handlers.openDraftModal?.({ mode: 'edit', row: params.data });
       }
     },
 
