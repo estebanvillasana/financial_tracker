@@ -130,6 +130,7 @@ async function request(path, { method = 'GET', query, body, headers } = {}) {
     // Attempt to extract error message from API response
     const message =
       data?.detail?.[0]?.msg ||
+      (typeof data?.detail === 'string' ? data.detail : null) ||
       data?.message ||
       response.statusText ||
       'Request failed';

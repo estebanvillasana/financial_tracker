@@ -212,9 +212,9 @@ function wireEvents(state, domRefs, toolbarEl) {
       row.description = String(state.mobileDraft.description || '').trim();
       row.date = state.mobileDraft.date || row.date;
       row.amount = state.mobileDraft.amount === '' || state.mobileDraft.amount == null ? null : Number(state.mobileDraft.amount);
-      row.category_id = Number.isFinite(Number(state.mobileDraft.category_id)) ? Number(state.mobileDraft.category_id) : null;
-      row.sub_category_id = Number.isFinite(Number(state.mobileDraft.sub_category_id)) ? Number(state.mobileDraft.sub_category_id) : null;
-      row.repetitive_movement_id = Number.isFinite(Number(state.mobileDraft.repetitive_movement_id)) ? Number(state.mobileDraft.repetitive_movement_id) : null;
+      row.category_id = state.mobileDraft.category_id ? Number(state.mobileDraft.category_id) : null;
+      row.sub_category_id = state.mobileDraft.sub_category_id ? Number(state.mobileDraft.sub_category_id) : null;
+      row.repetitive_movement_id = state.mobileDraft.repetitive_movement_id ? Number(state.mobileDraft.repetitive_movement_id) : null;
 
       if (!row.movement) {
         FeedbackBanner.render(feedbackEl, 'Movement name is required.');

@@ -330,6 +330,28 @@ function buildGridOptions(state, domRefs, handlers) {
           highlightMatch: true,
         }),
       },
+
+      /* ── Actions (delete row) ── */
+      {
+        field: '__actions',
+        headerName: '',
+        width: 48,
+        minWidth: 48,
+        maxWidth: 48,
+        flex: 0,
+        pinned: 'right',
+        resizable: false,
+        editable: false,
+        sortable: false,
+        suppressHeaderMenuButton: true,
+        suppressMovable: true,
+        cellRenderer: params => {
+          if (isAddRow(params.data)) return '';
+          return '<button type="button" class="ft-add-actions-btn" data-action="remove" aria-label="Remove row" title="Remove row">'
+            + '<span class="material-symbols-outlined" aria-hidden="true">close</span>'
+            + '</button>';
+        },
+      },
     ],
 
     /* ── Right-Click Context Menu ── */
@@ -408,6 +430,12 @@ function buildGridOptions(state, domRefs, handlers) {
     onCellClicked: params => {
       if (['category_id', 'sub_category_id', 'repetitive_movement_id'].includes(params.colDef.field)) {
         params.api.startEditingCell({ rowIndex: params.rowIndex, colKey: params.column.getColId() });
+      }
+      if (params.colDef.field === '__actions' && !isAddRow(params.data) && params.event?.target?.closest('[data-action="remove"]')) {
+        params.api.applyTransaction({ remove: [params.data] });
+        handlers.refreshSummaryState(state, domRefs);
+        handlers.renderFeedback(domRefs.feedbackEl, '');
+        requestAnimationFrame(() => applyRowTypeAttributes(params.api));
       }
     },
 

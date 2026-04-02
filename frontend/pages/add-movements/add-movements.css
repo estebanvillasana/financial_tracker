@@ -559,6 +559,31 @@
   user-select: none;
 }
 
+/* ── Row delete button (actions column) ──────────────────── */
+
+.ft-add-actions-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--ft-radius-widget);
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.ft-add-actions-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.ft-add-actions-btn:hover {
+  background: var(--ft-color-danger-15);
+  color: var(--ft-color-danger);
+}
+
 @media (max-width: 900px) {
   .ft-add-movements-page {
     height: auto;
@@ -596,19 +621,6 @@
     justify-content: center;
   }
 
-  .ft-add-movements-mobile-entry {
-    display: flex;
-  }
-
-  .ft-add-movements-mobile-drafts {
-    display: flex;
-    flex-direction: column;
-  }
-
-  #widget-add-movements-grid {
-    display: none;
-  }
-
   .ft-add-movements-hints {
     display: none;
   }
@@ -629,18 +641,6 @@
 
   .ft-add-movements-balance-row {
     grid-template-columns: 1fr;
-  }
-
-  .ft-add-movements-mobile-form__row {
-    grid-template-columns: 1fr;
-  }
-
-  .ft-add-movements-mobile-form__actions {
-    flex-direction: column-reverse;
-  }
-
-  .ft-add-movements-mobile-form__actions .ft-btn {
-    flex-basis: auto;
   }
 
   .ft-add-movements-hints {

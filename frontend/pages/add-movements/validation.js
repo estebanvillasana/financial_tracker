@@ -24,6 +24,10 @@ function normalizeDraftRow(row, state, accountId) {
   const description = String(row?.description || '').trim();
   const categoryId = parseNumberOrNull(row?.category_id);
   const subCategoryId = parseNumberOrNull(row?.sub_category_id);
+  const rawRepetitiveId = parseNumberOrNull(row?.repetitive_movement_id);
+  const repetitiveId = rawRepetitiveId !== null && state.repetitiveMovements?.some(rm => Number(rm.id) === rawRepetitiveId)
+    ? rawRepetitiveId
+    : null;
 
   const errors = [];
   const errorFields = [];
@@ -32,6 +36,7 @@ function normalizeDraftRow(row, state, accountId) {
   if (!TYPE_VALUES.includes(type)) { errors.push('Type must be Income or Expense.'); errorFields.push('type'); }
   if (!isValidIsoDate(date)) { errors.push('Date must be YYYY-MM-DD.'); errorFields.push('date'); }
   if (!Number.isFinite(amount) || amount <= 0) { errors.push('Amount must be greater than 0.'); errorFields.push('amount'); }
+  if (!categoryId) { errors.push('Category is required.'); errorFields.push('category_id'); }
 
   const category = state.categories.find(item => Number(item.id) === Number(categoryId));
   if (categoryId !== null && !category) { errors.push('Category is invalid.'); errorFields.push('category_id'); }
@@ -62,7 +67,7 @@ function normalizeDraftRow(row, state, accountId) {
       date,
       category_id: categoryId,
       sub_category_id: subCategoryId,
-      repetitive_movement_id: parseNumberOrNull(row?.repetitive_movement_id),
+      repetitive_movement_id: repetitiveId,
       invoice: 0,
       active: 1,
     },
