@@ -6,9 +6,11 @@
  * - dynamic: choose count plus which fields vary across the copies
  */
 import { todayIso } from './constants.js';
+import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 
 let _overlay = null;
 let _keydownHandler = null;
+let _datePickerCleanups = [];
 
 const DUPLICATE_FIELDS = [
   { key: 'date', label: 'Date', kind: 'date' },
@@ -123,16 +125,8 @@ function _renderInputCell(state, modalState, copy, copyIndex, fieldKey) {
   if (!field) return '';
 
   if (field.kind === 'date') {
-    return `
-      <input
-        class="ft-duplicate-draft-modal__control"
-        type="date"
-        data-action="copy-field"
-        data-copy-index="${copyIndex}"
-        data-field-key="${fieldKey}"
-        value="${_esc(copy.date || '')}"
-      />
-    `;
+    // Return a placeholder span that will be replaced with DatePicker after render
+    return `<span class="ft-duplicate-draft-modal__date-picker-slot" data-copy-index="${copyIndex}" data-field-key="${fieldKey}"></span>`;
   }
 
   if (field.kind === 'number') {
@@ -260,6 +254,43 @@ function _renderCopiesTable(state, modalState) {
   `;
 }
 
+/**
+ * Replaces date picker placeholder slots with actual DatePicker instances.
+ * Called after _renderBody() to enhance date fields in the copies table.
+ */
+function _initDatePickers(overlay, state, modalState) {
+  // Clean up existing date picker instances
+  _datePickerCleanups.forEach(cleanup => cleanup());
+  _datePickerCleanups = [];
+
+  const slots = overlay.querySelectorAll('.ft-duplicate-draft-modal__date-picker-slot');
+  slots.forEach(slot => {
+    try {
+      const copyIndex = Number(slot.dataset.copyIndex);
+      const fieldKey = slot.dataset.fieldKey;
+      const copy = modalState.copies[copyIndex];
+      if (!copy) return;
+
+      const pickerField = DatePicker.createPickerField(
+        'Select date',
+        copy.date || '',
+        (isoDate) => {
+          copy.date = isoDate;
+          _setMessage('');
+        }
+      );
+
+      // Replace the placeholder span with the date picker
+      slot.replaceWith(pickerField);
+
+      // Track cleanup function
+      _datePickerCleanups.push(pickerField._cleanup);
+    } catch (error) {
+      console.error('[DuplicateDraftModal] Failed to initialize date picker:', error);
+    }
+  });
+}
+
 function _renderBody(overlay, state, modalState) {
   const title = modalState.mode === 'dynamic'
     ? 'Duplicate With Custom Fields'
@@ -384,6 +415,10 @@ function open({ mode = 'simple', row, state }, { onDuplicate } = {}) {
   const rerender = () => {
     _syncCopies(modalState);
     _renderBody(_overlay, state, modalState);
+    // Initialize date pickers after DOM is fully rendered
+    setTimeout(() => {
+      _initDatePickers(_overlay, state, modalState);
+    }, 0);
   };
 
   rerender();
@@ -483,6 +518,10 @@ function open({ mode = 'simple', row, state }, { onDuplicate } = {}) {
 }
 
 function close() {
+  // Clean up date picker instances
+  _datePickerCleanups.forEach(cleanup => cleanup());
+  _datePickerCleanups = [];
+  
   if (_keydownHandler) {
     document.removeEventListener('keydown', _keydownHandler);
     _keydownHandler = null;

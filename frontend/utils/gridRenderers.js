@@ -12,7 +12,16 @@ import { formatDateDisplay, formatMoneyFromCents, normalizeCurrency } from './fo
 /** Renders an ISO date as "06 Mar. 2026". */
 export function dateCellRenderer(params) {
   const formatted = formatDateDisplay(params.value ?? '');
-  return formatted ? `<span class="ft-grid-date">${formatted}</span>` : '';
+  if (!formatted) return '';
+  
+  // Check if date is in the future
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cellDate = new Date(`${params.value ?? ''}T00:00:00`);
+  const isFuture = cellDate > today;
+  
+  const futureIndicator = isFuture ? '<span class="ft-grid-date--future-indicator" aria-label="Future date"></span>' : '';
+  return `<span class="ft-grid-date">${formatted}${futureIndicator}</span>`;
 }
 
 /**

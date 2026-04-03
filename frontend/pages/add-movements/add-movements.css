@@ -811,7 +811,7 @@ body.ft-modal-open {
   flex-direction: column;
   max-height: min(88dvh, 820px);
   max-width: min(880px, calc(100vw - 24px));
-  overflow: hidden;
+  overflow: visible;
   transform: translateY(12px);
   transition: transform 180ms ease;
   width: 100%;
@@ -987,6 +987,30 @@ body.ft-modal-open {
 
 .ft-duplicate-draft-modal__table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.ft-duplicate-draft-modal__date-picker-slot {
+  display: block;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.ft-duplicate-draft-modal__date-picker-slot .ft-date-popup {
+  width: 100%;
+  pointer-events: auto;
+}
+
+.ft-duplicate-draft-modal__date-picker-slot .ft-date-popup__trigger {
+  width: 100%;
+  min-width: unset;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ft-duplicate-draft-modal__date-picker-slot .ft-date-popup__calendar {
+  position: fixed !important;
+  z-index: 10002;
+  pointer-events: auto;
 }
 
 .ft-duplicate-draft-modal__copy-label {

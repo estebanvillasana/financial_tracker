@@ -482,17 +482,32 @@ const DatePicker = (() => {
     popup.appendChild(picker);
 
     /* Positions the popup relative to the trigger using fixed coords,
-       so it escapes overflow:hidden/auto scroll containers (e.g. modals). */
+       avoiding clipping from ancestor overflow containers. */
     function _positionPopup() {
       const rect = trigger.getBoundingClientRect();
+      const pickerHeight = 320; // Approximate height of the calendar
       const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const buffer = 40; // Extra space for breathing room
+
       popup.style.left = `${rect.left}px`;
-      if (spaceBelow >= 320 || spaceBelow >= rect.top) {
+      popup.style.transform = ''; // Reset any previous transform
+
+      // Prefer showing below only if there's plenty of space
+      if (spaceBelow >= pickerHeight + buffer) {
         popup.style.top    = `${rect.bottom + 4}px`;
         popup.style.bottom = 'auto';
-      } else {
+      }
+      // Otherwise show above if there's enough space
+      else if (spaceAbove >= pickerHeight + buffer) {
         popup.style.top    = 'auto';
         popup.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+      }
+      // Not enough space - center on screen
+      else {
+        popup.style.top    = '50%';
+        popup.style.bottom = 'auto';
+        popup.style.transform = 'translateY(-50%)';
       }
     }
 
@@ -517,12 +532,15 @@ const DatePicker = (() => {
     /* Close when clicking outside — use AbortController so the caller can clean up. */
     const ac = new AbortController();
     document.addEventListener('click', e => {
-      if (!wrapper.contains(e.target)) popup.hidden = true;
+      if (!wrapper.contains(e.target) && !popup.contains(e.target)) popup.hidden = true;
     }, { signal: ac.signal });
 
     wrapper.appendChild(trigger);
     wrapper.appendChild(clearBtn);
-    wrapper.appendChild(popup);
+
+    /* Append popup to body to prevent clipping by ancestor overflow containers (e.g., modals).
+       This ensures position: fixed works correctly in scrollable contexts. */
+    document.body.appendChild(popup);
 
     /** Removes the document-level outside-click listener. Call on teardown. */
     wrapper._cleanup = () => ac.abort();
