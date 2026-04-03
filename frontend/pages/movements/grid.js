@@ -65,9 +65,10 @@ function createConvertedSumStatusPanel(rates, targetCurrency) {
  * @param {Function}    opts.onEdit          — called with a single row object to edit
  * @param {Function}    opts.onDelete        — called with a single row object to delete
  * @param {Function}    opts.onRestore       — called with a single row object to restore
+ * @param {Function}    opts.onDuplicate     — called with one or more row objects to duplicate
  * @param {Function}    opts.onShowGroup     — called with movement_code string
  */
-export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDelete, onRestore, onBulkRestore, onShowGroup }) {
+export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDelete, onRestore, onDuplicate, onBulkRestore, onShowGroup }) {
   const ConvertedSumStatusPanel = createConvertedSumStatusPanel(rates, targetCurrency);
 
   const gridOptions = buildGridOptions({
@@ -79,6 +80,23 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
     getRowId: p => String(p.data.id),
     cellSelection: true,
     suppressCellFocus: false,
+    rowSelection: {
+      mode: 'multiRow',
+      checkboxes: true,
+      headerCheckbox: true,
+      selectAll: 'filtered',
+      enableClickSelection: false,
+    },
+    selectionColumnDef: {
+      pinned: 'left',
+      width: 52,
+      minWidth: 52,
+      maxWidth: 52,
+      resizable: false,
+      sortable: false,
+      suppressHeaderMenuButton: true,
+      suppressMovable: true,
+    },
     pagination: true,
     paginationPageSize: 50,
     paginationPageSizeSelector: [25, 50, 100],
@@ -118,13 +136,19 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
       const row = params.node?.data;
       if (!row) return [];
 
-      const selected = getRangeSelectedRows(params.api);
+      const selected = getContextSelectedRows(params);
       const hasMultiSelection = selected.length > 1;
 
       const items = [];
 
       // Bulk actions when multiple rows are selected
       if (hasMultiSelection) {
+        items.push({
+          name: `Duplicate ${selected.length} selected`,
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">content_copy</span>',
+          action: () => onDuplicate?.(selected),
+        });
+
         const activeSelected = selected.filter(r => r.active === 1);
         const inactiveSelected = selected.filter(r => r.active === 0);
 
@@ -146,6 +170,12 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
       }
 
       // Single-row actions
+      items.push({
+        name: 'Duplicate to Drafts',
+        icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">content_copy</span>',
+        action: () => onDuplicate?.([row]),
+      });
+
       items.push({
         name: 'Edit',
         icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">edit</span>',
@@ -180,6 +210,7 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
       if (params.event.key !== 'Escape') return;
       if (typeof params.api.clearCellSelection === 'function') params.api.clearCellSelection();
       else if (typeof params.api.clearRangeSelection === 'function') params.api.clearRangeSelection();
+      if (typeof params.api.deselectAll === 'function') params.api.deselectAll();
       params.api.clearFocusedCell();
     },
   });
@@ -187,25 +218,20 @@ export function mountGrid(hostEl, state, { rates, targetCurrency, onEdit, onDele
   state.gridApi = agGrid.createGrid(hostEl, gridOptions);
 }
 
-function getRangeSelectedRows(api) {
-  if (!api || typeof api.getCellRanges !== 'function') return [];
-  const ranges = api.getCellRanges() || [];
-  if (!ranges.length) return [];
+function getContextSelectedRows(params) {
+  const row = params.node?.data;
+  if (!row) return [];
 
-  const selected = new Map();
-  ranges.forEach(range => {
-    const start = range.startRow?.rowIndex;
-    const end = range.endRow?.rowIndex;
-    if (start == null || end == null) return;
-    const lo = Math.min(start, end);
-    const hi = Math.max(start, end);
-    for (let i = lo; i <= hi; i += 1) {
-      const node = api.getDisplayedRowAtIndex(i);
-      if (node?.data) selected.set(node.id ?? String(i), node.data);
-    }
-  });
+  const selectedRows = typeof params.api?.getSelectedRows === 'function'
+    ? params.api.getSelectedRows()
+    : [];
 
-  return Array.from(selected.values());
+  if (!selectedRows.length) return [row];
+
+  const clickedRowId = String(row.id);
+  const clickedRowIsSelected = selectedRows.some(item => String(item?.id) === clickedRowId);
+
+  return clickedRowIsSelected ? selectedRows : [row];
 }
 
 /** Replace grid data in-place. */

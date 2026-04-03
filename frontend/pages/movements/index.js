@@ -12,6 +12,8 @@ import { MovementModal } from '../../components/modals/movementModal/movementMod
 import { DatePicker } from '../../components/dumb/datePicker/datePicker.js';
 import { getMainCurrency } from '../../appSettings.js';
 import { normalizeCurrency } from '../../utils/formatters.js';
+import { createDraftRow } from '../add-movements/constants.js';
+import { restoreDrafts, saveDraftsImmediate } from '../add-movements/drafts.js';
 import { mountGrid, refreshGridData, applyExternalFilter } from './grid.js';
 import { fetchMovements, updateMovement, softDeleteMovement, restoreMovement } from './actions.js';
 
@@ -25,6 +27,25 @@ const DEFAULT_LIMIT = 500;
  * init to prevent accumulation across SPA navigations.
  */
 let _pickerCleanup = null;
+
+function isMoneyTransferMovement(row) {
+  return String(row?.movement_code ?? '').toUpperCase().startsWith('MT');
+}
+
+function buildDuplicateDraftRow(movement) {
+  const row = createDraftRow(movement?.type || 'Expense');
+  row.movement = String(movement?.movement || '').trim();
+  row.description = String(movement?.description || '').trim();
+  row.type = movement?.type || row.type;
+  row.date = movement?.date || row.date;
+
+  const cents = Number(movement?.value);
+  row.amount = Number.isFinite(cents) ? Math.abs(cents) / 100 : null;
+  row.category_id = movement?.category_id ?? null;
+  row.sub_category_id = movement?.sub_category_id ?? null;
+  row.repetitive_movement_id = movement?.repetitive_movement_id ?? null;
+  return row;
+}
 
 /* ── Page Init ────────────────────────────────────────────── */
 
@@ -137,6 +158,7 @@ async function initMovementsPage(root = document) {
     rates: state.rates,
     targetCurrency: normalizeCurrency(getMainCurrency()),
     onEdit: handleEdit,
+    onDuplicate: handleDuplicateToDrafts,
     onDelete: rowOrRows => handleBulkDelete(Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows]),
     onRestore: handleRestore,
     onBulkRestore: handleBulkRestore,
@@ -406,6 +428,95 @@ async function initMovementsPage(root = document) {
         setTimeout(() => FeedbackBanner.clear(feedbackEl), 3000);
       },
     });
+  }
+
+  function handleDuplicateToDrafts(rows) {
+    const sourceRows = Array.isArray(rows) ? rows.filter(Boolean) : [];
+    if (!sourceRows.length) {
+      FeedbackBanner.render(feedbackEl, 'Select at least one movement to duplicate.');
+      return;
+    }
+
+    const transferRows = sourceRows.filter(isMoneyTransferMovement);
+    if (transferRows.length > 0) {
+      FeedbackBanner.render(
+        feedbackEl,
+        transferRows.length === 1
+          ? 'Money transfers cannot be duplicated into Add Movements. Use the Transfers tab for that flow.'
+          : 'Money transfers cannot be duplicated into Add Movements. Remove transfer rows from the selection and try again.',
+      );
+      return;
+    }
+
+    const accountIds = Array.from(new Set(
+      sourceRows
+        .map(row => Number(row?.account_id))
+        .filter(Number.isFinite),
+    ));
+
+    if (accountIds.length !== 1) {
+      FeedbackBanner.render(
+        feedbackEl,
+        'Selected movements must belong to the same account before they can be sent to Add Movements.',
+      );
+      return;
+    }
+
+    const duplicatedRows = sourceRows
+      .map(buildDuplicateDraftRow)
+      .filter(row => row.movement);
+
+    if (!duplicatedRows.length) {
+      FeedbackBanner.render(feedbackEl, 'Nothing to duplicate from the selected movements.');
+      return;
+    }
+
+    const targetAccountId = accountIds[0];
+    const savedDrafts = restoreDrafts();
+    const hasOtherAccountDrafts = savedDrafts &&
+      Number(savedDrafts.accountId) !== targetAccountId &&
+      (savedDrafts.rows.length > 0 || Object.keys(savedDrafts.actualBalances || {}).length > 0);
+
+    const commitDraftsToStorage = (replaceExisting) => {
+      const currentDrafts = replaceExisting ? null : restoreDrafts();
+      const nextRows = replaceExisting
+        ? duplicatedRows
+        : [...(currentDrafts?.rows || []), ...duplicatedRows];
+      const nextDraftType = replaceExisting
+        ? (duplicatedRows[0]?.type || 'Expense')
+        : (currentDrafts?.draftType || duplicatedRows[0]?.type || 'Expense');
+      const nextActualBalances = replaceExisting ? {} : (currentDrafts?.actualBalances || {});
+
+      saveDraftsImmediate({
+        selectedAccountId: targetAccountId,
+        draftType: nextDraftType,
+        rows: nextRows,
+        actualBalances: nextActualBalances,
+      });
+
+      window.location.hash = 'add-movements';
+    };
+
+    if (hasOtherAccountDrafts) {
+      FeedbackBanner.renderWithActions(
+        feedbackEl,
+        `Replace unsaved add-movements drafts for another account with <b>${duplicatedRows.length}</b> duplicated movement${duplicatedRows.length === 1 ? '' : 's'}?`,
+        [
+          {
+            label: 'Replace Drafts',
+            className: 'ft-feedback-banner__btn--danger',
+            onClick: () => commitDraftsToStorage(true),
+          },
+          {
+            label: 'Cancel',
+            onClick: () => FeedbackBanner.clear(feedbackEl),
+          },
+        ],
+      );
+      return;
+    }
+
+    commitDraftsToStorage(false);
   }
 
   /* ── Bulk Delete ──────────────────────────────────────────── */
