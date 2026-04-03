@@ -176,56 +176,58 @@ const SideBarMenu = (() => {
 
     _closeNotePopup();
 
-    const popup = document.createElement('div');
-    popup.className = 'ft-nav-note-popup';
-    popup.id = 'ft-nav-note-popup';
-    popup.setAttribute('role', 'dialog');
-    popup.setAttribute('aria-modal', 'false');
-    popup.setAttribute('aria-label', note.label || 'Note');
+    // Create backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ft-modal-backdrop ft-nav-note-backdrop';
+    backdrop.id = 'ft-nav-note-backdrop';
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'ft-nav-note-modal';
+    modal.id = 'ft-nav-note-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', note.label || 'Note');
 
     const contentHtml = _escapeHtml(note.content).replace(/\n/g, '<br>');
-    popup.innerHTML = `
-      <div class="ft-nav-note-popup__header">
-        <span class="ft-nav-note-popup__title">${_escapeHtml(note.label)}</span>
-        <button class="ft-nav-note-popup__close" type="button" aria-label="Close note">
+    modal.innerHTML = `
+      <div class="ft-nav-note-modal__header">
+        <h2 class="ft-nav-note-modal__title">${_escapeHtml(note.label)}</h2>
+        <button class="ft-nav-note-modal__close" type="button" aria-label="Close note">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </div>
-      <p class="ft-nav-note-popup__content">${contentHtml}</p>`;
+      <div class="ft-nav-note-modal__body">
+        <p class="ft-nav-note-modal__content">${contentHtml}</p>
+      </div>`;
 
-    document.body.appendChild(popup);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
 
-    // Position: to the right of the nav on desktop, centered on mobile
-    if (_isMobileViewport()) {
-      popup.classList.add('ft-nav-note-popup--mobile');
-    } else {
-      const navEl = document.getElementById('ft-nav');
-      const navRect = navEl ? navEl.getBoundingClientRect() : { right: 56 };
-      const anchorRect = anchorEl.getBoundingClientRect();
-      const top = Math.min(anchorRect.top, window.innerHeight - 200);
-      popup.style.top = `${Math.max(8, top)}px`;
-      popup.style.left = `${navRect.right + 8}px`;
-    }
+    // Event listeners
+    modal.querySelector('.ft-nav-note-modal__close').addEventListener('click', _closeNotePopup);
+    backdrop.addEventListener('click', _onNoteBackdropClick);
 
-    popup.querySelector('.ft-nav-note-popup__close').addEventListener('click', _closeNotePopup);
+    // Close on Escape
+    document.addEventListener('keydown', _onNoteKeydown);
 
-    // Close on outside click (deferred so this click doesn't immediately close it)
-    setTimeout(() => {
-      document.addEventListener('click', _onOutsideNoteClick);
-      document.addEventListener('keydown', _onNoteKeydown);
-    }, 0);
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
   }
 
   function _closeNotePopup() {
-    const existing = document.getElementById('ft-nav-note-popup');
-    if (existing) existing.remove();
-    document.removeEventListener('click', _onOutsideNoteClick);
+    const backdrop = document.getElementById('ft-nav-note-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+      document.body.style.overflow = '';
+    }
     document.removeEventListener('keydown', _onNoteKeydown);
   }
 
-  function _onOutsideNoteClick(event) {
-    const popup = document.getElementById('ft-nav-note-popup');
-    if (popup && !popup.contains(event.target)) {
+  function _onNoteBackdropClick(event) {
+    // Only close if clicking the backdrop itself, not the modal
+    const modal = document.getElementById('ft-nav-note-modal');
+    if (modal && !modal.contains(event.target)) {
       _closeNotePopup();
     }
   }
