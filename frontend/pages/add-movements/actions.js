@@ -16,6 +16,7 @@ import { saveDraftsImmediate, clearDrafts } from './drafts.js';
 import { FeedbackBanner } from '../../components/dumb/feedbackBanner/feedbackBanner.js';
 import { BulkAddModal } from '../../components/modals/bulkAddModal/bulkAddModal.js';
 import { PdfImportModal } from '../../components/modals/pdfImportModal/pdfImportModal.js';
+import { openDuplicateDraftModal } from './duplicateDraftModal.js';
 import {
   updateHeaderButtons,
   renderBalanceCards,
@@ -253,6 +254,69 @@ function handleBulkAdd(state, domRefs, refreshSummaryState) {
   );
 }
 
+/* ── Draft Duplication ────────────────────────────────────────────────────── */
+
+function _insertDraftRows(state, domRefs, refreshSummaryState, sourceRowId, rowIndex, rows) {
+  if (!state.gridApi || !Array.isArray(rows) || rows.length === 0) return;
+
+  const sourceIndex = Number.isInteger(rowIndex)
+    ? rowIndex
+    : state.rows.findIndex(item => item._id === sourceRowId);
+
+  const addIndex = sourceIndex >= 0 ? sourceIndex + 1 : state.rows.length;
+
+  const newRows = rows.map(data => {
+    const row = createDraftRow(data.type || state.draftType);
+    row.movement = data.movement || '';
+    row.description = data.description || '';
+    row.type = data.type || state.draftType;
+    row.date = data.date || row.date;
+    row.amount = data.amount ?? null;
+    row.category_id = data.category_id ?? null;
+    row.sub_category_id = data.sub_category_id ?? null;
+    row.repetitive_movement_id = data.repetitive_movement_id ?? null;
+    return row;
+  });
+
+  state.gridApi.applyTransaction({
+    add: newRows,
+    addIndex,
+  });
+
+  syncRowsFromGrid(state);
+  refreshSummaryState(state, domRefs);
+  requestAnimationFrame(() => applyRowTypeAttributes(state.gridApi));
+}
+
+function handleDuplicateRow({ mode = 'simple', row, rowIndex }, state, domRefs, refreshSummaryState) {
+  if (!row || isAddRow(row)) return;
+
+  openDuplicateDraftModal(
+    { mode, row, state },
+    {
+      onDuplicate: duplicatedRows => {
+        if (!duplicatedRows?.length) return;
+
+        _insertDraftRows(state, domRefs, refreshSummaryState, row._id, rowIndex, duplicatedRows);
+
+        const copyCount = duplicatedRows.length;
+        const isDynamic = mode === 'dynamic';
+        FeedbackBanner.render(
+          domRefs.feedbackEl,
+          isDynamic
+            ? `Added ${copyCount} customized duplicate${copyCount === 1 ? '' : 's'} to the draft grid.`
+            : `Added ${copyCount} duplicate${copyCount === 1 ? '' : 's'} to the draft grid.`,
+          'success',
+        );
+        setTimeout(() => {
+          const current = domRefs.feedbackEl?.querySelector('.ft-feedback-banner--success');
+          if (current) FeedbackBanner.clear(domRefs.feedbackEl);
+        }, 4000);
+      },
+    },
+  );
+}
+
 /* ── PDF Import ────────────────────────────────────────────────────────────── */
 
 /**
@@ -303,4 +367,4 @@ function handlePdfImport(state, domRefs, refreshSummaryState) {
   );
 }
 
-export { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handlePdfImport };
+export { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handleDuplicateRow, handlePdfImport };

@@ -431,6 +431,29 @@ function buildGridOptions(state, domRefs, handlers) {
       const targetType = currentType === 'Expense' ? 'Income' : 'Expense';
       return [
         {
+          name: 'Duplicate row...',
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">content_copy</span>',
+          action: () => {
+            handlers.duplicateRow?.({
+              mode: 'simple',
+              row: params.node.data,
+              rowIndex: params.node.rowIndex,
+            });
+          },
+        },
+        {
+          name: 'Duplicate with custom fields...',
+          icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">tune</span>',
+          action: () => {
+            handlers.duplicateRow?.({
+              mode: 'dynamic',
+              row: params.node.data,
+              rowIndex: params.node.rowIndex,
+            });
+          },
+        },
+        'separator',
+        {
           name: `Change to ${targetType}`,
           icon: '<span class="material-symbols-outlined" style="font-size:14px;line-height:1;vertical-align:middle">swap_vert</span>',
           action: () => {

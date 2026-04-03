@@ -33,7 +33,7 @@ import {
 } from './render.js';
 import { commitSentinelRow, syncRowsFromGrid, mountGrid, applyRowTypeAttributes } from './grid.js';
 import { saveDrafts, saveDraftsImmediate, restoreDrafts } from './drafts.js';
-import { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handlePdfImport } from './actions.js';
+import { commitDrafts, requestDiscard, handleAccountChange, handleBulkAdd, handleDuplicateRow, handlePdfImport } from './actions.js';
 import { openDraftModal } from './draftMovementModal.js';
 
 /* ── State Refresh ────────────────────────────────────────────────────────── */
@@ -361,6 +361,9 @@ async function initAddMovementsPage(root = document) {
     getGridTheme,
     refreshSummaryState,
     renderFeedback: FeedbackBanner.render,
+    duplicateRow: duplicateArgs => {
+      handleDuplicateRow(duplicateArgs, state, domRefs, refreshSummaryState);
+    },
     openDraftModal: ({ mode, row }) => {
       openDraftModal(
         { mode, row, state },
