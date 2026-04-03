@@ -47,6 +47,75 @@ function isInlineEditorTarget(target) {
   return Boolean(target.closest('input, textarea, [contenteditable="true"], .ag-cell-inline-editing'));
 }
 
+function shiftIsoDateByDays(isoDate, deltaDays) {
+  const parsed = parseDateToIso(isoDate);
+  const base = parsed || new Date().toISOString().slice(0, 10);
+  const [year, month, day] = String(base).split('-').map(Number);
+  const shifted = new Date(year, (month || 1) - 1, day || 1);
+  shifted.setDate(shifted.getDate() + deltaDays);
+
+  const yyyy = String(shifted.getFullYear());
+  const mm = String(shifted.getMonth() + 1).padStart(2, '0');
+  const dd = String(shifted.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function copyValueFromRowAbove(params, state, domRefs, handlers) {
+  const rowIndex = params?.rowIndex;
+  const colId = params?.column?.getColId?.();
+  if (!Number.isInteger(rowIndex) || !colId || rowIndex <= 0) return false;
+
+  const sourceNode = params.api.getDisplayedRowAtIndex(rowIndex - 1);
+  const targetNode = params.node;
+  if (!sourceNode?.data || !targetNode?.data || isAddRow(sourceNode.data)) return false;
+
+  targetNode.data[colId] = sourceNode.data[colId];
+
+  if (colId === 'category_id') {
+    const subCategory = state.subCategories.find(item => Number(item.id) === Number(targetNode.data?.sub_category_id));
+    if (subCategory && Number(subCategory.category_id) !== Number(targetNode.data?.category_id)) {
+      targetNode.data.sub_category_id = null;
+    }
+  }
+
+  params.api.applyTransaction({ update: [targetNode.data] });
+  params.api.refreshCells({ force: true, rowNodes: [targetNode] });
+  handlers.refreshSummaryState(state, domRefs);
+  handlers.renderFeedback(domRefs.feedbackEl, '');
+  requestAnimationFrame(() => applyRowTypeAttributes(params.api));
+  return true;
+}
+
+function shiftFocusedDateCell(params, state, domRefs, handlers, deltaDays) {
+  const colId = params?.column?.getColId?.();
+  const targetNode = params?.node;
+  if (colId !== 'date' || !targetNode?.data) return false;
+
+  targetNode.data.date = shiftIsoDateByDays(targetNode.data.date, deltaDays);
+  params.api.applyTransaction({ update: [targetNode.data] });
+  params.api.refreshCells({ force: true, rowNodes: [targetNode] });
+
+  if (isAddRow(targetNode.data) && hasUserData(targetNode.data)) {
+    const rowIndex = Number.isInteger(params.rowIndex) ? params.rowIndex : null;
+    requestAnimationFrame(() => {
+      commitSentinelRow(state);
+      handlers.refreshSummaryState(state, domRefs);
+      applyRowTypeAttributes(params.api);
+      if (rowIndex !== null) {
+        const count = params.api.getDisplayedRowCount();
+        const focusRow = Math.min(rowIndex, Math.max(count - 2, 0));
+        params.api.setFocusedCell(focusRow, 'date');
+      }
+    });
+    return true;
+  }
+
+  handlers.refreshSummaryState(state, domRefs);
+  handlers.renderFeedback(domRefs.feedbackEl, '');
+  requestAnimationFrame(() => applyRowTypeAttributes(params.api));
+  return true;
+}
+
 /* ── Sentinel Row Logic ───────────────────────────────────────────────────── */
 
 function commitSentinelRow(state) {
@@ -462,6 +531,35 @@ function buildGridOptions(state, domRefs, handlers) {
         params.api.clearFocusedCell();
         return;
       }
+
+      if (
+        params.event.altKey &&
+        !params.event.ctrlKey &&
+        !params.event.metaKey &&
+        !params.event.shiftKey
+      ) {
+        const lowerKey = String(params.event.key || '').toLowerCase();
+        if (lowerKey === 'a' || lowerKey === 's') {
+          params.event.preventDefault();
+          params.event.stopPropagation();
+          shiftFocusedDateCell(params, state, domRefs, handlers, lowerKey === 's' ? 1 : -1);
+          return;
+        }
+      }
+
+      if (
+        params.event.ctrlKey &&
+        !params.event.altKey &&
+        !params.event.metaKey &&
+        !params.event.shiftKey &&
+        String(params.event.key || '').toLowerCase() === 'd'
+      ) {
+        params.event.preventDefault();
+        params.event.stopPropagation();
+        copyValueFromRowAbove(params, state, domRefs, handlers);
+        return;
+      }
+
       if (!isAddRow(params.data) || params.event.key !== 'Enter') return;
       if (isPopupEditorOpen()) return;
 

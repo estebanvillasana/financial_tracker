@@ -76,6 +76,14 @@ const DatePicker = (() => {
     return `${year}-${mm}-${dd}`;
   }
 
+  /** Adds or subtracts whole days from an ISO date string. */
+  function _shiftIsoDate(isoDate, deltaDays) {
+    const { year, month, day } = _parseIso(isoDate);
+    const shifted = new Date(year, month, day);
+    shifted.setDate(shifted.getDate() + deltaDays);
+    return _toIso(shifted.getFullYear(), shifted.getMonth(), shifted.getDate());
+  }
+
   /**
    * Builds a 6-row × 7-column grid of day objects for a given month.
    * Each day: { year, month (0-based), day, isOutside, isToday, iso }.
@@ -203,13 +211,13 @@ const DatePicker = (() => {
       root.innerHTML = _buildCalendarHTML(viewYear, viewMonth, selectedIso);
     }
 
-    function _selectDate(isoDate) {
+    function _selectDate(isoDate, reason = 'select') {
       selectedIso = isoDate;
       const parsed = _parseIso(selectedIso);
       viewYear = parsed.year;
       viewMonth = parsed.month;
       _refresh();
-      if (typeof options.onChange === 'function') options.onChange(selectedIso);
+      if (typeof options.onChange === 'function') options.onChange(selectedIso, { reason });
     }
 
     /* ── Event delegation ── */
@@ -232,25 +240,43 @@ const DatePicker = (() => {
       const dayBtn = event.target.closest('.ft-date-picker__day');
       if (dayBtn && dayBtn.dataset.date) {
         event.stopPropagation();
-        _selectDate(dayBtn.dataset.date);
+        _selectDate(dayBtn.dataset.date, 'select');
         return;
       }
 
       const todayBtn = event.target.closest('.ft-date-picker__today-btn');
       if (todayBtn) {
         event.stopPropagation();
-        _selectDate(_todayIso());
+        _selectDate(_todayIso(), 'today');
       }
     });
 
     /* Keyboard nav: arrow keys move between days, Enter/Space selects */
     root.addEventListener('keydown', event => {
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        const lowerKey = String(event.key || '').toLowerCase();
+        if (lowerKey === 'a' || lowerKey === 's') {
+          event.preventDefault();
+          event.stopPropagation();
+          const baseIso = selectedIso || _todayIso();
+          const delta = lowerKey === 's' ? 1 : -1;
+          _selectDate(_shiftIsoDate(baseIso, delta), 'step');
+
+          requestAnimationFrame(() => {
+            const target = root.querySelector(`.ft-date-picker__day[data-date="${selectedIso}"]`) ||
+              root.querySelector('.ft-date-picker__day[data-selected]');
+            target?.focus();
+          });
+          return;
+        }
+      }
+
       if (['Enter', ' '].includes(event.key)) {
         const focused = event.target.closest('.ft-date-picker__day') || root.querySelector('.ft-date-picker__day:focus');
         if (!focused?.dataset.date) return;
         event.preventDefault();
         event.stopPropagation();
-        _selectDate(focused.dataset.date);
+        _selectDate(focused.dataset.date, 'select');
         return;
       }
 
@@ -359,8 +385,9 @@ const DatePicker = (() => {
         this._el = createElement(
           { value: this._value },
           {
-            onChange: (isoDate) => {
+            onChange: (isoDate, meta = {}) => {
               this._value = isoDate;
+              if (meta.reason === 'step') return;
               this._closeEditor();
             },
           }
@@ -444,10 +471,10 @@ const DatePicker = (() => {
     const picker = createElement(
       { value: currentValue },
       {
-        onChange: isoDate => {
+        onChange: (isoDate, meta = {}) => {
           currentValue = isoDate;
           _refresh();
-          popup.hidden = true;
+          if (meta.reason !== 'step') popup.hidden = true;
           onChange?.(currentValue);
         },
       }
