@@ -1,4 +1,6 @@
-﻿// sideBarMenu.js — Dumb sidebar navigation component
+// sideBarMenu.js — Dumb sidebar navigation component
+
+import { fetchCustomLinks } from '../../../services/customLinks.js';
 
 const SideBarMenu = (() => {
   const MOBILE_BREAKPOINT = 900;
@@ -26,9 +28,17 @@ const SideBarMenu = (() => {
       { code: 'gel', codePlusSymbol: '₾ GEL' },
     ]);
   let _globalHandlersBound = false;
+  let _notesMap = {}; // id -> { label, content }
 
   function _escapeAttr(value) {
     return String(value ?? '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function _escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   function _isMobileViewport() {
@@ -38,6 +48,193 @@ const SideBarMenu = (() => {
   function _getLabelForPage(page) {
     return NAV_ITEMS.find(item => item.page === page)?.label || 'Navigation';
   }
+
+  // ── Custom Links ───────────────────────────────────────
+
+  function _buildNoteMap(data) {
+    _notesMap = {};
+    if (!data) return;
+    const all = [...(data.ungrouped || [])];
+    (data.groups || []).forEach(g => all.push(...(g.items || [])));
+    all.forEach(item => {
+      if (item.type === 'note') {
+        _notesMap[item.id] = { label: item.label || '', content: item.content || '' };
+      }
+    });
+  }
+
+  function _buildItemHtml(item) {
+    const icon = _escapeHtml(item.icon || 'link');
+    const label = _escapeHtml(item.label || '');
+    const safeAttrLabel = _escapeAttr(item.label || '');
+
+    if (item.type === 'note') {
+      return `
+        <li class="ft-nav__links-item" data-tooltip="${safeAttrLabel}">
+          <button class="ft-nav__links-btn ft-nav__links-btn--note" type="button"
+                  data-ql-note-id="${_escapeAttr(item.id)}" aria-label="${safeAttrLabel}">
+            <span class="material-symbols-outlined ft-nav__links-item-icon" aria-hidden="true">${icon}</span>
+            <span class="ft-nav__links-item-label">${label}</span>
+          </button>
+        </li>`;
+    }
+
+    const url = _escapeAttr(item.url || '#');
+    return `
+      <li class="ft-nav__links-item" data-tooltip="${safeAttrLabel}">
+        <a class="ft-nav__links-btn ft-nav__links-btn--link" href="${url}"
+           target="_blank" rel="noopener noreferrer" aria-label="${safeAttrLabel}">
+          <span class="material-symbols-outlined ft-nav__links-item-icon" aria-hidden="true">${icon}</span>
+          <span class="ft-nav__links-item-label">${label}</span>
+        </a>
+      </li>`;
+  }
+
+  function _buildCustomLinksHTML(data) {
+    if (!data) return '';
+    const { groups = [], ungrouped = [] } = data;
+    if (!groups.length && !ungrouped.length) return '';
+
+    const groupsHtml = groups.map(group => {
+      const id = _escapeAttr(group.id || '');
+      const label = _escapeHtml(group.label || 'Group');
+      const safeAttrLabel = _escapeAttr(group.label || 'Group');
+      const itemsHtml = (group.items || []).map(_buildItemHtml).join('');
+      return `
+        <div class="ft-nav__links-group" data-ql-group-id="${id}">
+          <button class="ft-nav__links-group-btn" type="button"
+                  data-tooltip="${safeAttrLabel}" aria-expanded="true">
+            <span class="material-symbols-outlined ft-nav__links-group-icon" aria-hidden="true">folder</span>
+            <span class="ft-nav__links-group-label">${label}</span>
+            <span class="material-symbols-outlined ft-nav__links-group-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <ul class="ft-nav__links-list" role="list">${itemsHtml}</ul>
+        </div>`;
+    }).join('');
+
+    const ungroupedHtml = ungrouped.length
+      ? `<ul class="ft-nav__links-list ft-nav__links-list--root" role="list">
+           ${ungrouped.map(_buildItemHtml).join('')}
+         </ul>`
+      : '';
+
+    return `
+      <div class="ft-nav__links-header" data-tooltip="Quick Links">
+        <span class="material-symbols-outlined ft-nav__links-header-icon" aria-hidden="true">bookmarks</span>
+        <span class="ft-nav__links-header-label">Quick Links</span>
+      </div>
+      ${groupsHtml}
+      ${ungroupedHtml}`;
+  }
+
+  function _renderCustomLinks(data) {
+    const el = document.getElementById('ft-nav-links');
+    if (!el) return;
+
+    const html = _buildCustomLinksHTML(data);
+    if (!html) {
+      el.hidden = true;
+      return;
+    }
+
+    el.innerHTML = html;
+    el.hidden = false;
+    _bindCustomLinksHandlers();
+  }
+
+  function _bindCustomLinksHandlers() {
+    // Group toggle — only in expanded mode
+    document.querySelectorAll('.ft-nav__links-group-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (document.getElementById('ft-nav')?.classList.contains('ft-nav--collapsed')) return;
+        const group = btn.closest('.ft-nav__links-group');
+        if (!group) return;
+        const isExpanded = btn.getAttribute('aria-expanded') !== 'false';
+        btn.setAttribute('aria-expanded', String(!isExpanded));
+        group.dataset.collapsed = String(isExpanded);
+      });
+    });
+
+    // Note popups
+    document.querySelectorAll('.ft-nav__links-btn--note').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = btn.dataset.qlNoteId;
+        if (_isMobileViewport()) {
+          _closeMobileDrawer();
+        }
+        _showNotePopup(id, btn);
+      });
+    });
+  }
+
+  // ── Note Popup ─────────────────────────────────────────
+
+  function _showNotePopup(id, anchorEl) {
+    const note = _notesMap[id];
+    if (!note) return;
+
+    _closeNotePopup();
+
+    const popup = document.createElement('div');
+    popup.className = 'ft-nav-note-popup';
+    popup.id = 'ft-nav-note-popup';
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'false');
+    popup.setAttribute('aria-label', note.label || 'Note');
+
+    const contentHtml = _escapeHtml(note.content).replace(/\n/g, '<br>');
+    popup.innerHTML = `
+      <div class="ft-nav-note-popup__header">
+        <span class="ft-nav-note-popup__title">${_escapeHtml(note.label)}</span>
+        <button class="ft-nav-note-popup__close" type="button" aria-label="Close note">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <p class="ft-nav-note-popup__content">${contentHtml}</p>`;
+
+    document.body.appendChild(popup);
+
+    // Position: to the right of the nav on desktop, centered on mobile
+    if (_isMobileViewport()) {
+      popup.classList.add('ft-nav-note-popup--mobile');
+    } else {
+      const navEl = document.getElementById('ft-nav');
+      const navRect = navEl ? navEl.getBoundingClientRect() : { right: 56 };
+      const anchorRect = anchorEl.getBoundingClientRect();
+      const top = Math.min(anchorRect.top, window.innerHeight - 200);
+      popup.style.top = `${Math.max(8, top)}px`;
+      popup.style.left = `${navRect.right + 8}px`;
+    }
+
+    popup.querySelector('.ft-nav-note-popup__close').addEventListener('click', _closeNotePopup);
+
+    // Close on outside click (deferred so this click doesn't immediately close it)
+    setTimeout(() => {
+      document.addEventListener('click', _onOutsideNoteClick);
+      document.addEventListener('keydown', _onNoteKeydown);
+    }, 0);
+  }
+
+  function _closeNotePopup() {
+    const existing = document.getElementById('ft-nav-note-popup');
+    if (existing) existing.remove();
+    document.removeEventListener('click', _onOutsideNoteClick);
+    document.removeEventListener('keydown', _onNoteKeydown);
+  }
+
+  function _onOutsideNoteClick(event) {
+    const popup = document.getElementById('ft-nav-note-popup');
+    if (popup && !popup.contains(event.target)) {
+      _closeNotePopup();
+    }
+  }
+
+  function _onNoteKeydown(event) {
+    if (event.key === 'Escape') _closeNotePopup();
+  }
+
+  // ── HTML Builder ───────────────────────────────────────
 
   function _buildHTML(currencies, currentCurrency, userName) {
     const current = (currentCurrency || 'usd').toLowerCase();
@@ -108,6 +305,8 @@ const SideBarMenu = (() => {
               </div>
             </li>
           </ul>
+
+          <div class="ft-nav__links" id="ft-nav-links" hidden></div>
 
           <div class="ft-nav__footer">
             ${userTag}
@@ -192,6 +391,7 @@ const SideBarMenu = (() => {
     window.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
         _closeMobileDrawer();
+        _closeNotePopup();
       }
     });
   }
@@ -259,6 +459,14 @@ const SideBarMenu = (() => {
     _bindGlobalHandlers();
     _restoreState();
     _setMobilePageLabel(window.location.hash.replace('#', '').trim() || 'dashboard');
+
+    // Load and render custom links (non-blocking — failure is silent)
+    fetchCustomLinks()
+      .then(data => {
+        _buildNoteMap(data);
+        _renderCustomLinks(data);
+      })
+      .catch(() => {/* custom links are optional */});
   }
 
   function setActivePage(page) {
@@ -273,7 +481,16 @@ const SideBarMenu = (() => {
     }
   }
 
-  return { init, setActivePage };
+  /**
+   * Re-render the quick links section with new data.
+   * Called by the settings modal after saving.
+   */
+  function updateCustomLinks(data) {
+    _buildNoteMap(data);
+    _renderCustomLinks(data);
+  }
+
+  return { init, setActivePage, updateCustomLinks };
 })();
 
 export { SideBarMenu };
