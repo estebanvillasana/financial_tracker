@@ -3,7 +3,7 @@ import { applyAppSettings } from '../../appSettings.js';
 import { finalAppConfig } from '../../defaults.js';
 import { fetchSettings, saveSettings, downloadDatabaseSnapshot, exportDatabaseWorkbook } from './actions.js';
 
-const TAB_IDS = ['preferences', 'database', 'connection'];
+const TAB_IDS = ['preferences', 'database', 'connection', 'quicklinks'];
 let activeModal = null;
 let activeKeyHandler = null;
 let lastFocusedElement = null;
@@ -89,6 +89,7 @@ function buildModalHTML() {
           <button class="ft-settings-modal__tab" id="settings-tab-preferences" type="button" role="tab" aria-selected="true" aria-controls="settings-panel-preferences" data-settings-tab="preferences">Preferences</button>
           <button class="ft-settings-modal__tab" id="settings-tab-database" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-database" data-settings-tab="database" tabindex="-1">Database</button>
           <button class="ft-settings-modal__tab" id="settings-tab-connection" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-connection" data-settings-tab="connection" tabindex="-1">Connection</button>
+          <button class="ft-settings-modal__tab" id="settings-tab-quicklinks" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-quicklinks" data-settings-tab="quicklinks" tabindex="-1">Quick Links</button>
         </div>
 
         <div class="ft-settings-modal__body">
@@ -192,6 +193,18 @@ function buildModalHTML() {
               </p>
             </article>
           </section>
+
+          <section class="ft-settings-modal__panel" id="settings-panel-quicklinks" role="tabpanel" aria-labelledby="settings-tab-quicklinks" hidden>
+            <article class="ft-card ft-settings__panel">
+              <div class="ft-settings__panel-header">
+                <div>
+                  <h3 class="ft-h3">Quick Links</h3>
+                  <p class="ft-small ft-text-muted">Sidebar shortcuts to external links and personal notes. Stored outside the database.</p>
+                </div>
+              </div>
+              <div id="ql-content"></div>
+            </article>
+          </section>
         </div>
 
         <footer class="ft-settings-modal__footer">
@@ -259,7 +272,7 @@ function bindTabEvents(modalRoot) {
   });
 }
 
-async function hydrateSettingsModal(modalRoot) {
+async function hydrateSettingsModal(modalRoot, { onCustomLinksSaved } = {}) {
   const feedbackEl = modalRoot.querySelector('#settings-feedback');
   const currencySelect = modalRoot.querySelector('#settings-currency');
   const preferencesForm = modalRoot.querySelector('#settings-preferences-form');
@@ -362,10 +375,15 @@ async function hydrateSettingsModal(modalRoot) {
     }
   });
 
+  // Initialize Quick Links tab (lazy — only fetches when the tab is opened or modal loads)
+  import('./customLinksTab.js')
+    .then(({ initCustomLinksTab }) => initCustomLinksTab(modalRoot, feedbackEl, onCustomLinksSaved))
+    .catch(() => {/* non-critical */});
+
   await reloadSettings();
 }
 
-async function openSettingsModal({ initialTab = 'preferences' } = {}) {
+async function openSettingsModal({ initialTab = 'preferences', onCustomLinksSaved } = {}) {
   closeSettingsModal();
 
   const wrapper = document.createElement('div');
@@ -395,7 +413,7 @@ async function openSettingsModal({ initialTab = 'preferences' } = {}) {
 
   bindTabEvents(modalRoot);
   switchTab(modalRoot, TAB_IDS.includes(initialTab) ? initialTab : 'preferences');
-  await hydrateSettingsModal(modalRoot);
+  await hydrateSettingsModal(modalRoot, { onCustomLinksSaved });
   modalRoot.querySelector('[data-settings-tab][aria-selected="true"]')?.focus();
 
   return modalRoot;
