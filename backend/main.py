@@ -17,6 +17,7 @@ from routes.app_config import router as app_config_router
 from routes.database_exports import router as database_exports_router
 from routes.me import router as me_router
 from routes.pdf_parser import router as pdf_parser_router
+from routes.custom_links import router as custom_links_router
 from scripts.exchange_rates import main as update_exchange_rates
 from scripts.backup_db import backup_all_databases
 
@@ -191,3 +192,4 @@ app.include_router(app_config_router)
 app.include_router(database_exports_router)
 app.include_router(me_router)
 app.include_router(pdf_parser_router)
+app.include_router(custom_links_router)
