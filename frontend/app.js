@@ -77,7 +77,10 @@ async function loadPage(page) {
 
 async function openSettingsDialog(initialTab = 'preferences') {
   const module = await import('./pages/settings/index.js');
-  return module.openSettingsModal({ initialTab });
+  return module.openSettingsModal({
+    initialTab,
+    onCustomLinksSaved: (data) => SideBarMenu.updateCustomLinks(data),
+  });
 }
 
 async function handleRouteChange() {
